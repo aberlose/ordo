@@ -9,7 +9,7 @@ If something you need is not here, ask — do not invent behaviour.
 - Purpose: organise, prioritise and visualise a backlog of tasks.
 - Works fully offline. No account, no server.
 - UI languages: French (default) and English, switchable in settings.
-- Themes: light, dark, or follow the system.
+- Appearance: light, dark, or follow the system; colour theme **Ciel** by default, with Aurore, Lavande, Indigo and Corail selectable in settings.
 - Name: **Ordo** (Latin "order, rank").
 
 ## Core features (from the pitch) — all in MVP
