@@ -17,8 +17,8 @@ If something you need is not here, ask — do not invent behaviour.
 | Feature | Behaviour |
 | --- | --- |
 | Several boards | Listed in the sidebar. Create, rename, duplicate, archive, reorder. Each board has an icon and a colour. |
-| Kanban view | Columns side by side, horizontal scroll. A card shows title, priority, tags, dates and sub-task progress. |
-| Search and filters | Full-text search on title, description and tags. Combinable filters: priority, tag, status, due date (overdue, this week, no date). Clear all in one click. |
+| Kanban view | Columns side by side, horizontal scroll. A card shows title, priority, tags, due date, attachment count and sub-task progress. The task key (ORDO-42) is **hidden by default**; a board setting to show it comes later. |
+| Search and filters | Full-text search on title, description and tags. Combinable filters: priority, tag, due date (overdue, this week, no date). Two entry points producing the same active filters: filter buttons with checkbox menus above the board, and typed filters in the command palette (`#tag`, `haute`, `retard`…). Results update live; clear all in one click. |
 | Columns on the fly | Added from the board. Settings: name, icon, main colour, number of tasks shown by default (beyond it, a "Show more" button; "no limit" is allowed). This is a **display limit only** — there is no WIP limit. Columns can be reordered by drag and drop. |
 | Status | A task's status **is** its column. Each column has a category (To do, In progress, Done), as in Jira, so "done" is known whatever the column names. A new board starts with three columns: TO-DO, IN PROGRESS, DONE (localised). |
 | Tasks | Quick add at the bottom of each column (type a title, press Enter). Details open in a side panel that can be expanded to full screen. |

@@ -30,3 +30,20 @@ The clarity and density of Jira, the restraint of LiteLLM. Neutral backgrounds, 
 - [ ] Search and filter bar
 - [ ] Command palette
 - [ ] Empty states (first launch, board without tasks)
+
+## Decisions so far (board, round 3 — 2026-10-09)
+
+Mockup canvas: "Ordo — Maquettes du board" (Claude design canvas, pages Tour 1 → Tour 3).
+
+| Topic | Decision |
+| --- | --- |
+| Typeface | Figtree (to confirm in context); IBM Plex Mono only for keyboard hints |
+| Palette | Warm neutrals + sage green accent (`#1F6F5C` light / `#5CC2A5` dark), from variant B |
+| Sidebar | Open by default (variant C style: search, board list with counts); collapsible to a 64 px icon rail (variant B style) |
+| Board header | Compact bar from variant C: board icon, name, view switcher, theme, "New task" button with `N` shortcut |
+| Columns | Variant B: no background, coloured underline, ring dot (filled for "done" columns), count |
+| Priority | Five small bars in the priority colour, no label (label on hover) |
+| Sub-tasks | Progress ring + `done/total` |
+| Task key | Hidden on cards by default |
+| Filters | Buttons with checkbox menus **and** typed filters in ⌘K; both produce the same active filters |
+| Tags on cards | Open: labels (A), coloured `#text` (B) or dots on the bottom line (C) |
