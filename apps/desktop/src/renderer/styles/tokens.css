@@ -26,12 +26,14 @@
   --col-violet: #7c3aed;
 
   --shadow-card: 0 1px 3px rgb(15 26 51 / 0.06), 0 1px 1px rgb(15 26 51 / 0.04);
+  --shadow-lift: 0 6px 18px rgb(15 26 51 / 0.1), 0 1px 3px rgb(15 26 51 / 0.06);
   --shadow-pop: 0 24px 64px rgb(15 26 51 / 0.22), 0 2px 8px rgb(15 26 51 / 0.08);
   --scrim: rgb(15 26 51 / 0.38);
 }
 
 :root[data-mode='dark'] {
   --shadow-card: 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-lift: 0 6px 18px rgb(0 0 0 / 0.55);
   --shadow-pop: 0 24px 64px rgb(0 0 0 / 0.6);
   --scrim: rgb(0 0 0 / 0.55);
 }
