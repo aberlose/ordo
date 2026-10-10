@@ -1,0 +1,76 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/figtree';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import './tokens.css';
+
+/* Map the design tokens to Tailwind utilities: bg-surface, text-text-2, border-border, … */
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-side: var(--side);
+  --color-rail: var(--rail);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-kbd-on-accent: var(--kbd-on-accent);
+  --color-tint-violet: var(--tint-violet);
+  --color-col-violet: var(--col-violet);
+  --shadow-card: var(--shadow-card);
+  --shadow-pop: var(--shadow-pop);
+
+  /* Type scale from the approved mockups (px). */
+  --text-kbd: 11px;
+  --text-caption: 11.5px;
+  --text-label: 12.5px;
+  --text-meta: 13px;
+  --text-title: 15px;
+  --text-display: 28px;
+
+  /* Layout sizes from the approved mockups. */
+  --spacing-sidebar: 232px;
+  --spacing-rail: 64px;
+  --spacing-header: 54px;
+  --spacing-column: 296px;
+  --radius-kbd: 5px;
+  --radius-tile: 9px;
+  --radius-card: 10px;
+  --radius-logo: 18px;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--canvas-bg, var(--canvas));
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Inside the sidebar, the generic text/border tokens resolve to the sidebar-scoped ones. */
+  .side {
+    --text: var(--side-text);
+    --text-2: var(--side-text-2);
+    --text-3: var(--side-text-3);
+    --surface: var(--side-active);
+    --border: var(--side-border);
+    --border-strong: var(--side-border);
+    color: var(--side-text);
+  }
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}

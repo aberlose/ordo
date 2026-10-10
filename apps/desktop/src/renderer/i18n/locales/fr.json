@@ -1,0 +1,42 @@
+{
+  "sidebar": {
+    "search": "Rechercher",
+    "boards": "Boards",
+    "noBoards": "Aucun board pour l'instant.",
+    "newBoard": "Nouveau board",
+    "archives": "Archives",
+    "trash": "Corbeille",
+    "settings": "Réglages",
+    "collapse": "Réduire la barre latérale",
+    "expand": "Ouvrir la barre latérale"
+  },
+  "welcome": {
+    "title": "Bienvenue dans Ordo",
+    "subtitle": "Organisez, priorisez et visualisez vos tâches. Tout reste sur cet ordinateur, même sans connexion.",
+    "emptyTitle": "Créer un board vide",
+    "emptyBody": "Trois colonnes pour démarrer : À faire, En cours, Terminé.",
+    "tip": "Astuce : <kbd>{{mod}}K</kbd> ouvre la palette de commandes à tout moment."
+  },
+  "board": {
+    "defaultName": "Mon premier board",
+    "kanban": "Kanban",
+    "newTask": "Nouvelle tâche",
+    "priority": "Priorité",
+    "tags": "Tags",
+    "due": "Échéance",
+    "taskCount_one": "{{count}} tâche",
+    "taskCount_other": "{{count}} tâches",
+    "newColumn": "Nouvelle colonne",
+    "loadError": "Impossible de charger ce board.",
+    "toggleTheme": "Changer de thème"
+  },
+  "column": {
+    "todo": "À faire",
+    "inProgress": "En cours",
+    "done": "Terminé",
+    "emptyTitle": "Aucune tâche pour l'instant",
+    "emptyBody": "Ajoutez votre première tâche, ou appuyez sur <kbd>N</kbd> n'importe où.",
+    "addTask": "Ajouter une tâche",
+    "dropHere": "Glissez une tâche ici"
+  }
+}

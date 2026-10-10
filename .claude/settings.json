@@ -10,10 +10,7 @@
       "Bash(git diff:*)",
       "Bash(git log:*)"
     ],
-    "deny": [
-      "Bash(git push --force:*)",
-      "Bash(rm -rf:*)"
-    ]
+    "deny": ["Bash(git push --force:*)", "Bash(rm -rf:*)"]
   },
   "hooks": {
     "PostToolUse": [

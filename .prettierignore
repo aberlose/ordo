@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+out
+dist
+release
+storybook-static
+docs/design/mockups
+apps/desktop/src/main/infrastructure/db/migrations

@@ -5,7 +5,7 @@ This file is the entry point for every coding agent. Read it fully before any ch
 
 ## Status
 
-Milestone 1 (mockups) is done: approved mockups are in `docs/design/mockups/`, tokens in `docs/design/tokens.md`. Milestone 2 (code skeleton) is next; it does not exist yet: there is no `package.json`, so the commands below are the target, not something you can run today.
+Milestones 1 (mockups) and 2 (skeleton) are done: approved mockups are in `docs/design/mockups/`, tokens in `docs/design/tokens.md`. The app opens on the first-launch screen and can create an empty board; everything else is milestone 3 (MVP).
 See `docs/roadmap.md`.
 
 ## Stack (decided — see `docs/adr/`)
@@ -21,18 +21,18 @@ See `docs/roadmap.md`.
 
 Never add a dependency that is not listed here without asking first.
 
-## Commands (target, once the skeleton exists)
+## Commands
 
-| Command | What it does |
-| --- | --- |
-| `pnpm dev` | Run the app with hot reload |
-| `pnpm typecheck` | `tsc --noEmit` across all packages |
-| `pnpm lint` | ESLint + dependency-cruiser |
-| `pnpm test` | Vitest (domain, contracts, renderer components) |
-| `pnpm e2e` | Playwright against the built Electron app |
-| `pnpm storybook` | Component catalogue, light + dark |
-| `pnpm db:generate` | Generate a Drizzle migration from the schema |
-| `pnpm build` / `pnpm dist` | Build / produce installers |
+| Command                    | What it does                                    |
+| -------------------------- | ----------------------------------------------- |
+| `pnpm dev`                 | Run the app with hot reload                     |
+| `pnpm typecheck`           | `tsc --noEmit` across all packages              |
+| `pnpm lint`                | ESLint + dependency-cruiser                     |
+| `pnpm test`                | Vitest (domain, contracts, renderer components) |
+| `pnpm e2e`                 | Playwright against the built Electron app       |
+| `pnpm storybook`           | Component catalogue, light + dark               |
+| `pnpm db:generate`         | Generate a Drizzle migration from the schema    |
+| `pnpm build` / `pnpm dist` | Build / produce installers                      |
 
 ## Repository map
 
