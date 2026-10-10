@@ -1,4 +1,4 @@
-import type { ColumnCategory, ColumnColor, DisplayLimit, Rank } from '@ordo/domain';
+import type { CalendarDay, ColumnCategory, ColumnColor, DisplayLimit, Priority, Rank } from '@ordo/domain';
 
 /** Ports implemented by the infrastructure layer. Use cases depend only on these. */
 
@@ -51,5 +51,40 @@ export interface BoardRepository {
 
 export interface ColumnRepository {
   listByBoard(boardId: string): ColumnRecord[];
+  findById(id: string): ColumnRecord | null;
   insertMany(columns: readonly ColumnRecord[]): void;
+}
+
+export interface TaskRecord {
+  readonly id: string;
+  readonly boardId: string;
+  readonly columnId: string;
+  readonly parentId: string | null;
+  readonly key: number;
+  readonly title: string;
+  readonly priority: Priority;
+  readonly startDate: CalendarDay | null;
+  readonly dueDate: CalendarDay | null;
+  readonly rank: Rank;
+  readonly completedAt: number | null;
+  readonly createdAt: number;
+  readonly updatedAt: number;
+}
+
+export type TaskPatch = Partial<
+  Pick<TaskRecord, 'title' | 'columnId' | 'priority' | 'startDate' | 'dueDate' | 'rank' | 'completedAt'>
+> & { readonly updatedAt: number };
+
+export interface TaskRepository {
+  /** Top-level, not deleted, not archived tasks of a board, ordered by rank. */
+  listTopLevelByBoard(boardId: string): TaskRecord[];
+  /** A task that is not deleted. */
+  findById(id: string): TaskRecord | null;
+  /** Highest rank in the column, deleted tasks included (a restored task must not collide). */
+  lastRankInColumn(columnId: string): Rank | null;
+  /** Highest key ever given on the board, deleted tasks included (keys are never reused). */
+  maxKey(boardId: string): number | null;
+  insert(task: TaskRecord): void;
+  update(id: string, patch: TaskPatch): void;
+  softDelete(id: string, now: number): void;
 }

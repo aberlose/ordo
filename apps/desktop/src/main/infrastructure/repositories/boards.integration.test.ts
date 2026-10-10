@@ -1,11 +1,13 @@
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { makeBoardUseCases } from '../../application/boards';
+import { makeTaskUseCases } from '../../application/tasks';
 import { openDatabase, type OpenedDatabase } from '../db/client';
 import { sqliteTransactor } from '../db/transactor';
 import { uuidv7Generator } from '../ids';
 import { boardRepository } from './boardRepository';
 import { columnRepository } from './columnRepository';
+import { taskRepository } from './taskRepository';
 
 const migrations = resolve(__dirname, '../db/migrations');
 let opened: OpenedDatabase | undefined;
@@ -17,6 +19,7 @@ function useCases() {
   return makeBoardUseCases({
     boards: boardRepository(opened.db),
     columns: columnRepository(opened.db),
+    tasks: taskRepository(opened.db),
     tx: sqliteTransactor(opened.sqlite),
     clock: { now: () => Date.now() },
     ids: uuidv7Generator(),
@@ -42,5 +45,40 @@ describe('boards on SQLite', () => {
     );
     expect(() => boards.createBoard({ name: 'X', columnNames: ['a', 'b', 'c'] })).toThrow();
     expect(boards.listBoards()).toEqual([]);
+  });
+});
+
+describe('tasks on SQLite', () => {
+  it('creates, updates, moves and soft-deletes tasks', () => {
+    opened = openDatabase(':memory:', migrations);
+    const ports = {
+      columns: columnRepository(opened.db),
+      tasks: taskRepository(opened.db),
+      tx: sqliteTransactor(opened.sqlite),
+      clock: { now: () => Date.now() },
+      ids: uuidv7Generator(),
+    };
+    const boards = makeBoardUseCases({ ...ports, boards: boardRepository(opened.db) });
+    const tasks = makeTaskUseCases(ports);
+    const board = boards.createBoard({ name: 'Perso', columnNames: ['À faire', 'En cours', 'Terminé'] });
+    const [todo, , done] = board.columns.map((c) => c.id) as [string, string, string];
+
+    const a = tasks.createTask({ columnId: todo, title: 'Relire' });
+    const b = tasks.createTask({ columnId: todo, title: 'Démo' });
+    tasks.updateTask({ id: a.id, priority: 5, startDate: '2026-10-02', dueDate: '2026-10-17' });
+    const moved = tasks.updateTask({ id: b.id, columnId: done });
+
+    const read = boards.getBoard(board.id);
+    expect(read.taskCount).toBe(2);
+    expect(read.tasks.find((t) => t.id === a.id)).toMatchObject({
+      priority: 5,
+      startDate: '2026-10-02',
+      dueDate: '2026-10-17',
+    });
+    expect(moved.completedAt).not.toBeNull();
+
+    tasks.deleteTask(a.id);
+    expect(boards.getBoard(board.id).tasks.map((t) => t.id)).toEqual([b.id]);
+    expect(tasks.createTask({ columnId: todo, title: 'Encore' }).key).toBe(3);
   });
 });
