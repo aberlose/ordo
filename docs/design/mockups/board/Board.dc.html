@@ -135,7 +135,7 @@ input{font:inherit;color:inherit}
 <sc-for list="{{cols}}" as="col" hint-placeholder-count="4">
 <section style="width: 296px; flex-shrink: 0; max-height: 100%; display: flex; flex-direction: column; gap: 12px">
 <div style="display: flex; align-items: center; gap: 10px; padding: 0 2px 10px; border-bottom: 2px solid {{col.color}}">
-<span style="width: 10px; height: 10px; border-radius: 50%; border: 2px solid {{col.color}}; background: {{col.dotFill}}; box-sizing: border-box"></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{col.color}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{col.icon}}"/></svg>
 <h2 style="margin: 0; font-size: 14px; font-weight: 600">{{col.name}}</h2>
 <span style="font-size: 13px; color: var(--text-3); font-variant-numeric: tabular-nums">{{col.count}}</span>
 <div style="flex: 1"></div>
@@ -259,7 +259,7 @@ const PRIO = { 1: { l: 'Très basse', c: '#94A3B8' }, 2: { l: 'Basse', c: '#3B82
 const PRIOKW = { 'très haute': [5], 'haute': [4, 5], 'moyenne': [3], 'basse': [1, 2], 'très basse': [1] };
 const DUE = { late: 'En retard', week: 'Cette semaine', none: 'Sans date' };
 const COLS = [
-  { id: 'todo', name: 'À faire', color: '#78716C', limit: 6, tasks: [
+  { id: 'todo', name: 'À faire', color: '#78716C', icon: 'M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z', limit: 6, tasks: [
     { t: 'Auditer les performances mobiles', p: 5, tags: ['perf', 'front'], due: '8 oct.', late: true },
     { t: 'Maquetter la page tarifs', p: 4, tags: ['design'], due: '17 oct.', sub: [1, 4] },
     { t: 'Préparer la démo client', p: 4, tags: [], due: '21 oct.', att: 2 },
@@ -268,14 +268,14 @@ const COLS = [
     { t: 'Exporter les visuels produits en WebP', p: 2, tags: ['design'] },
     { t: 'Optimiser les images du blog', p: 2, tags: ['front', 'perf'], due: '24 oct.' },
     { t: 'Mettre à jour les mentions légales', p: 1, tags: ['contenu'] } ] },
-  { id: 'doing', name: 'En cours', color: '#2563EB', tasks: [
+  { id: 'doing', name: 'En cours', color: '#2563EB', icon: 'M7 4v16l13-8z', tasks: [
     { t: 'Intégrer le nouveau header', p: 4, tags: ['front'], due: '8 oct.', late: true, sub: [3, 5] },
     { t: 'Brancher le formulaire de contact', p: 3, tags: ['front', 'back'], sub: [1, 2] },
     { t: 'Choisir la police de titrage', p: 2, tags: ['design'], att: 3 } ] },
-  { id: 'review', name: 'En revue', color: '#D97706', tasks: [
+  { id: 'review', name: 'En revue', color: '#D97706', icon: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z', tasks: [
     { t: 'Page produit : galerie zoomable', p: 3, tags: ['front'], sub: [4, 4] },
     { t: 'Textes de la page À propos', p: 2, tags: ['contenu'], due: '10 oct.', week: true } ] },
-  { id: 'done', name: 'Terminé', color: '#16A34A', done: true, tasks: [
+  { id: 'done', name: 'Terminé', color: '#16A34A', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12l3 3 5-6', done: true, tasks: [
     { t: 'Arborescence du site', p: 3, tags: ['design'], sub: [3, 3] },
     { t: 'Benchmark concurrents', p: 2, tags: ['contenu'] },
     { t: 'Kick-off avec le client', p: 3, tags: [] } ] }

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — réglages d'une colonne</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.cs{--canvas:#F2F6FF;--surface:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#6D7A97;--accent:#1F5EFF;--accent-bg:linear-gradient(135deg,#1F5EFF 0%,#2F8BFF 100%);--accent-fg:#FFFFFF;--accent-soft:#E2EBFF;--danger:#D92D20;--scrim:rgba(15,26,51,.38);--pop:0 16px 40px rgba(15,26,51,.18),0 2px 6px rgba(15,26,51,.08)}
+.cs.dark{--canvas:#0A1020;--surface:#121B30;--rail:#0E1628;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7383A3;--accent:#5B8CFF;--accent-bg:linear-gradient(135deg,#3D73FF 0%,#4FA3FF 100%);--accent-fg:#06101F;--accent-soft:#16294F;--danger:#FF8A80;--scrim:rgba(0,0,0,.55);--pop:0 16px 40px rgba(0,0,0,.6)}
+button{font:inherit;color:inherit;cursor:pointer}
+input{font:inherit;color:inherit}
+.fl{font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px;display:block}
+.hint{font-size:12px;color:var(--text-3);line-height:1.4;margin-top:6px}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position: relative; width: 100%; height: 900px; overflow: hidden; background: var(--canvas); color: var(--text); font-family: 'Figtree', system-ui, sans-serif; font-size: 14px">
+
+<div aria-hidden="true" style="position: absolute; inset: 0; z-index: 0; isolation: isolate; pointer-events: none"><dc-import name="Board" palette="ciel" tag-style="soft" theme="{{theme}}" hint-size="100%,900px"></dc-import></div>
+<sc-if value="{{isDialog}}" hint-placeholder-val="{{false}}"><div style="position: absolute; inset: 0; z-index: 1; background: var(--scrim)"></div></sc-if>
+<sc-if value="{{isInline}}" hint-placeholder-val="{{false}}"><div style="position: absolute; left: 576px; top: 120px; width: 304px; height: 780px; z-index: 1; background: var(--canvas)"></div></sc-if>
+<sc-if value="{{isPopover}}" hint-placeholder-val="{{true}}"><div style="position: absolute; left: 846px; top: 130px; width: 30px; height: 30px; z-index: 1; border-radius: 6px; background: var(--accent-soft); outline: 2px solid var(--accent)"></div></sc-if>
+
+<section role="dialog" aria-label="{{heading}}" style="{{frameStyle}}; z-index: 2; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--pop); display: flex; flex-direction: column; overflow: hidden">
+
+<div style="display: flex; align-items: center; gap: 8px; padding: 14px 12px 12px 16px; border-bottom: 1px solid var(--border)">
+<h2 style="margin: 0; font-size: 15px; font-weight: 600; flex: 1">{{heading}}</h2>
+<button aria-label="Changer de thème" onClick="{{toggleTheme}}" style="width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--text-3); display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+<button aria-label="Fermer" style="width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--text-3); display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+</div>
+
+<div style="display: flex; flex: 1; min-height: 0">
+<div style="flex: 1; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 18px; overflow-y: auto">
+
+<label style="display: block"><span class="fl">Nom</span>
+<span style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 10px; border: 1.5px solid var(--accent); border-radius: 8px; background: var(--surface)">
+<span style="color: {{color}}; display: flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{iconPath}}"/></svg></span>
+<input value="{{name}}" onChange="{{onName}}" placeholder="Ex. : En revue" style="flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 14px">
+</span></label>
+
+<div><span class="fl">Couleur</span>
+<div role="radiogroup" aria-label="Couleur" style="display: flex; gap: 6px; flex-wrap: wrap">
+<sc-for list="{{colors}}" as="c" hint-placeholder-count="10">
+<button role="radio" aria-checked="{{c.sel}}" aria-label="{{c.name}}" title="{{c.name}}" onClick="{{c.pick}}" style="width: 24px; height: 24px; border-radius: 50%; border: 0; padding: 0; background: {{c.v}}; outline: {{c.ring}}; outline-offset: 2px"></button>
+</sc-for>
+</div></div>
+
+<div><span class="fl" style="display: flex; justify-content: space-between">Icône<span style="font-weight: 400; color: var(--text-3)">{{iconCount}}</span></span>
+<label style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; margin-bottom: 8px; border: 1px solid var(--border); border-radius: 8px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+<input aria-label="Rechercher une icône" value="{{iconQuery}}" onChange="{{onIconQuery}}" placeholder="Rechercher une icône (ex. : bug, maison)" style="flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 13px">
+</label>
+<div role="radiogroup" aria-label="Icône" style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; max-height: 148px; overflow-y: auto; padding: 2px">
+<sc-for list="{{icons}}" as="ic" hint-placeholder-count="24">
+<button role="radio" aria-checked="{{ic.sel}}" aria-label="{{ic.name}}" title="{{ic.name}}" onClick="{{ic.pick}}" style="height: 32px; border-radius: 7px; border: 1px solid {{ic.border}}; background: {{ic.bg}}; color: {{ic.fg}}; display: flex; align-items: center; justify-content: center; padding: 0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.d}}"/></svg></button>
+</sc-for>
+</div>
+<sc-if value="{{noIcon}}" hint-placeholder-val="{{false}}"><div class="hint">Aucune icône ne correspond.</div></sc-if>
+</div>
+
+<div><span class="fl">Type de statut</span>
+<div role="radiogroup" aria-label="Type de statut" style="display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: var(--rail)">
+<sc-for list="{{cats}}" as="ct" hint-placeholder-count="3">
+<button role="radio" aria-checked="{{ct.sel}}" onClick="{{ct.pick}}" style="flex: 1; height: 30px; border: 0; border-radius: 7px; background: {{ct.bg}}; box-shadow: {{ct.shadow}}; font-size: 13px; font-weight: {{ct.weight}}; color: {{ct.fg}}">{{ct.l}}</button>
+</sc-for>
+</div>
+<div class="hint">{{catHint}}</div></div>
+
+<div><span class="fl">Tâches affichées par défaut</span>
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="display: flex; align-items: center; height: 34px; border: 1px solid var(--border); border-radius: 8px; opacity: {{stepOpacity}}">
+<button aria-label="Moins" onClick="{{dec}}" style="width: 34px; height: 32px; border: 0; background: none; color: var(--text-2); font-size: 16px">−</button>
+<span style="width: 36px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600">{{limitText}}</span>
+<button aria-label="Plus" onClick="{{inc}}" style="width: 34px; height: 32px; border: 0; background: none; color: var(--text-2); font-size: 16px">+</button>
+</div>
+<label style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer"><input type="checkbox" checked="{{noLimit}}" onChange="{{toggleNoLimit}}" style="margin: 0; accent-color: var(--accent)">Aucune limite</label>
+</div>
+<div class="hint">{{limitHint}}</div></div>
+
+</div>
+
+<sc-if value="{{isDialog}}" hint-placeholder-val="{{false}}">
+<div style="width: 300px; flex-shrink: 0; padding: 16px 20px; background: var(--canvas); border-left: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px">
+<span style="font-size: 12px; font-weight: 600; color: var(--text-3)">Aperçu</span>
+<div style="display: flex; align-items: center; gap: 8px; padding: 0 2px 10px; border-bottom: 2px solid {{color}}">
+<span style="color: {{color}}; display: flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{iconPath}}"/></svg></span>
+<span style="font-size: 14px; font-weight: 600">{{previewName}}</span>
+<span style="font-size: 13px; color: var(--text-3)">0</span>
+</div>
+<div style="height: 64px; border: 1px dashed var(--border-strong); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12.5px; color: var(--text-3)">Glissez une tâche ici</div>
+<div style="font-size: 12px; color: var(--text-3); line-height: 1.45; margin-top: auto">La colonne sera ajoutée à droite de « Terminé ». Vous pourrez la déplacer en la glissant par son en-tête.</div>
+</div>
+</sc-if>
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border)">
+<sc-if value="{{isEdit}}" hint-placeholder-val="{{true}}"><button style="height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: none; color: var(--danger); font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>Supprimer</button></sc-if>
+<div style="flex: 1"></div>
+<button style="height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px">Annuler</button>
+<button style="height: 32px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--accent-bg); color: var(--accent-fg); font-size: 13px; font-weight: 600">{{submit}}</button>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["popover","inline","dialog"],"default":"popover"},"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1440,"height":900}}'>
+const COLORS = [
+  { name: 'Ardoise', v: '#78716C' }, { name: 'Bleu', v: '#2563EB' }, { name: 'Cyan', v: '#0891B2' }, { name: 'Sarcelle', v: '#0F766E' }, { name: 'Vert', v: '#16A34A' },
+  { name: 'Ambre', v: '#CA8A04' }, { name: 'Orange', v: '#D97706' }, { name: 'Rouge', v: '#DC2626' }, { name: 'Rose', v: '#DB2777' }, { name: 'Violet', v: '#7C3AED' }
+];
+const ICONS = [
+  { name: 'Boîte de réception', d: 'M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z' },
+  { name: 'Lecture', d: 'M7 4v16l13-8z' },
+  { name: 'Œil', d: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z' },
+  { name: 'Validé', d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12l3 3 5-6' },
+  { name: 'Pause', d: 'M8 5v14M16 5v14' },
+  { name: 'Bloqué', d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM6 6l12 12' },
+  { name: 'Horloge', d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2' },
+  { name: 'Drapeau', d: 'M5 21V4h11l-2 4 2 4H5' },
+  { name: 'Étoile', d: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3l-5.5 2.9 1-6.2L3 9.6l6.2-.9z' },
+  { name: 'Bug', d: 'M12 6a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0v-6a4 4 0 0 0-4-4zM12 10v10M3 13h5M16 13h5M5 7l3 2M19 7l-3 2' },
+  { name: 'Idée', d: 'M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z' },
+  { name: 'Fusée lancement', d: 'M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M9 15l-3-3c1-4 4-8 11-9-1 7-5 10-9 11zM15 7.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z' },
+  { name: 'Cœur favori', d: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z' },
+  { name: 'Éclair urgent', d: 'M13 2 4 14h7l-1 8 9-12h-7z' },
+  { name: 'Cible objectif', d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM12 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2z' },
+  { name: 'Calendrier planifié', d: 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM16 3v4M8 3v4M3 11h18' },
+  { name: 'Loupe recherche analyse', d: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5' },
+  { name: 'Code développement', d: 'm8 6-6 6 6 6M16 6l6 6-6 6' },
+  { name: 'Crayon rédaction', d: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4' },
+  { name: 'Message discussion', d: 'M4 5h16v11H8l-4 4z' },
+  { name: 'Équipe personnes', d: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7.5M22 21v-1a6 6 0 0 0-4-5.6' },
+  { name: 'Personne client', d: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM5 21v-1a7 7 0 0 1 14 0v1' },
+  { name: 'Maison perso', d: 'M3 11 12 4l9 7M5 10v10h14V10' },
+  { name: 'Mallette travail', d: 'M3 8h18v12H3zM9 8V5h6v3M3 13h18' },
+  { name: 'Panier courses', d: 'M3 4h2l3 12h11l2-8H7M10 20h.01M17 20h.01' },
+  { name: 'Livre lecture doc', d: 'M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5' },
+  { name: 'Dossier', d: 'M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z' },
+  { name: 'Archive', d: 'M3 4h18v4H3zM5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4' },
+  { name: 'Corbeille', d: 'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14' },
+  { name: 'Envoyer livré', d: 'M22 2 11 13M22 2l-7 20-4-9-9-4z' },
+  { name: 'Colis paquet', d: 'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10' },
+  { name: 'Clé outil maintenance', d: 'M15 4a5 5 0 0 0-4.5 7L4 17.5V20h2.5L13 13.5A5 5 0 0 0 20 9l-3 1-2-2 1-3z' },
+  { name: 'Bouclier sécurité', d: 'M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z' },
+  { name: 'Cadenas verrouillé', d: 'M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4' },
+  { name: 'Alerte attention', d: 'M12 3 2 20h20zM12 9v5M12 17v.1' },
+  { name: 'Question aide', d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7M12 17v.1' },
+  { name: 'Étincelles nouveau', d: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 3v4M21 5h-4' },
+  { name: 'Trophée réussite', d: 'M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8' },
+  { name: 'Café pause', d: 'M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 10h1a3 3 0 0 1 0 6h-1M8 2v3M12 2v3' },
+  { name: 'Musique', d: 'M9 18V5l11-2v13M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM17 19a3 3 0 1 0 0-6 3 3 0 0 0 0 6z' },
+  { name: 'Appareil photo', d: 'M3 8h4l2-3h6l2 3h4v11H3zM12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z' },
+  { name: 'Globe web international', d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18' },
+  { name: 'Lieu adresse', d: 'M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11zM12 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6z' },
+  { name: 'Camion livraison', d: 'M2 6h12v10H2zM14 10h4l3 3v3h-7M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4z' },
+  { name: 'Dollar argent budget', d: 'M12 2v20M17 6H9.5a3 3 0 0 0 0 6h5a3 3 0 0 1 0 6H6' },
+  { name: 'Graphique statistiques', d: 'M4 20V10M10 20V4M16 20v-7M2 20h20' },
+  { name: 'Calques couches', d: 'M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 18l10 5 10-5' }
+];
+const norm = (x) => x.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const CATS = [{ k: 'todo', l: 'À faire' }, { k: 'doing', l: 'En cours' }, { k: 'done', l: 'Terminé' }];
+const CAT_HINT = {
+  todo: 'Les tâches de cette colonne sont considérées comme pas encore commencées.',
+  doing: 'Les tâches de cette colonne sont considérées comme en cours.',
+  done: 'Les tâches déplacées ici sont considérées comme finies (date de fin enregistrée).'
+};
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const add = props.mode === 'dialog';
+    this.state = add
+      ? { theme: null, name: 'En revue', color: 9, icon: 2, cat: 'doing', limit: 6, noLimit: true }
+      : { theme: null, name: 'En cours', color: 1, icon: 1, cat: 'doing', limit: 8, noLimit: false };
+  }
+  renderVals() {
+    const s = this.state;
+    const theme = s.theme ?? this.props.theme ?? 'light';
+    const mode = this.props.mode ?? 'popover';
+    const frames = {
+      popover: 'position: absolute; left: 556px; top: 168px; width: 340px; border-radius: 12px',
+      inline: 'position: absolute; left: 576px; top: 122px; width: 304px; border-radius: 12px',
+      dialog: 'position: absolute; left: 50%; top: 120px; transform: translateX(-50%); width: 720px; border-radius: 14px'
+    };
+    return {
+      themeClass: theme === 'dark' ? 'cs dark' : 'cs', theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),
+      isPopover: mode === 'popover', isInline: mode === 'inline', isDialog: mode === 'dialog', isEdit: mode !== 'dialog',
+      frameStyle: frames[mode], heading: mode === 'dialog' ? 'Nouvelle colonne' : 'Réglages de la colonne', submit: mode === 'dialog' ? 'Ajouter la colonne' : 'Enregistrer',
+      name: s.name, previewName: s.name || 'Nouvelle colonne', onName: (e) => this.setState({ name: e.target.value }),
+      color: COLORS[s.color].v, iconPath: ICONS[s.icon].d,
+      colors: COLORS.map((c, i) => ({ ...c, sel: i === s.color, ring: i === s.color ? '2px solid ' + c.v : 'none', pick: () => this.setState({ color: i }) })),
+      iconQuery: s.iconQuery ?? '', onIconQuery: (e) => this.setState({ iconQuery: e.target.value }),
+      iconCount: ICONS.filter((ic) => norm(ic.name).includes(norm(s.iconQuery ?? ''))).length + ' icônes',
+      noIcon: !ICONS.some((ic) => norm(ic.name).includes(norm(s.iconQuery ?? ''))),
+      icons: ICONS.map((ic, i) => ({ ...ic, i })).filter((ic) => norm(ic.name).includes(norm(s.iconQuery ?? ''))).map((ic) => { const i = ic.i; return { name: ic.name, d: ic.d, sel: i === s.icon, border: i === s.icon ? COLORS[s.color].v : 'var(--border)', bg: i === s.icon ? 'color-mix(in srgb, ' + COLORS[s.color].v + ' 12%, var(--surface))' : 'var(--surface)', fg: i === s.icon ? COLORS[s.color].v : 'var(--text-2)', pick: () => this.setState({ icon: i }) }; }),
+      cats: CATS.map((c) => ({ ...c, sel: c.k === s.cat, bg: c.k === s.cat ? 'var(--surface)' : 'transparent', shadow: c.k === s.cat ? '0 1px 2px rgba(15,26,51,.12)' : 'none', weight: c.k === s.cat ? 600 : 400, fg: c.k === s.cat ? 'var(--text)' : 'var(--text-2)', pick: () => this.setState({ cat: c.k }) })),
+      catHint: CAT_HINT[s.cat],
+      limitText: s.noLimit ? '∞' : String(s.limit), noLimit: s.noLimit, stepOpacity: s.noLimit ? 0.45 : 1,
+      dec: () => this.setState({ limit: Math.max(1, s.limit - 1), noLimit: false }), inc: () => this.setState({ limit: Math.min(99, s.limit + 1), noLimit: false }),
+      toggleNoLimit: () => this.setState({ noLimit: !s.noLimit }),
+      limitHint: s.noLimit ? 'Toutes les tâches de la colonne sont affichées.' : 'Au-delà de ' + s.limit + ' tâches, un bouton « Voir N de plus » apparaît en bas de la colonne.'
+    };
+  }
+}
+</script>
+</body>
+</html>
