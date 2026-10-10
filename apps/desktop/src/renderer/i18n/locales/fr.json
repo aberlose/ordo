@@ -15,9 +15,6 @@
     "subtitle": "Organisez, priorisez et visualisez vos tâches. Tout reste sur cet ordinateur, même sans connexion.",
     "emptyTitle": "Créer un board vide",
     "emptyBody": "Trois colonnes pour démarrer : À faire, En cours, Terminé.",
-    "exampleTitle": "Découvrir avec un exemple",
-    "exampleBody": "Un board rempli de tâches de démonstration, à supprimer quand vous voulez.",
-    "soon": "Bientôt",
     "tip": "Astuce : <kbd>{{mod}}K</kbd> ouvre la palette de commandes à tout moment."
   },
   "board": {

@@ -17,6 +17,12 @@ pnpm storybook    # component catalogue, light/dark, fr/en, every colour theme
 pnpm dist         # unsigned installer for the current OS (apps/desktop/release/)
 ```
 
+### Troubleshooting
+
+- **`corepack enable` / `pnpm install` fails with `Cannot find matching keyid`**: the Corepack bundled with older Node 22 releases has outdated npm signing keys. Run `npm install -g corepack@latest`, or update Node (`nvm install 22`). Fallback: `corepack disable && npm install -g pnpm@10.28.0`.
+- **`pnpm dev` fails with `Error: Electron uninstall`**: the Electron binary was not downloaded during install (interrupted install). Run `node node_modules/electron/install.js`, then `pnpm dev` again.
+- **macOS refuses to open the packaged app** (unsigned build): right-click the app → Open, or run `xattr -cr /Applications/Ordo.app`.
+
 CI (GitHub Actions) runs the checks, the Electron end-to-end test, and builds unsigned `.dmg` and `.exe` installers as artifacts.
 
 ## Documentation

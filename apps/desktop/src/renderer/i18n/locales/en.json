@@ -15,9 +15,6 @@
     "subtitle": "Organise, prioritise and visualise your tasks. Everything stays on this computer, even offline.",
     "emptyTitle": "Create an empty board",
     "emptyBody": "Three columns to start: To do, In progress, Done.",
-    "exampleTitle": "Discover with an example",
-    "exampleBody": "A board full of demo tasks, to delete whenever you like.",
-    "soon": "Soon",
     "tip": "Tip: <kbd>{{mod}}K</kbd> opens the command palette at any time."
   },
   "board": {

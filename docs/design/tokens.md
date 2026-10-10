@@ -7,7 +7,7 @@ Implemented in `apps/desktop/src/renderer/styles/tokens.css` (`<html data-palett
 
 | Theme               | Role               | Light accent | Dark accent | Gradient                                                   |
 | ------------------- | ------------------ | ------------ | ----------- | ---------------------------------------------------------- |
-| **Ciel** (`ciel`)   | **Default**        | `#1F5EFF`    | `#5B8CFF`   | Blue halo at the top of the canvas; accent button gradient |
+| **Ciel** (`ciel`)   | **Default**        | `#1A52E6`    | `#5B8CFF`   | Blue halo at the top of the canvas; accent button gradient |
 | Aurore (`aurore`)   | Option in settings | `#5146E5`    | `#9A8CFF`   | Accent button indigo → violet; light sidebar gradient      |
 | Lavande (`lavande`) | Option in settings | `#6248E8`    | `#A594FF`   | Canvas lavender → white; sidebar gradient                  |
 | Indigo (`indigo`)   | Option in settings | `#4F46E5`    | `#8E88FF`   | None                                                       |
@@ -47,12 +47,14 @@ Rejected palettes (kept in the canvas history only): sage, encre, prune, nuit.
 | `--border-strong`      | `#C4D0E6`                                            | `#2E4068`                                            |
 | `--text`               | `#0F1A33`                                            | `#E7EEFB`                                            |
 | `--text-2`             | `#465472`                                            | `#A2B1CE`                                            |
-| `--text-3`             | `#6D7A97`                                            | `#7383A3`                                            |
-| `--accent`             | `#1F5EFF`                                            | `#5B8CFF`                                            |
-| `--accent-bg`          | `linear-gradient(135deg, #1F5EFF 0%, #2F8BFF 100%)`  | `linear-gradient(135deg, #3D73FF 0%, #4FA3FF 100%)`  |
+| `--text-3`             | `#5F6B88`                                            | `#7B8BAB`                                            |
+| `--accent`             | `#1A52E6`                                            | `#5B8CFF`                                            |
+| `--accent-bg`          | `linear-gradient(135deg, #1A52E6 0%, #2B6CF0 100%)`  | `linear-gradient(135deg, #3D73FF 0%, #4FA3FF 100%)`  |
 | `--accent-fg`          | `#FFFFFF`                                            | `#06101F`                                            |
 | `--accent-soft`        | `#E2EBFF`                                            | `#16294F`                                            |
 | `--danger`             | `#D92D20`                                            | `#FF8A80`                                            |
+
+Ciel values were darkened on 2026-10-10 so text and accent reach WCAG AA (4.5:1) on every Ciel background. The `.dc.html` mockups keep the earlier, slightly lighter values.
 
 ## Fixed colours (all themes)
 

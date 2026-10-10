@@ -13,8 +13,7 @@ describe('FirstLaunch', () => {
 
   it('does not offer the example board yet', () => {
     render(<FirstLaunch onCreateEmpty={() => undefined} />);
-    expect(
-      screen.getByRole('button', { name: /Découvrir avec un exemple/ }).getAttribute('aria-disabled'),
-    ).toBe('true');
+    expect(screen.queryByRole('button', { name: /Découvrir avec un exemple/ })).toBeNull();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
   });
 });
