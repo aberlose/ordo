@@ -1,0 +1,37 @@
+# Unsigned installers for personal use (ADR 0001). macOS and Windows ask for confirmation on first launch.
+appId: app.ordo.desktop
+productName: Ordo
+copyright: Copyright © 2026 Ordo
+directories:
+  output: release/${version}
+  buildResources: resources
+files:
+  - out/**
+  - package.json
+  - '!**/*.{map,ts,tsx}'
+extraResources:
+  - from: src/main/infrastructure/db/migrations
+    to: migrations
+asarUnpack:
+  - '**/*.node'
+# better-sqlite3 13 ships N-API prebuilds for every target: no native rebuild needed.
+npmRebuild: false
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.productivity
+  identity: null
+dmg:
+  artifactName: Ordo-${version}-${arch}.dmg
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: Ordo-Setup-${version}.exe
+linux:
+  target: [AppImage]
+publish: null

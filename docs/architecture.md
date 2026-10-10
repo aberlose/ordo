@@ -60,16 +60,16 @@ ordo/
 
 ## Dependency rules (enforced by dependency-cruiser)
 
-| From | May import | Must not import |
-| --- | --- | --- |
-| `packages/domain` | nothing (standard library only) | everything else |
-| `packages/contracts` | `domain`, `zod` | main, preload, renderer |
-| `main/application` | `domain`, `contracts`, ports | `main/ipc`, Electron, renderer |
-| `main/infrastructure` | `domain`, `application` ports, Drizzle, better-sqlite3 | `main/ipc`, renderer |
-| `main/ipc` | `contracts`, `application` | `infrastructure` directly, renderer |
-| `preload` | `contracts`, Electron `contextBridge`/`ipcRenderer` | main, renderer |
-| `renderer` | `contracts` (types), `domain` (pure helpers) | main, preload, Node/Electron APIs |
-| `renderer/features/a` | `features/b/index.ts` only | `features/b/**` internals |
+| From                  | May import                                             | Must not import                     |
+| --------------------- | ------------------------------------------------------ | ----------------------------------- |
+| `packages/domain`     | nothing (standard library only)                        | everything else                     |
+| `packages/contracts`  | `domain`, `zod`                                        | main, preload, renderer             |
+| `main/application`    | `domain`, `contracts`, ports                           | `main/ipc`, Electron, renderer      |
+| `main/infrastructure` | `domain`, `application` ports, Drizzle, better-sqlite3 | `main/ipc`, renderer                |
+| `main/ipc`            | `contracts`, `application`                             | `infrastructure` directly, renderer |
+| `preload`             | `contracts`, Electron `contextBridge`/`ipcRenderer`    | main, renderer                      |
+| `renderer`            | `contracts` (types), `domain` (pure helpers)           | main, preload, Node/Electron APIs   |
+| `renderer/features/a` | `features/b/index.ts` only                             | `features/b/**` internals           |
 
 ## Electron security
 
@@ -85,14 +85,14 @@ ordo/
 
 Target: a board of 10,000 tasks stays fluid. Measured in CI on a generated dataset, not estimated.
 
-| Measure | Budget | How |
-| --- | --- | --- |
-| Cold start to board shown | < 1.5 s | Show window when ready, lazy-load editor and secondary views, prefetch current board |
-| Drag and drop | 60 fps | Pragmatic DnD, memoised cards, virtualised columns, one row written thanks to `rank` |
-| Search on 10,000 tasks | < 50 ms | FTS5 index, 150 ms input debounce |
-| Open a task | < 100 ms | Primary-key query, editor kept loaded after first use |
-| Idle memory | < 300 MB | One window, no heavy library at startup |
-| Note save | Invisible | Autosave 500 ms after last keystroke, in a transaction |
+| Measure                   | Budget    | How                                                                                  |
+| ------------------------- | --------- | ------------------------------------------------------------------------------------ |
+| Cold start to board shown | < 1.5 s   | Show window when ready, lazy-load editor and secondary views, prefetch current board |
+| Drag and drop             | 60 fps    | Pragmatic DnD, memoised cards, virtualised columns, one row written thanks to `rank` |
+| Search on 10,000 tasks    | < 50 ms   | FTS5 index, 150 ms input debounce                                                    |
+| Open a task               | < 100 ms  | Primary-key query, editor kept loaded after first use                                |
+| Idle memory               | < 300 MB  | One window, no heavy library at startup                                              |
+| Note save                 | Invisible | Autosave 500 ms after last keystroke, in a transaction                               |
 
 ## Offline
 

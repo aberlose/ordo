@@ -1,0 +1,45 @@
+{
+  "sidebar": {
+    "search": "Search",
+    "boards": "Boards",
+    "noBoards": "No board yet.",
+    "newBoard": "New board",
+    "archives": "Archives",
+    "trash": "Trash",
+    "settings": "Settings",
+    "collapse": "Collapse sidebar",
+    "expand": "Expand sidebar"
+  },
+  "welcome": {
+    "title": "Welcome to Ordo",
+    "subtitle": "Organise, prioritise and visualise your tasks. Everything stays on this computer, even offline.",
+    "emptyTitle": "Create an empty board",
+    "emptyBody": "Three columns to start: To do, In progress, Done.",
+    "exampleTitle": "Discover with an example",
+    "exampleBody": "A board full of demo tasks, to delete whenever you like.",
+    "soon": "Soon",
+    "tip": "Tip: <kbd>{{mod}}K</kbd> opens the command palette at any time."
+  },
+  "board": {
+    "defaultName": "My first board",
+    "kanban": "Kanban",
+    "newTask": "New task",
+    "priority": "Priority",
+    "tags": "Tags",
+    "due": "Due date",
+    "taskCount_one": "{{count}} task",
+    "taskCount_other": "{{count}} tasks",
+    "newColumn": "New column",
+    "loadError": "This board could not be loaded.",
+    "toggleTheme": "Toggle theme"
+  },
+  "column": {
+    "todo": "To do",
+    "inProgress": "In progress",
+    "done": "Done",
+    "emptyTitle": "No task yet",
+    "emptyBody": "Add your first task, or press <kbd>N</kbd> anywhere.",
+    "addTask": "Add a task",
+    "dropHere": "Drag a task here"
+  }
+}

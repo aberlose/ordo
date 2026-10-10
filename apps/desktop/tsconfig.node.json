@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "outDir": "node_modules/.cache/tsc-node",
+    "types": ["node"]
+  },
+  "include": [
+    "src/main",
+    "src/preload/index.ts",
+    "e2e",
+    "playwright.config.ts",
+    "electron.vite.config.ts",
+    "drizzle.config.ts",
+    "vitest.main.config.ts",
+    "vitest.renderer.config.ts"
+  ]
+}

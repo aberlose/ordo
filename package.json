@@ -1,0 +1,36 @@
+{
+  "name": "ordo",
+  "private": true,
+  "type": "module",
+  "description": "Offline desktop Kanban for macOS and Windows",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @ordo/desktop dev",
+    "build": "pnpm --filter @ordo/desktop build",
+    "dist": "pnpm --filter @ordo/desktop dist",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "eslint . && depcruise apps/desktop/src packages/domain/src packages/contracts/src --config .dependency-cruiser.cjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "storybook": "pnpm --filter @ordo/desktop storybook",
+    "db:generate": "pnpm --filter @ordo/desktop db:generate",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "dependency-cruiser": "^18.5.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

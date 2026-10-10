@@ -1,0 +1,242 @@
+/*
+ * Design tokens — values from docs/design/tokens.md (approved mockups).
+ * Components never use raw colours: only these variables, via Tailwind (see index.css).
+ * <html> carries `data-palette` (ciel | aurore | lavande | indigo | corail) and `data-mode` (light | dark).
+ */
+
+:root {
+  --font-sans: 'Figtree Variable', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --priority-1: #94a3b8;
+  --priority-2: #3b82f6;
+  --priority-3: #ca8a04;
+  --priority-4: #ea580c;
+  --priority-5: #dc2626;
+
+  --col-slate: #78716c;
+  --col-blue: #2563eb;
+  --col-cyan: #0891b2;
+  --col-teal: #0f766e;
+  --col-green: #16a34a;
+  --col-amber: #ca8a04;
+  --col-orange: #d97706;
+  --col-red: #dc2626;
+  --col-pink: #db2777;
+  --col-violet: #7c3aed;
+
+  --shadow-card: 0 1px 3px rgb(15 26 51 / 0.06), 0 1px 1px rgb(15 26 51 / 0.04);
+  --shadow-pop: 0 24px 64px rgb(15 26 51 / 0.22), 0 2px 8px rgb(15 26 51 / 0.08);
+  --scrim: rgb(15 26 51 / 0.38);
+}
+
+:root[data-mode='dark'] {
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.5);
+  --shadow-pop: 0 24px 64px rgb(0 0 0 / 0.6);
+  --scrim: rgb(0 0 0 / 0.55);
+}
+
+/* Ciel — default */
+:root,
+:root[data-palette='ciel'] {
+  --canvas: #f2f6ff;
+  --canvas-bg: linear-gradient(180deg, #e6efff 0%, #f4f7fd 280px);
+  --surface: #ffffff;
+  --side: #ffffff;
+  --side-bg: #ffffff;
+  --rail: #e9effc;
+  --border: #dfe6f3;
+  --border-strong: #c4d0e6;
+  --text: #0f1a33;
+  --text-2: #465472;
+  --text-3: #6d7a97;
+  --accent: #1f5eff;
+  --accent-bg: linear-gradient(135deg, #1f5eff 0%, #2f8bff 100%);
+  --accent-fg: #ffffff;
+  --accent-soft: #e2ebff;
+  --danger: #d92d20;
+}
+:root[data-mode='dark'],
+:root[data-palette='ciel'][data-mode='dark'] {
+  --canvas: #0a1020;
+  --canvas-bg: linear-gradient(180deg, #0f1c3a 0%, #0a1020 300px);
+  --surface: #121b30;
+  --side: #0c1426;
+  --side-bg: #0c1426;
+  --rail: #0a1120;
+  --border: #20304f;
+  --border-strong: #2e4068;
+  --text: #e7eefb;
+  --text-2: #a2b1ce;
+  --text-3: #7383a3;
+  --accent: #5b8cff;
+  --accent-bg: linear-gradient(135deg, #3d73ff 0%, #4fa3ff 100%);
+  --accent-fg: #06101f;
+  --accent-soft: #16294f;
+  --danger: #ff8a80;
+}
+
+/* Aurore */
+:root[data-palette='aurore'] {
+  --canvas: #f7f7fc;
+  --canvas-bg: #f7f7fc;
+  --surface: #ffffff;
+  --side: #f0f0fb;
+  --side-bg: linear-gradient(180deg, #eceeff 0%, #f4ecff 100%);
+  --rail: #ececf8;
+  --border: #e4e4f1;
+  --border-strong: #cdcde4;
+  --text: #16162e;
+  --text-2: #4e4e6e;
+  --text-3: #76769a;
+  --accent: #5146e5;
+  --accent-bg: linear-gradient(135deg, #4f5bff 0%, #8b3fe8 100%);
+  --accent-fg: #ffffff;
+  --accent-soft: #eceafd;
+  --danger: #d92d20;
+}
+:root[data-palette='aurore'][data-mode='dark'] {
+  --canvas: #0e0e1a;
+  --canvas-bg: #0e0e1a;
+  --surface: #17172a;
+  --side: #0b0b16;
+  --side-bg: linear-gradient(180deg, #141533 0%, #1a1230 100%);
+  --rail: #0b0b16;
+  --border: #26263f;
+  --border-strong: #36365a;
+  --text: #ececf8;
+  --text-2: #ababc8;
+  --text-3: #7c7c9e;
+  --accent: #9a8cff;
+  --accent-bg: linear-gradient(135deg, #6e78ff 0%, #a65cff 100%);
+  --accent-fg: #0e0e1a;
+  --accent-soft: #25214f;
+  --danger: #ff8a80;
+}
+
+/* Lavande */
+:root[data-palette='lavande'] {
+  --canvas: #f6f5fd;
+  --canvas-bg: linear-gradient(135deg, #ede8ff 0%, #f6f5fd 38%, #f3f6fd 100%);
+  --surface: #ffffff;
+  --side: #eeebfb;
+  --side-bg: linear-gradient(180deg, #e8e2fc 0%, #f1effb 100%);
+  --rail: #ece9fa;
+  --border: #e3e0f3;
+  --border-strong: #cdc8e6;
+  --text: #1b1736;
+  --text-2: #524d74;
+  --text-3: #7a7599;
+  --accent: #6248e8;
+  --accent-bg: #6248e8;
+  --accent-fg: #ffffff;
+  --accent-soft: #ece8fd;
+  --danger: #d92d20;
+}
+:root[data-palette='lavande'][data-mode='dark'] {
+  --canvas: #110f22;
+  --canvas-bg: linear-gradient(135deg, #1d1842 0%, #110f22 45%, #0f1222 100%);
+  --surface: #1a1830;
+  --side: #0d0b1c;
+  --side-bg: linear-gradient(180deg, #181439 0%, #0d0b1c 100%);
+  --rail: #0c0a1a;
+  --border: #2a2747;
+  --border-strong: #3a365e;
+  --text: #eeebfa;
+  --text-2: #b2acd0;
+  --text-3: #827ca3;
+  --accent: #a594ff;
+  --accent-bg: #a594ff;
+  --accent-fg: #110f22;
+  --accent-soft: #2a2356;
+  --danger: #ff8a80;
+}
+
+/* Indigo */
+:root[data-palette='indigo'] {
+  --canvas: #f4f5fb;
+  --canvas-bg: #f4f5fb;
+  --surface: #ffffff;
+  --side: #ebedf8;
+  --side-bg: #ebedf8;
+  --rail: #e4e7f5;
+  --border: #e1e4f0;
+  --border-strong: #c9cee3;
+  --text: #151833;
+  --text-2: #4b5072;
+  --text-3: #767b9a;
+  --accent: #4f46e5;
+  --accent-bg: #4f46e5;
+  --accent-fg: #ffffff;
+  --accent-soft: #e6e5fc;
+  --danger: #d92d20;
+}
+:root[data-palette='indigo'][data-mode='dark'] {
+  --canvas: #0d0f1f;
+  --canvas-bg: #0d0f1f;
+  --surface: #161935;
+  --side: #0a0b18;
+  --side-bg: #0a0b18;
+  --rail: #090a15;
+  --border: #262a4a;
+  --border-strong: #353a61;
+  --text: #e8e9f7;
+  --text-2: #a6a9c8;
+  --text-3: #7a7fa3;
+  --accent: #8e88ff;
+  --accent-bg: #8e88ff;
+  --accent-fg: #0d0f1f;
+  --accent-soft: #24224f;
+  --danger: #ff8a80;
+}
+
+/* Corail */
+:root[data-palette='corail'] {
+  --canvas: #fbf5f0;
+  --canvas-bg: #fbf5f0;
+  --surface: #ffffff;
+  --side: #f6ebe2;
+  --side-bg: #f6ebe2;
+  --rail: #f2e4d9;
+  --border: #ede0d5;
+  --border-strong: #dccab9;
+  --text: #2a1a12;
+  --text-2: #6b5446;
+  --text-3: #94806f;
+  --accent: #cc4426;
+  --accent-bg: #cc4426;
+  --accent-fg: #ffffff;
+  --accent-soft: #fce6dd;
+  --danger: #b42318;
+}
+:root[data-palette='corail'][data-mode='dark'] {
+  --canvas: #16100d;
+  --canvas-bg: #16100d;
+  --surface: #211915;
+  --side: #110c0a;
+  --side-bg: #110c0a;
+  --rail: #0e0a08;
+  --border: #352821;
+  --border-strong: #4a3a30;
+  --text: #f6ece6;
+  --text-2: #c2afa3;
+  --text-3: #94806f;
+  --accent: #ff7a55;
+  --accent-bg: #ff7a55;
+  --accent-fg: #16100d;
+  --accent-soft: #3f2219;
+  --danger: #ff8a80;
+}
+
+/* Derived tokens, shared by every colour theme. */
+:root {
+  /* Sidebar-scoped colours: a theme may give the sidebar its own (e.g. dark sidebar in light mode). */
+  --side-text: var(--text);
+  --side-text-2: var(--text-2);
+  --side-text-3: var(--text-3);
+  --side-active: var(--surface);
+  --side-border: var(--border);
+  /* Keyboard hint drawn on the accent button. */
+  --kbd-on-accent: rgb(255 255 255 / 0.2);
+  --tint-violet: color-mix(in srgb, var(--col-violet) 12%, var(--surface));
+}
