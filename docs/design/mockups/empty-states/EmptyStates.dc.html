@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — états vides</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.vd{--canvas:#F2F6FF;--canvas-bg:linear-gradient(180deg,#E6EFFF 0%,#F4F7FD 280px);--surface:#FFFFFF;--side:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#6D7A97;--accent:#1F5EFF;--accent-bg:linear-gradient(135deg,#1F5EFF 0%,#2F8BFF 100%);--accent-fg:#FFFFFF;--accent-soft:#E2EBFF;--shadow:0 1px 3px rgba(15,26,51,.06)}
+.vd.dark{--canvas:#0A1020;--canvas-bg:linear-gradient(180deg,#0F1C3A 0%,#0A1020 300px);--surface:#121B30;--side:#0C1426;--rail:#0A1120;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7383A3;--accent:#5B8CFF;--accent-bg:linear-gradient(135deg,#3D73FF 0%,#4FA3FF 100%);--accent-fg:#06101F;--accent-soft:#16294F;--shadow:0 1px 3px rgba(0,0,0,.5)}
+button{font:inherit;color:inherit;cursor:pointer}
+kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:1px 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text-2)}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="width: 100%; height: 900px; display: flex; overflow: hidden; background: var(--canvas-bg); color: var(--text); font-family: 'Figtree', system-ui, sans-serif; font-size: 14px">
+
+<aside style="width: 232px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; padding: 12px 10px; box-sizing: border-box; background: var(--side); border-right: 1px solid var(--border)">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 6px; margin-bottom: 10px">
+<div style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--text); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px">O</div>
+<span style="font-weight: 600; flex: 1">Ordo</span>
+<button aria-label="Changer de thème" onClick="{{toggleTheme}}" style="width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--text-3); display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</div>
+<button style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); font-size: 13px; text-align: left"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex: 1">Rechercher</span><kbd>⌘K</kbd></button>
+<div style="display: flex; align-items: center; padding: 6px 8px 4px; color: var(--text-3); font-size: 11.5px; font-weight: 500"><span style="flex: 1">Boards</span><button aria-label="Nouveau board" style="border: 0; background: none; padding: 2px; color: var(--text-3); display: flex"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+<sc-if value="{{isFirst}}" hint-placeholder-val="{{true}}"><div style="margin: 4px 8px; padding: 12px; border: 1px dashed var(--border-strong); border-radius: 8px; font-size: 12.5px; color: var(--text-3); line-height: 1.45">Aucun board pour l'instant.</div></sc-if>
+<sc-if value="{{isBoard}}" hint-placeholder-val="{{false}}"><a href="#" style="display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 8px; border-radius: 6px; text-decoration: none; color: var(--text); background: var(--accent-soft); font-weight: 500"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="11" rx="1.5"/></svg><span style="flex: 1">Mon premier board</span><span style="font-size: 12px; color: var(--text-3)">0</span></a></sc-if>
+<div style="flex: 1"></div>
+<a href="#" style="display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 8px; text-decoration: none; color: var(--text-2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Réglages</a>
+</aside>
+
+<main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+
+<sc-if value="{{isFirst}}" hint-placeholder-val="{{true}}">
+<div style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px">
+<div style="width: 600px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px">
+<div style="width: 64px; height: 64px; border-radius: 18px; background: var(--accent-bg); color: var(--accent-fg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 30px; margin-bottom: 6px">O</div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -.015em">Bienvenue dans Ordo</h1>
+<p style="margin: 0; max-width: 460px; font-size: 15px; line-height: 1.55; color: var(--text-2)">Organisez, priorisez et visualisez vos tâches. Tout reste sur cet ordinateur, même sans connexion.</p>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: 100%; margin-top: 18px">
+<button onClick="{{goBoard}}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; border: 1.5px solid var(--accent); border-radius: 12px; background: var(--surface); text-align: left; box-shadow: var(--shadow)">
+<span style="width: 36px; height: 36px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+<span style="font-size: 15px; font-weight: 600">Créer un board vide</span>
+<span style="font-size: 13px; color: var(--text-3); line-height: 1.45">Trois colonnes pour démarrer : À faire, En cours, Terminé.</span>
+</button>
+<button style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-align: left; box-shadow: var(--shadow)">
+<span style="width: 36px; height: 36px; border-radius: 9px; background: color-mix(in srgb, #7C3AED 12%, var(--surface)); color: #7C3AED; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 3v4M21 5h-4"/></svg></span>
+<span style="font-size: 15px; font-weight: 600">Découvrir avec un exemple</span>
+<span style="font-size: 13px; color: var(--text-3); line-height: 1.45">Un board rempli de tâches de démonstration, à supprimer quand vous voulez.</span>
+</button>
+</div>
+<p style="margin: 18px 0 0; font-size: 13px; color: var(--text-3)">Astuce : <kbd>⌘K</kbd> ouvre la palette de commandes à tout moment.</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isBoard}}" hint-placeholder-val="{{false}}">
+<header style="height: 54px; flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 0 24px; border-bottom: 1px solid var(--border)">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" aria-hidden="true"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="11" rx="1.5"/></svg>
+<h1 style="margin: 0; font-size: 15px; font-weight: 600">Mon premier board</h1>
+<span style="color: var(--text-3)">/</span><span style="color: var(--text-2)">Kanban</span>
+<div style="flex: 1"></div>
+<button style="height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: var(--accent-bg); color: var(--accent-fg); font-weight: 500; display: flex; align-items: center; gap: 10px">Nouvelle tâche<kbd style="background: rgba(255,255,255,.18); border-color: transparent; color: inherit">N</kbd></button>
+</header>
+<div style="display: flex; align-items: center; gap: 8px; padding: 12px 24px; border-bottom: 1px solid var(--border); opacity: .5">
+<span style="height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; font-size: 13px; color: var(--text-2)">Priorité</span>
+<span style="height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; font-size: 13px; color: var(--text-2)">Tags</span>
+<span style="height: 30px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; font-size: 13px; color: var(--text-2)">Échéance</span>
+<div style="flex: 1"></div><span style="font-size: 13px; color: var(--text-3)">0 tâche</span>
+</div>
+<div style="flex: 1; min-height: 0; display: flex; align-items: flex-start; gap: 28px; padding: 22px 24px 24px">
+<sc-for list="{{cols}}" as="col" hint-placeholder-count="3">
+<section style="width: 296px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 2px 10px; border-bottom: 2px solid {{col.color}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{col.color}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{col.icon}}"/></svg>
+<h2 style="margin: 0; font-size: 14px; font-weight: 600">{{col.name}}</h2>
+<span style="font-size: 13px; color: var(--text-3)">0</span>
+</div>
+<sc-if value="{{col.first}}" hint-placeholder-val="{{false}}">
+<div style="padding: 22px 18px; border: 1.5px dashed var(--border-strong); border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; background: var(--surface)">
+<span style="font-size: 14px; font-weight: 600">Aucune tâche pour l'instant</span>
+<span style="font-size: 13px; color: var(--text-3); line-height: 1.45">Ajoutez votre première tâche, ou appuyez sur <kbd>N</kbd> n'importe où.</span>
+<button style="margin-top: 4px; height: 32px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ajouter une tâche</button>
+</div>
+</sc-if>
+<sc-if value="{{col.other}}" hint-placeholder-val="{{true}}"><div style="height: 76px; border: 1.5px dashed var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-3)">Glissez une tâche ici</div></sc-if>
+</section>
+</sc-for>
+<button style="width: 180px; flex-shrink: 0; height: 40px; border: 0; border-radius: 10px; background: none; color: var(--text-3); display: flex; align-items: center; gap: 8px; padding: 0 4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nouvelle colonne</button>
+</div>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["first","board"],"default":"first"},"$preview":{"width":1440,"height":900}}'>
+const COLS = [
+  { name: 'À faire', color: '#78716C', icon: 'M22 12h-6l-2 3h-4l-2-3H2M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z' },
+  { name: 'En cours', color: '#2563EB', icon: 'M7 4v16l13-8z' },
+  { name: 'Terminé', color: '#16A34A', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12l3 3 5-6' }
+];
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { theme: 'light', mode: null }; }
+  renderVals() {
+    const s = this.state;
+    const mode = s.mode ?? this.props.mode ?? 'first';
+    return {
+      themeClass: s.theme === 'dark' ? 'vd dark' : 'vd', toggleTheme: () => this.setState({ theme: s.theme === 'dark' ? 'light' : 'dark' }),
+      isFirst: mode === 'first', isBoard: mode === 'board', goBoard: () => this.setState({ mode: 'board' }),
+      cols: COLS.map((c, i) => ({ ...c, first: i === 0, other: i !== 0 }))
+    };
+  }
+}
+</script>
+</body>
+</html>

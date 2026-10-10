@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — palette de commandes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.pc{--surface:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--text:#0F1A33;--text-2:#465472;--text-3:#6D7A97;--accent:#1F5EFF;--accent-soft:#E2EBFF;--scrim:rgba(15,26,51,.38);--pop:0 24px 64px rgba(15,26,51,.22),0 2px 8px rgba(15,26,51,.08)}
+.pc.dark{--surface:#121B30;--rail:#0E1628;--border:#20304F;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7383A3;--accent:#5B8CFF;--accent-soft:#16294F;--scrim:rgba(0,0,0,.55);--pop:0 24px 64px rgba(0,0,0,.6)}
+button{font:inherit;color:inherit;cursor:pointer}
+input{font:inherit;color:inherit}
+kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-radius:5px;color:var(--text-3)}
+</style>
+</helmet>
+<div class="{{themeClass}}" style="position: relative; width: 100%; height: 900px; overflow: hidden; color: var(--text); font-family: 'Figtree', system-ui, sans-serif; font-size: 14px">
+<div aria-hidden="true" style="position: absolute; inset: 0; z-index: 0; isolation: isolate; pointer-events: none"><dc-import name="Board" palette="ciel" tag-style="soft" theme="{{theme}}" hint-size="100%,900px"></dc-import></div>
+<div style="position: absolute; inset: 0; z-index: 1; background: var(--scrim)"></div>
+
+<div role="dialog" aria-label="Palette de commandes" style="position: absolute; z-index: 2; top: 96px; left: 50%; transform: translateX(-50%); width: 640px; max-height: calc(100% - 96px - 48px); background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--pop); display: flex; flex-direction: column; overflow: hidden">
+<label style="display: flex; align-items: center; gap: 12px; padding: 0 18px; height: 56px; flex-shrink: 0; border-bottom: 1px solid var(--border)">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+<input aria-label="Rechercher, filtrer ou lancer une commande" placeholder="Rechercher une tâche, filtrer (#tag, haute…) ou lancer une commande" style="flex: 1; border: 0; outline: 0; background: none; font-size: 16px">
+<button aria-label="Changer de thème" onClick="{{toggleTheme}}" style="width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--text-3); display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+</label>
+<div role="listbox" style="flex: 1; min-height: 0; overflow-y: auto; padding: 6px 8px 8px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div style="padding: 10px 10px 4px; font-size: 11.5px; font-weight: 600; color: var(--text-3)">{{g.title}}</div>
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+<div role="option" aria-selected="{{it.sel}}" onMouseEnter="{{it.hover}}" style="height: 38px; border-radius: 8px; display: flex; align-items: center; gap: 12px; padding: 0 10px; background: {{it.bg}}; cursor: pointer">
+<span style="width: 26px; height: 26px; border-radius: 7px; display: flex; align-items: center; justify-content: center; background: {{it.iconBg}}; color: {{it.iconFg}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{it.icon}}"/></svg></span>
+<span style="flex: 1; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{it.l}}</span>
+<span style="font-size: 12px; color: var(--text-3)">{{it.meta}}</span>
+<span style="display: flex; gap: 3px"><sc-for list="{{it.keys}}" as="k" hint-placeholder-count="1"><kbd>{{k}}</kbd></sc-for></span>
+</div>
+</sc-for>
+</sc-for>
+</div>
+<div style="display: flex; align-items: center; gap: 16px; padding: 10px 18px; flex-shrink: 0; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-3)">
+<span style="display: flex; align-items: center; gap: 6px"><kbd>↑</kbd><kbd>↓</kbd>naviguer</span>
+<span style="display: flex; align-items: center; gap: 6px"><kbd>↵</kbd>ouvrir</span>
+<span style="display: flex; align-items: center; gap: 6px"><kbd>Échap</kbd>fermer</span>
+<div style="flex: 1"></div>
+<span>Tapez <b style="color: var(--text-2); font-weight: 600">#tag</b>, <b style="color: var(--text-2); font-weight: 600">haute</b> ou <b style="color: var(--text-2); font-weight: 600">retard</b> pour filtrer</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+const I = {
+  task: 'M5 4h14v16H5zM9 9h6M9 13h6M9 17h3',
+  plus: 'M12 5v14M5 12h14',
+  col: 'M4 4h6v16H4zM14 4h6v10h-6z',
+  board: 'M3 3h7v18H3zM14 3h7v11h-7z',
+  moon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z',
+  side: 'M3 4h18v16H3zM9 4v16',
+  gear: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  trash: 'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14'
+};
+const GROUPS = [
+  { title: 'Récemment ouvertes', items: [
+    { l: 'Intégrer le nouveau header', meta: 'En cours', icon: I.task, keys: [] },
+    { l: 'Maquetter la page tarifs', meta: 'À faire', icon: I.task, keys: [] },
+    { l: 'Page produit : galerie zoomable', meta: 'En revue', icon: I.task, keys: [] } ] },
+  { title: 'Actions', items: [
+    { l: 'Nouvelle tâche', meta: '', icon: I.plus, keys: ['N'], accent: true },
+    { l: 'Nouvelle colonne', meta: '', icon: I.col, keys: [] },
+    { l: 'Nouveau board', meta: '', icon: I.board, keys: [] },
+    { l: 'Basculer clair / sombre', meta: '', icon: I.moon, keys: ['⇧', '⌘', 'L'] },
+    { l: 'Réduire la barre latérale', meta: '', icon: I.side, keys: ['⌘', '\\'] },
+    { l: 'Ouvrir les réglages', meta: '', icon: I.gear, keys: ['⌘', ','] },
+    { l: 'Ouvrir la corbeille', meta: '', icon: I.trash, keys: [] } ] },
+  { title: 'Aller au board', items: [
+    { l: 'Perso', meta: '9 tâches', icon: I.board, keys: [], color: '#2563EB' },
+    { l: 'Veille tech', meta: '23 tâches', icon: I.board, keys: [], color: '#7C3AED' },
+    { l: 'Déménagement', meta: '12 tâches', icon: I.board, keys: [], color: '#B45309' } ] }
+];
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { theme: 'light', sel: 'Actions-0' }; }
+  renderVals() {
+    const s = this.state;
+    return {
+      theme: s.theme, themeClass: s.theme === 'dark' ? 'pc dark' : 'pc', toggleTheme: () => this.setState({ theme: s.theme === 'dark' ? 'light' : 'dark' }),
+      groups: GROUPS.map((g) => ({ title: g.title, items: g.items.map((it, i) => {
+        const id = g.title.split(' ')[0] + '-' + i; const sel = id === s.sel;
+        return { ...it, sel, bg: sel ? 'var(--accent-soft)' : 'transparent',
+          iconBg: it.color ? 'color-mix(in srgb, ' + it.color + ' 14%, var(--surface))' : (sel ? 'var(--surface)' : 'var(--rail)'),
+          iconFg: it.color ?? (sel || it.accent ? 'var(--accent)' : 'var(--text-2)'),
+          hover: () => this.setState({ sel: id }) };
+      }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

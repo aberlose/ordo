@@ -29,9 +29,9 @@ The clarity of Jira, the restraint of LiteLLM, with a vivid blue/violet identity
 - [x] Task detail window (and full-screen mode)
 - [x] Column settings
 - [x] Search and filter bar (part of the board)
-- [ ] Command palette (filters part approved with the board; commands list still to design)
+- [x] Command palette
 - [x] Settings
-- [ ] Empty states (first launch, board without tasks)
+- [x] Empty states (first launch, board without tasks)
 
 ## Approved so far
 
@@ -39,3 +39,5 @@ The clarity of Jira, the restraint of LiteLLM, with a vivid blue/violet identity
 - **Task detail** — layout chosen 2026-10-10: `mockups/task-detail/`.
 - **Column settings** — layout chosen 2026-10-10: `mockups/column-settings/`.
 - **Settings** — layout chosen 2026-10-10: `mockups/settings/`.
+- **Empty states** — approved 2026-10-10: `mockups/empty-states/`.
+- **Command palette** — approved 2026-10-10: `mockups/command-palette/`.

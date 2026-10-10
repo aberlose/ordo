@@ -5,7 +5,7 @@ This file is the entry point for every coding agent. Read it fully before any ch
 
 ## Status
 
-Milestone 1 (mockups) is next. The code skeleton (milestone 2) does not exist yet: there is no `package.json`, so the commands below are the target, not something you can run today.
+Milestone 1 (mockups) is done: approved mockups are in `docs/design/mockups/`, tokens in `docs/design/tokens.md`. Milestone 2 (code skeleton) is next; it does not exist yet: there is no `package.json`, so the commands below are the target, not something you can run today.
 See `docs/roadmap.md`.
 
 ## Stack (decided — see `docs/adr/`)
