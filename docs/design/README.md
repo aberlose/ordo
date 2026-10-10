@@ -25,7 +25,7 @@ The clarity of Jira, the restraint of LiteLLM, with a vivid blue/violet identity
 ## First mockup series (milestone 1)
 
 - [x] Kanban board
-- [ ] Task detail panel (and full-screen mode)
+- [x] Task detail window (and full-screen mode)
 - [ ] Column settings
 - [ ] Search and filter bar
 - [ ] Command palette
@@ -34,3 +34,4 @@ The clarity of Jira, the restraint of LiteLLM, with a vivid blue/violet identity
 ## Approved so far
 
 - **Board** — approved 2026-10-09: `mockups/board/` (decisions in its README), tokens in `tokens.md`.
+- **Task detail** — layout chosen 2026-10-10: `mockups/task-detail/`.

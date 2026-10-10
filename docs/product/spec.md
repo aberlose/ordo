@@ -21,7 +21,7 @@ If something you need is not here, ask — do not invent behaviour.
 | Search and filters | Full-text search on title, description and tags. Combinable filters: priority, tag, due date (overdue, this week, no date). Two entry points producing the same active filters: filter buttons with checkbox menus above the board, and typed filters in the command palette (`#tag`, `haute`, `retard`…). Results update live; clear all in one click. |
 | Columns on the fly | Added from the board. Settings: name, icon, main colour, number of tasks shown by default (beyond it, a "Show more" button; "no limit" is allowed). This is a **display limit only** — there is no WIP limit. Columns can be reordered by drag and drop. |
 | Status | A task's status **is** its column. Each column has a category (To do, In progress, Done), as in Jira, so "done" is known whatever the column names. A new board starts with three columns: TO-DO, IN PROGRESS, DONE (localised). |
-| Tasks | Quick add at the bottom of each column (type a title, press Enter). Details open in a side panel that can be expanded to full screen. |
+| Tasks | Quick add at the bottom of each column (type a title, press Enter). Details open in a centred window over the dimmed board, which can be expanded to full screen. |
 | Drag and drop | Between columns (changes status) and within a column (changes order). Also doable with the keyboard. |
 | Task fields | Title (required). Description (optional). Status (first column by default). Priority on five levels, Very low → Very high, **Medium by default**. Start date and due date (optional, **day only, no time**). |
 | Sub-tasks | **One level only.** Tasks attached to a parent task, with their own title and status. On the parent card they show as a progress bar (e.g. 3/5). |
