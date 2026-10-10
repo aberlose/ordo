@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — sélecteur de date</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lt{--canvas:#F2F6FF;--surface:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#5F6B88;--accent:#1A52E6;--accent-fg:#FFFFFF;--accent-soft:#E2EBFF;--danger:#D92D20;--pop:0 12px 32px rgba(15,26,51,.16),0 2px 6px rgba(15,26,51,.06)}
+.dk{--canvas:#0A1020;--surface:#121B30;--rail:#172340;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7B8BAB;--accent:#5B8CFF;--accent-fg:#06101F;--accent-soft:#16294F;--danger:#FF8A80;--pop:0 12px 32px rgba(0,0,0,.55)}
+button{font:inherit;color:inherit;cursor:pointer}
+input{font:inherit;color:inherit}
+.prop{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;margin-left:-8px;border:0;border-radius:6px;background:none;font-size:13.5px;text-align:left}
+.lbl{font-size:13px;color:var(--text-3);width:88px;flex-shrink:0}
+.nav{width:28px;height:28px;border:0;border-radius:6px;background:none;color:var(--text-2);display:flex;align-items:center;justify-content:center}
+.sc{height:30px;border:0;border-radius:6px;background:none;padding:0 10px;font-size:13px;text-align:left;display:flex;align-items:center;gap:8px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1120px; box-sizing: border-box; padding: 28px 32px; display: flex; flex-direction: column; gap: 28px; background: #F7F8FB; font-family: 'Figtree', system-ui, sans-serif; font-size: 14px; color: #0F1A33">
+
+<sc-for list="{{variants}}" as="v" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">{{v.title}}</h2>
+<p style="margin: 0; font-size: 13px; color: #465472; line-height: 1.5">{{v.desc}}</p>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="{{th.cls}}" style="position: relative; background: var(--surface); color: var(--text); border-radius: 14px; padding: 18px; border: 1px solid var(--border); height: {{v.panelH}}; box-sizing: border-box; overflow: hidden">
+<div style="font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px">{{th.name}}</div>
+<div style="display: flex; flex-direction: column; gap: 2px; width: 300px; padding: 10px 16px; border-radius: 12px; background: var(--canvas); border: 1px solid var(--border); box-sizing: border-box">
+<div style="display: flex; align-items: center"><span class="lbl">Début</span><button class="prop"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>2 oct. 2026</button></div>
+<div style="display: flex; align-items: center"><span class="lbl">Échéance</span><button class="prop" aria-haspopup="dialog" aria-expanded="true" style="background: var(--rail)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>17 oct. 2026</button></div>
+</div>
+
+<div role="dialog" aria-label="Choisir l'échéance" style="position: absolute; left: {{v.popLeft}}; top: {{v.popTop}}; display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--pop); overflow: hidden">
+
+<sc-if value="{{v.isB}}" hint-placeholder-val="{{false}}">
+<div style="width: 150px; padding: 8px 6px; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 1px; background: var(--canvas)">
+<sc-for list="{{shortcuts}}" as="s" hint-placeholder-count="5">
+<button class="sc" style="color: {{s.color}}"><span style="flex: 1">{{s.l}}</span><span style="font-size: 11.5px; color: var(--text-3)">{{s.d}}</span></button>
+</sc-for>
+</div>
+</sc-if>
+
+<div style="width: 268px; padding: 10px 12px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px">
+<sc-if value="{{v.isB}}" hint-placeholder-val="{{false}}">
+<label style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 8px"><input aria-label="Date d'échéance" value="17/10/2026" style="flex: 1; min-width: 0; border: 0; outline: none; background: none; font-size: 13.5px; font-variant-numeric: tabular-nums"><span style="font-size: 11.5px; color: var(--text-3)">jj/mm/aaaa</span></label>
+</sc-if>
+<div style="display: flex; align-items: center">
+<button class="nav" aria-label="Mois précédent"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button>
+<div style="flex: 1; text-align: center; font-size: 13.5px; font-weight: 600">octobre 2026</div>
+<button class="nav" aria-label="Mois suivant"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+</div>
+<div role="grid" style="display: grid; grid-template-columns: repeat(7, 34px); row-gap: 2px; justify-content: space-between">
+<sc-for list="{{wd}}" as="w" hint-placeholder-count="7"><div style="height: 26px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: var(--text-3); font-weight: 500">{{w}}</div></sc-for>
+<sc-for list="{{v.days}}" as="d" hint-placeholder-count="35">
+<div style="height: 32px; display: flex; align-items: center; justify-content: center; background: {{d.band}}; border-radius: {{d.bandR}}">
+<button aria-label="{{d.aria}}" aria-selected="{{d.sel}}" style="width: 32px; height: 32px; border-radius: 8px; border: {{d.ring}}; background: {{d.bg}}; color: {{d.color}}; font-size: 13px; font-weight: {{d.w}}; padding: 0; box-sizing: border-box; font-variant-numeric: tabular-nums">{{d.n}}</button>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{v.isA}}" hint-placeholder-val="{{true}}">
+<div style="display: flex; align-items: center; gap: 4px; padding-top: 8px; border-top: 1px solid var(--border)">
+<button class="sc" style="color: var(--accent); font-weight: 500">Aujourd'hui</button>
+<button class="sc" style="color: var(--text-2)">Demain</button>
+<div style="flex: 1"></div>
+<button class="sc" style="color: var(--text-3)">Effacer</button>
+</div>
+</sc-if>
+</div>
+</div>
+
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1120}}'>
+const MONTHS = 'janvier février mars avril mai juin juillet août septembre octobre novembre décembre'.split(' ');
+function days(range) {
+  const out = [];
+  for (let i = 0; i < 35; i++) {
+    const n = i - 2; // Oct 1 2026 is a Thursday; Monday-first grid starts on Sep 28
+    const inMonth = n >= 1 && n <= 31;
+    const label = inMonth ? n : (n < 1 ? 30 + n : n - 31);
+    const sel = inMonth && n === 17;
+    const today = inMonth && n === 10;
+    const start = range && inMonth && n === 2;
+    const inRange = range && inMonth && n > 2 && n < 17;
+    const col = i % 7;
+    let band = 'transparent', bandR = '0';
+    if (range && inMonth && n >= 2 && n <= 17) {
+      band = 'var(--accent-soft)';
+      const left = n === 2 || col === 0, right = n === 17 || col === 6;
+      bandR = (left ? '8px' : '0') + ' ' + (right ? '8px' : '0') + ' ' + (right ? '8px' : '0') + ' ' + (left ? '8px' : '0');
+    }
+    out.push({
+      n: label, sel, band, bandR,
+      aria: inMonth ? label + ' ' + MONTHS[9] + ' 2026' : label + (n < 1 ? ' septembre' : ' novembre') + ' 2026',
+      bg: sel ? 'var(--accent)' : 'transparent',
+      color: sel ? 'var(--accent-fg)' : !inMonth ? 'var(--text-3)' : (col >= 5 ? 'var(--text-2)' : 'var(--text)'),
+      ring: today && !sel ? '1.5px solid var(--accent)' : start ? '1.5px solid color-mix(in srgb, var(--accent) 45%, transparent)' : '0',
+      w: sel || today ? '600' : '400'
+    });
+  }
+  return out;
+}
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      variants: [
+        { title: 'A · Calendrier simple (shadcn Calendar)', desc: 'Un mois, aujourd’hui entouré, jour choisi plein. Pied : Aujourd’hui, Demain, Effacer. Navigation au clavier par flèches, PageUp/PageDown pour les mois.', isA: true, isB: false, popLeft: '330px', popTop: '30px', panelH: '360px', days: days(false) },
+        { title: 'B · Raccourcis, saisie et période', desc: 'Raccourcis à gauche, champ pour taper la date, et la période début → échéance teintée dans le calendrier. Plus rapide pour les dates relatives, plus large.', isA: false, isB: true, popLeft: '18px', popTop: '126px', panelH: '470px', days: days(true) }
+      ],
+      themes: [{ cls: 'lt', name: 'Clair' }, { cls: 'dk', name: 'Sombre' }],
+      wd: ['L', 'M', 'M', 'J', 'V', 'S', 'D'],
+      shortcuts: [
+        { l: 'Aujourd’hui', d: 'sam.', color: 'var(--text)' },
+        { l: 'Demain', d: 'dim.', color: 'var(--text)' },
+        { l: 'Lundi prochain', d: '12 oct.', color: 'var(--text)' },
+        { l: 'Dans 1 semaine', d: '17 oct.', color: 'var(--text)' },
+        { l: 'Fin du mois', d: '31 oct.', color: 'var(--text)' },
+        { l: 'Aucune date', d: '', color: 'var(--text-3)' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

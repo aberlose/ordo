@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — états d'une carte</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lt{--canvas:#F2F6FF;--surface:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#5F6B88;--accent:#1A52E6;--accent-fg:#FFFFFF;--accent-soft:#E2EBFF;--danger:#D92D20;--shadow:0 1px 3px rgba(15,26,51,.06),0 1px 1px rgba(15,26,51,.04);--lift:0 6px 18px rgba(15,26,51,.10),0 1px 3px rgba(15,26,51,.06)}
+.dk{--canvas:#0A1020;--surface:#121B30;--rail:#172340;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7B8BAB;--accent:#5B8CFF;--accent-fg:#06101F;--accent-soft:#16294F;--danger:#FF8A80;--shadow:0 1px 3px rgba(0,0,0,.5);--lift:0 6px 18px rgba(0,0,0,.55)}
+button{font:inherit;color:inherit;cursor:pointer}
+.tg{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px 0 6px;border-radius:4px;font-size:11.5px;font-weight:500;background:color-mix(in srgb,var(--c) 10%,var(--surface));color:var(--text-2)}
+.tg::before{content:"";width:3px;height:10px;border-radius:2px;background:var(--c)}
+.qa{width:24px;height:24px;border:0;border-radius:6px;background:var(--surface);color:var(--text-2);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px var(--border)}
+</style>
+</helmet>
+<div style="width: 1440px; height: 620px; box-sizing: border-box; padding: 28px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; background: #F7F8FB; font-family: 'Figtree', system-ui, sans-serif; font-size: 14px; color: #0F1A33">
+
+<sc-for list="{{variants}}" as="v" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">{{v.title}}</h2>
+<p style="margin: 0; font-size: 13px; color: #465472; line-height: 1.5">{{v.desc}}</p>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="{{th.cls}}" style="background: var(--canvas); color: var(--text); border-radius: 14px; padding: 18px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; box-sizing: border-box">
+<div style="font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px">{{th.name}}</div>
+<sc-for list="{{v.states}}" as="s" hint-placeholder-count="3">
+<div style="font-size: 12px; color: var(--text-3); margin-top: 4px">{{s.label}}</div>
+<article tabindex="0" style="position: relative; background: var(--surface); border: 1px solid {{s.border}}; border-radius: 10px; padding: 12px 14px 11px; box-shadow: {{s.shadow}}; outline: {{s.outline}}; outline-offset: 2px; transform: {{s.lift}}; display: flex; flex-direction: column; gap: 9px; cursor: {{s.cursor}}">
+<sc-if value="{{s.quick}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 4px">
+<button class="qa" aria-label="Ouvrir la tâche"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M21 3l-8 8M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg></button>
+<button class="qa" aria-label="Plus d'actions"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+</div>
+</sc-if>
+<div style="font-size: 14px; font-weight: 500; line-height: 1.4; padding-right: {{s.titlePad}}">Corriger l'export PDF des factures</div>
+<div style="display: flex; gap: 6px"><span class="tg" style="--c: #DC2626">bug</span><span class="tg" style="--c: #0891B2">facturation</span></div>
+<div style="display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-3)">
+<span role="img" aria-label="Priorité Haute" style="display: flex; align-items: flex-end; gap: 1.5px; height: 10px"><span style="width: 2.5px; height: 3.6px; border-radius: 1px; background: #EA580C"></span><span style="width: 2.5px; height: 5.2px; border-radius: 1px; background: #EA580C"></span><span style="width: 2.5px; height: 6.8px; border-radius: 1px; background: #EA580C"></span><span style="width: 2.5px; height: 8.4px; border-radius: 1px; background: #EA580C"></span><span style="width: 2.5px; height: 10px; border-radius: 1px; background: var(--border-strong)"></span></span>
+<div style="flex: 1"></div>
+<span style="color: var(--danger); font-weight: 600">8 oct.</span>
+</div>
+</article>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":620}}'>
+const base = { border: 'var(--border)', shadow: 'var(--shadow)', outline: 'none', lift: 'none', cursor: 'default', quick: false, titlePad: '0' };
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      themes: [{ cls: 'lt', name: 'Clair' }, { cls: 'dk', name: 'Sombre' }],
+      variants: [
+        { title: 'A · Soulèvement discret', desc: 'Survol : bordure plus marquée, ombre plus portée, la carte monte de 1 px. Focus clavier : anneau accent de 2 px, décalé de la carte. Clic ou Entrée ouvre le détail.',
+          states: [
+            { ...base, label: 'Repos' },
+            { ...base, label: 'Survol', border: 'var(--border-strong)', shadow: 'var(--lift)', lift: 'translateY(-1px)', cursor: 'pointer' },
+            { ...base, label: 'Focus clavier (Tab / flèches)', outline: '2px solid var(--accent)' }
+          ] },
+        { title: 'B · Actions rapides au survol', desc: 'Survol : bordure teintée d’accent et deux boutons (ouvrir, ⋯) en haut à droite. Focus clavier : bordure accent et halo doux, les mêmes boutons apparaissent.',
+          states: [
+            { ...base, label: 'Repos' },
+            { ...base, label: 'Survol', border: 'color-mix(in srgb, var(--accent) 45%, var(--border))', cursor: 'pointer', quick: true, titlePad: '56px' },
+            { ...base, label: 'Focus clavier (Tab / flèches)', border: 'var(--accent)', shadow: '0 0 0 3px var(--accent-soft)', quick: true, titlePad: '56px' }
+          ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
