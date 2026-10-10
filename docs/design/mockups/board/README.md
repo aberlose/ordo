@@ -25,4 +25,4 @@ These are Claude design-canvas components (`.dc.html`); they need the canvas run
 
 ## Not covered yet
 
-Drag-and-drop states (see round 1 variant C for a first take), card hover/focus, task detail, column settings, settings screen, empty states.
+Drag-and-drop states (see round 1 variant C for a first take), card hover/focus, empty states. Task detail, column settings and settings have their own folders.

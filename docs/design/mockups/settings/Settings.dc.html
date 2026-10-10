@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — réglages</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.st{--scrim:rgba(15,26,51,.38);--pop:0 24px 64px rgba(15,26,51,.22),0 2px 8px rgba(15,26,51,.08)}
+.st.dark{--scrim:rgba(0,0,0,.55);--pop:0 24px 64px rgba(0,0,0,.6)}
+.st.p-ciel{--canvas:#F2F6FF;--canvas-bg:linear-gradient(180deg,#E6EFFF 0%,#F4F7FD 280px);--surface:#FFFFFF;--side:#F7F9FE;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#6D7A97;--accent:#1F5EFF;--accent-bg:linear-gradient(135deg,#1F5EFF 0%,#2F8BFF 100%);--accent-fg:#FFFFFF;--accent-soft:#E2EBFF;--danger:#D92D20}
+.st.p-ciel.dark{--canvas:#0A1020;--canvas-bg:linear-gradient(180deg,#0F1C3A 0%,#0A1020 300px);--surface:#121B30;--side:#0E1628;--rail:#0A1120;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7383A3;--accent:#5B8CFF;--accent-bg:linear-gradient(135deg,#3D73FF 0%,#4FA3FF 100%);--accent-fg:#06101F;--accent-soft:#16294F;--danger:#FF8A80}
+.st.p-aurore{--canvas:#F7F7FC;--canvas-bg:#F7F7FC;--surface:#FFFFFF;--side:#F2F1FD;--rail:#ECECF8;--border:#E4E4F1;--border-strong:#CDCDE4;--text:#16162E;--text-2:#4E4E6E;--text-3:#76769A;--accent:#5146E5;--accent-bg:linear-gradient(135deg,#4F5BFF 0%,#8B3FE8 100%);--accent-fg:#FFFFFF;--accent-soft:#ECEAFD;--danger:#D92D20}
+.st.p-aurore.dark{--canvas:#0E0E1A;--canvas-bg:#0E0E1A;--surface:#17172A;--side:#121224;--rail:#0B0B16;--border:#26263F;--border-strong:#36365A;--text:#ECECF8;--text-2:#ABABC8;--text-3:#7C7C9E;--accent:#9A8CFF;--accent-bg:linear-gradient(135deg,#6E78FF 0%,#A65CFF 100%);--accent-fg:#0E0E1A;--accent-soft:#25214F;--danger:#FF8A80}
+.st.p-lavande{--canvas:#F6F5FD;--canvas-bg:linear-gradient(135deg,#EDE8FF 0%,#F6F5FD 38%,#F3F6FD 100%);--surface:#FFFFFF;--side:#F3F1FC;--rail:#ECE9FA;--border:#E3E0F3;--border-strong:#CDC8E6;--text:#1B1736;--text-2:#524D74;--text-3:#7A7599;--accent:#6248E8;--accent-bg:#6248E8;--accent-fg:#FFFFFF;--accent-soft:#ECE8FD;--danger:#D92D20}
+.st.p-lavande.dark{--canvas:#110F22;--canvas-bg:linear-gradient(135deg,#1D1842 0%,#110F22 45%,#0F1222 100%);--surface:#1A1830;--side:#151329;--rail:#0C0A1A;--border:#2A2747;--border-strong:#3A365E;--text:#EEEBFA;--text-2:#B2ACD0;--text-3:#827CA3;--accent:#A594FF;--accent-bg:#A594FF;--accent-fg:#110F22;--accent-soft:#2A2356;--danger:#FF8A80}
+.st.p-indigo{--canvas:#F4F5FB;--canvas-bg:#F4F5FB;--surface:#FFFFFF;--side:#F0F1FA;--rail:#E4E7F5;--border:#E1E4F0;--border-strong:#C9CEE3;--text:#151833;--text-2:#4B5072;--text-3:#767B9A;--accent:#4F46E5;--accent-bg:#4F46E5;--accent-fg:#FFFFFF;--accent-soft:#E6E5FC;--danger:#D92D20}
+.st.p-indigo.dark{--canvas:#0D0F1F;--canvas-bg:#0D0F1F;--surface:#161935;--side:#12142B;--rail:#090A15;--border:#262A4A;--border-strong:#353A61;--text:#E8E9F7;--text-2:#A6A9C8;--text-3:#7A7FA3;--accent:#8E88FF;--accent-bg:#8E88FF;--accent-fg:#0D0F1F;--accent-soft:#24224F;--danger:#FF8A80}
+.st.p-corail{--canvas:#FBF5F0;--canvas-bg:#FBF5F0;--surface:#FFFFFF;--side:#F9F0E9;--rail:#F2E4D9;--border:#EDE0D5;--border-strong:#DCCAB9;--text:#2A1A12;--text-2:#6B5446;--text-3:#94806F;--accent:#CC4426;--accent-bg:#CC4426;--accent-fg:#FFFFFF;--accent-soft:#FCE6DD;--danger:#B42318}
+.st.p-corail.dark{--canvas:#16100D;--canvas-bg:#16100D;--surface:#211915;--side:#1B1411;--rail:#0E0A08;--border:#352821;--border-strong:#4A3A30;--text:#F6ECE6;--text-2:#C2AFA3;--text-3:#94806F;--accent:#FF7A55;--accent-bg:#FF7A55;--accent-fg:#16100D;--accent-soft:#3F2219;--danger:#FF8A80}
+button{font:inherit;color:inherit;cursor:pointer}
+.sec{display:flex;flex-direction:column;gap:22px}
+.row{display:flex;align-items:flex-start;gap:24px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+.row:last-child{border-bottom:0;padding-bottom:0}
+.rl{width:200px;flex-shrink:0;display:flex;flex-direction:column;gap:4px}
+.rl b{font-size:14px;font-weight:600}
+.rl span{font-size:12.5px;color:var(--text-3);line-height:1.45}
+kbd{font-family:'IBM Plex Mono',monospace;font-size:11.5px;min-width:22px;height:22px;padding:0 6px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--border);border-bottom-width:2px;border-radius:5px;background:var(--surface);color:var(--text-2)}
+</style>
+</helmet>
+<div class="{{rootClass}}" style="position: relative; width: 100%; height: 900px; overflow: hidden; background: var(--canvas-bg, var(--canvas)); color: var(--text); font-family: 'Figtree', system-ui, sans-serif; font-size: 14px">
+
+<sc-if value="{{isModal}}" hint-placeholder-val="{{true}}">
+<div aria-hidden="true" style="position: absolute; inset: 0; z-index: 0; isolation: isolate; pointer-events: none"><dc-import name="Board" palette="{{palette}}" tag-style="soft" theme="{{dark}}" hint-size="100%,900px"></dc-import></div>
+<div style="position: absolute; inset: 0; z-index: 1; background: var(--scrim)"></div>
+</sc-if>
+
+<section role="dialog" aria-label="Réglages" style="{{frameStyle}}; z-index: 2; background: var(--surface); display: flex; overflow: hidden">
+
+<nav aria-label="Sections des réglages" style="width: 220px; flex-shrink: 0; background: var(--side); border-right: 1px solid var(--border); padding: 18px 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 2px">
+<sc-if value="{{isPage}}" hint-placeholder-val="{{false}}"><button style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; margin-bottom: 14px; border: 0; border-radius: 7px; background: none; color: var(--text-2); font-size: 13px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Retour au board</button></sc-if>
+<h2 style="margin: 0 8px 12px; font-size: 18px; font-weight: 600">Réglages</h2>
+<sc-for list="{{sections}}" as="sc" hint-placeholder-count="5">
+<button aria-current="{{sc.cur}}" onClick="{{sc.pick}}" style="display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border: 0; border-radius: 7px; background: {{sc.bg}}; color: {{sc.fg}}; font-weight: {{sc.weight}}; font-size: 13.5px; text-align: left"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sc.icon}}"/></svg>{{sc.l}}</button>
+</sc-for>
+</nav>
+
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<div style="height: 56px; flex-shrink: 0; display: flex; align-items: center; padding: 0 16px 0 32px; border-bottom: 1px solid var(--border)">
+<h3 style="margin: 0; font-size: 16px; font-weight: 600; flex: 1">{{sectionTitle}}</h3>
+<sc-if value="{{isModal}}" hint-placeholder-val="{{true}}"><button aria-label="Fermer" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: none; color: var(--text-3); display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></sc-if>
+</div>
+<div style="flex: 1; min-height: 0; overflow-y: auto">
+<div style="max-width: 760px; padding: 28px 32px 40px">
+
+<sc-if value="{{secAppearance}}" hint-placeholder-val="{{true}}">
+<div class="sec">
+<div class="row">
+<div class="rl"><b>Mode</b><span>Le mode Système suit le réglage clair ou sombre de votre ordinateur.</span></div>
+<div role="radiogroup" aria-label="Mode" style="display: flex; gap: 2px; padding: 3px; border-radius: 9px; background: var(--rail)">
+<sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+<button role="radio" aria-checked="{{m.sel}}" onClick="{{m.pick}}" style="display: flex; align-items: center; gap: 7px; height: 32px; padding: 0 14px; border: 0; border-radius: 7px; background: {{m.bg}}; box-shadow: {{m.shadow}}; font-size: 13px; font-weight: {{m.weight}}; color: {{m.fg}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"/></svg>{{m.l}}</button>
+</sc-for>
+</div>
+</div>
+<div class="row" style="flex-direction: column; gap: 14px">
+<div class="rl" style="width: auto"><b>Thème de couleur</b><span>S'applique à toute l'application. Ciel est le thème par défaut.</span></div>
+<div role="radiogroup" aria-label="Thème de couleur" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; width: 100%">
+<sc-for list="{{palettes}}" as="p" hint-placeholder-count="5">
+<button role="radio" aria-checked="{{p.sel}}" onClick="{{p.pick}}" style="padding: 0; border: 0; background: none; text-align: left; display: flex; flex-direction: column; gap: 8px">
+<span style="position: relative; display: flex; height: 92px; border-radius: 10px; overflow: hidden; background: {{p.canvas}}; outline: {{p.ring}}; outline-offset: 2px; border: 1px solid {{p.border}}; box-sizing: border-box">
+<span style="width: 26px; background: {{p.side}}; border-right: 1px solid {{p.border}}; display: flex; flex-direction: column; gap: 5px; padding: 8px 6px; box-sizing: border-box"><span style="height: 4px; border-radius: 2px; background: {{p.accent}}"></span><span style="height: 4px; border-radius: 2px; background: {{p.border}}"></span><span style="height: 4px; border-radius: 2px; background: {{p.border}}"></span></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 8px"><span style="display: flex; justify-content: flex-end"><span style="width: 30px; height: 9px; border-radius: 3px; background: {{p.btn}}"></span></span>
+<span style="display: flex; gap: 6px; flex: 1"><span style="flex: 1; display: flex; flex-direction: column; gap: 4px"><span style="height: 2px; background: {{p.c1}}"></span><span style="height: 16px; border-radius: 3px; background: {{p.surface}}; border: 1px solid {{p.border}}"></span><span style="height: 16px; border-radius: 3px; background: {{p.surface}}; border: 1px solid {{p.border}}"></span></span><span style="flex: 1; display: flex; flex-direction: column; gap: 4px"><span style="height: 2px; background: {{p.accent}}"></span><span style="height: 16px; border-radius: 3px; background: {{p.surface}}; border: 1px solid {{p.border}}"></span></span></span></span>
+<sc-if value="{{p.sel}}" hint-placeholder-val="{{false}}"><span style="position: absolute; top: 6px; left: 6px; width: 18px; height: 18px; border-radius: 50%; background: {{p.accent}}; display: flex; align-items: center; justify-content: center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg></span></sc-if>
+</span>
+<span style="display: flex; flex-direction: column; gap: 1px; padding-left: 2px"><span style="font-size: 13.5px; font-weight: {{p.weight}}">{{p.name}}</span><span style="font-size: 12px; color: var(--text-3)">{{p.note}}</span></span>
+</button>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{secLanguage}}" hint-placeholder-val="{{false}}">
+<div class="sec"><div class="row">
+<div class="rl"><b>Langue de l'interface</b><span>Les dates et les nombres suivent la langue choisie.</span></div>
+<div role="radiogroup" aria-label="Langue" style="display: flex; flex-direction: column; gap: 8px; width: 280px">
+<sc-for list="{{langs}}" as="lg" hint-placeholder-count="2">
+<button role="radio" aria-checked="{{lg.sel}}" onClick="{{lg.pick}}" style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 14px; border-radius: 10px; border: 1.5px solid {{lg.border}}; background: {{lg.bg}}; text-align: left"><span style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid {{lg.border}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{lg.dot}}"></span></span><span style="flex: 1; font-weight: 500">{{lg.l}}</span><span style="font-size: 12px; color: var(--text-3)">{{lg.ex}}</span></button>
+</sc-for>
+</div>
+</div></div>
+</sc-if>
+
+<sc-if value="{{secData}}" hint-placeholder-val="{{false}}">
+<div class="sec">
+<div class="row"><div class="rl"><b>Emplacement</b><span>Vos données restent sur cet ordinateur. Rien n'est envoyé sur Internet.</span></div>
+<div style="display: flex; flex-direction: column; gap: 10px; min-width: 0"><code style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; padding: 8px 10px; border-radius: 8px; background: var(--rail); color: var(--text-2)">~/Library/Application Support/Ordo/ordo.db</code><span style="font-size: 12.5px; color: var(--text-3)">2,4 Mo · 4 boards · 60 tâches · 12 pièces jointes (18 Mo)</span><button style="align-self: flex-start; height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px">Ouvrir le dossier</button></div></div>
+<div class="row"><div class="rl"><b>Corbeille</b><span>Les tâches, colonnes et boards supprimés y restent 30 jours, puis sont effacés.</span></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><span style="font-size: 13.5px">7 éléments dans la corbeille</span><div style="display: flex; gap: 8px"><button style="height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font-size: 13px">Voir la corbeille</button><button style="height: 32px; padding: 0 12px; border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--border)); border-radius: 8px; background: none; color: var(--danger); font-size: 13px; font-weight: 500">Vider maintenant</button></div></div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{secKeys}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{keys}}" as="k" hint-placeholder-count="10">
+<div style="display: flex; align-items: center; height: 42px; border-bottom: 1px solid var(--border)"><span style="flex: 1; font-size: 13.5px">{{k.l}}</span><span style="display: flex; gap: 4px"><sc-for list="{{k.k}}" as="kk" hint-placeholder-count="1"><kbd>{{kk}}</kbd></sc-for></span></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{secAbout}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; flex-direction: column; align-items: flex-start; gap: 14px">
+<div style="width: 56px; height: 56px; border-radius: 15px; background: var(--accent-bg, var(--accent)); color: var(--accent-fg); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 26px">O</div>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 20px; font-weight: 600">Ordo</span><span style="font-size: 13px; color: var(--text-3)">Version 0.1.0 · 10 oct. 2026</span></div>
+<p style="margin: 0; max-width: 460px; font-size: 13.5px; line-height: 1.55; color: var(--text-2)">Organiser, prioriser et visualiser son backlog, hors ligne. Toutes les données restent sur cet ordinateur.</p>
+</div>
+</sc-if>
+
+</div>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["modal","page"],"default":"modal"},"$preview":{"width":1440,"height":900}}'>
+const SECTIONS = [
+  { k: 'appearance', l: 'Apparence', icon: 'M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.6 0-.9-.6-1.4-.6-2.2 0-1 .8-1.7 1.8-1.7H17a4 4 0 0 0 4-4c0-4.7-4-8.5-9-8.5zM7.5 11h.01M10 7.5h.01M14.5 7.5h.01' },
+  { k: 'language', l: 'Langue', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18' },
+  { k: 'data', l: 'Données', icon: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3' },
+  { k: 'keys', l: 'Raccourcis clavier', icon: 'M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10' },
+  { k: 'about', l: 'À propos', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v5M12 8h.01' }
+];
+const MODES = [
+  { k: 'light', l: 'Clair', icon: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4' },
+  { k: 'dark', l: 'Sombre', icon: 'M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z' },
+  { k: 'system', l: 'Système', icon: 'M3 4h18v12H3zM8 20h8M12 16v4' }
+];
+const PAL = [
+  { k: 'ciel', name: 'Ciel', note: 'Par défaut', l: { canvas: 'linear-gradient(180deg,#E6EFFF,#F4F7FD)', side: '#FFFFFF', surface: '#FFFFFF', border: '#DFE6F3', accent: '#1F5EFF', btn: 'linear-gradient(135deg,#1F5EFF,#2F8BFF)' }, d: { canvas: 'linear-gradient(180deg,#0F1C3A,#0A1020)', side: '#0C1426', surface: '#121B30', border: '#20304F', accent: '#5B8CFF', btn: 'linear-gradient(135deg,#3D73FF,#4FA3FF)' } },
+  { k: 'aurore', name: 'Aurore', note: 'Dégradé indigo → violet', l: { canvas: '#F7F7FC', side: 'linear-gradient(180deg,#ECEEFF,#F4ECFF)', surface: '#FFFFFF', border: '#E4E4F1', accent: '#5146E5', btn: 'linear-gradient(135deg,#4F5BFF,#8B3FE8)' }, d: { canvas: '#0E0E1A', side: 'linear-gradient(180deg,#141533,#1A1230)', surface: '#17172A', border: '#26263F', accent: '#9A8CFF', btn: 'linear-gradient(135deg,#6E78FF,#A65CFF)' } },
+  { k: 'lavande', name: 'Lavande', note: 'Fond lilas dégradé', l: { canvas: 'linear-gradient(135deg,#EDE8FF,#F6F5FD 45%,#F3F6FD)', side: 'linear-gradient(180deg,#E8E2FC,#F1EFFB)', surface: '#FFFFFF', border: '#E3E0F3', accent: '#6248E8', btn: '#6248E8' }, d: { canvas: 'linear-gradient(135deg,#1D1842,#110F22 50%)', side: 'linear-gradient(180deg,#181439,#0D0B1C)', surface: '#1A1830', border: '#2A2747', accent: '#A594FF', btn: '#A594FF' } },
+  { k: 'indigo', name: 'Indigo', note: 'Indigo vif, sans dégradé', l: { canvas: '#F4F5FB', side: '#EBEDF8', surface: '#FFFFFF', border: '#E1E4F0', accent: '#4F46E5', btn: '#4F46E5' }, d: { canvas: '#0D0F1F', side: '#0A0B18', surface: '#161935', border: '#262A4A', accent: '#8E88FF', btn: '#8E88FF' } },
+  { k: 'corail', name: 'Corail', note: 'Chaleureux', l: { canvas: '#FBF5F0', side: '#F6EBE2', surface: '#FFFFFF', border: '#EDE0D5', accent: '#CC4426', btn: '#CC4426' }, d: { canvas: '#16100D', side: '#110C0A', surface: '#211915', border: '#352821', accent: '#FF7A55', btn: '#FF7A55' } }
+];
+const KEYS = [
+  { l: 'Nouvelle tâche', k: ['N'] }, { l: 'Palette de commandes', k: ['⌘', 'K'] }, { l: 'Rechercher dans le board', k: ['/'] }, { l: 'Filtrer', k: ['F'] },
+  { l: 'Annuler', k: ['⌘', 'Z'] }, { l: 'Rétablir', k: ['⇧', '⌘', 'Z'] }, { l: 'Naviguer entre les cartes', k: ['←', '↑', '↓', '→'] },
+  { l: 'Ouvrir la tâche sélectionnée', k: ['Entrée'] }, { l: 'Fermer une fenêtre', k: ['Échap'] }, { l: 'Réduire la barre latérale', k: ['⌘', '\\'] }
+];
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sec: 'appearance', mode: 'light', palette: 'ciel', lang: 'fr' }; }
+  renderVals() {
+    const s = this.state;
+    const isModal = (this.props.mode ?? 'modal') === 'modal';
+    const dark = s.mode === 'dark' ? 'dark' : 'light';
+    const sec = SECTIONS.find((x) => x.k === s.sec);
+    return {
+      rootClass: 'st p-' + s.palette + (dark === 'dark' ? ' dark' : ''), palette: s.palette, dark,
+      isModal, isPage: !isModal,
+      frameStyle: isModal ? 'position: absolute; left: 50%; top: 64px; bottom: 64px; transform: translateX(-50%); width: 980px; border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--pop)' : 'position: absolute; inset: 0',
+      sections: SECTIONS.map((x) => ({ ...x, cur: x.k === s.sec ? 'page' : 'false', bg: x.k === s.sec ? 'var(--accent-soft)' : 'transparent', fg: x.k === s.sec ? 'var(--text)' : 'var(--text-2)', weight: x.k === s.sec ? 600 : 400, pick: () => this.setState({ sec: x.k }) })),
+      sectionTitle: sec.l, secAppearance: s.sec === 'appearance', secLanguage: s.sec === 'language', secData: s.sec === 'data', secKeys: s.sec === 'keys', secAbout: s.sec === 'about',
+      modes: MODES.map((m) => ({ ...m, sel: m.k === s.mode, bg: m.k === s.mode ? 'var(--surface)' : 'transparent', shadow: m.k === s.mode ? '0 1px 2px rgba(15,26,51,.12)' : 'none', weight: m.k === s.mode ? 600 : 400, fg: m.k === s.mode ? 'var(--text)' : 'var(--text-2)', pick: () => this.setState({ mode: m.k }) })),
+      palettes: PAL.map((p) => { const v = dark === 'dark' ? p.d : p.l; const sel = p.k === s.palette; return { ...v, name: p.name, note: p.note, sel, c1: '#78716C', ring: sel ? '2px solid ' + v.accent : 'none', weight: sel ? 600 : 500, pick: () => this.setState({ palette: p.k }) }; }),
+      langs: [{ k: 'fr', l: 'Français', ex: '10 oct. 2026' }, { k: 'en', l: 'English', ex: 'Oct 10, 2026' }].map((x) => ({ ...x, sel: x.k === s.lang, border: x.k === s.lang ? 'var(--accent)' : 'var(--border)', bg: x.k === s.lang ? 'var(--accent-soft)' : 'var(--surface)', dot: x.k === s.lang ? 'var(--accent)' : 'transparent', pick: () => this.setState({ lang: x.k }) })),
+      keys: KEYS
+    };
+  }
+}
+</script>
+</body>
+</html>
