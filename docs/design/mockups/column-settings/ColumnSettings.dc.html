@@ -182,9 +182,9 @@ class Component extends DCLogic {
     const theme = s.theme ?? this.props.theme ?? 'light';
     const mode = this.props.mode ?? 'popover';
     const frames = {
-      popover: 'position: absolute; left: 556px; top: 168px; width: 340px; border-radius: 12px',
-      inline: 'position: absolute; left: 576px; top: 122px; width: 304px; border-radius: 12px',
-      dialog: 'position: absolute; left: 50%; top: 120px; transform: translateX(-50%); width: 720px; border-radius: 14px'
+      popover: 'position: absolute; left: 556px; top: 168px; width: 340px; max-height: calc(100% - 168px - 32px); border-radius: 12px',
+      inline: 'position: absolute; left: 576px; top: 122px; width: 304px; max-height: calc(100% - 122px - 32px); border-radius: 12px',
+      dialog: 'position: absolute; left: 50%; top: 120px; transform: translateX(-50%); width: 720px; max-height: calc(100% - 240px); border-radius: 14px'
     };
     return {
       themeClass: theme === 'dark' ? 'cs dark' : 'cs', theme, toggleTheme: () => this.setState({ theme: theme === 'dark' ? 'light' : 'dark' }),

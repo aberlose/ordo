@@ -11,6 +11,7 @@ The clarity of Jira, the restraint of LiteLLM, with a vivid blue/violet identity
 - **Tokens:** semantic CSS variables (`--bg-canvas`, `--bg-surface`, `--text-primary`, `--border-subtle`, `--accent`, …), each with a light and a dark value. No colour is written directly in a component. Final values land in `tokens.md` after the mockups are approved.
 - **Column palette:** 10 hues, each tuned to keep good contrast in light and dark.
 - **Themes:** light, dark, system.
+- **Breathing room:** floating panels (popovers, menus, dialogs) and board columns always keep at least 24 px between their edge and the window edge; when content is taller, the panel scrolls inside instead of touching the edge.
 - **Accessibility:** WCAG AA contrast minimum, visible focus everywhere, keyboard drag and drop.
 - **UI kit:** shadcn/ui (Radix) + Tailwind, components copied into `renderer/shared/ui/` and restyled with the tokens.
 
