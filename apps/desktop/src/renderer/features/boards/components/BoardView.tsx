@@ -136,7 +136,9 @@ export function BoardView({ board }: BoardViewProps) {
                   <Plus size={16} aria-hidden />
                 </button>
               </div>
-              <div className="-m-0.5 flex min-h-0 flex-col gap-2.5 overflow-y-auto p-0.5">
+              {/* Side and top padding offset by negative margins, bottom padding inside: room for the hover
+                  shadow and focus ring, which the scroll area would clip, without breaking the 24 px bottom gap. */}
+              <div className="-mx-4 -mt-1 flex min-h-0 flex-col gap-2.5 overflow-y-auto px-4 pt-1 pb-6">
                 {empty && !quickAddOpen && index === 0 && (
                   <div className="flex flex-col items-center gap-2.5 rounded-xl border-2 border-dashed border-border-strong bg-surface px-4.5 py-5.5 text-center">
                     <span className="text-sm font-semibold">{t('column.emptyTitle')}</span>
