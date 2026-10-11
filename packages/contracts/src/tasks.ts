@@ -47,3 +47,15 @@ export const DeleteTaskInput = z.object({ id: Id }).strict();
 export type Task = z.infer<typeof Task>;
 export type CreateTaskInput = z.infer<typeof CreateTaskInput>;
 export type UpdateTaskInput = z.infer<typeof UpdateTaskInput>;
+
+/** Drag and drop or ⌥/Alt + arrows: the server ranks the task between its new neighbours (one row written). */
+export const MoveTaskInput = z
+  .object({
+    taskId: Id,
+    toColumnId: Id,
+    beforeId: Id.nullable(),
+    afterId: Id.nullable(),
+  })
+  .strict();
+
+export type MoveTaskInput = z.infer<typeof MoveTaskInput>;
