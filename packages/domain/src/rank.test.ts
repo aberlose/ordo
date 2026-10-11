@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rankBetween, ranksAfter } from './rank';
+import { rankBetween, ranksAfter, rankAtEnd } from './rank';
 
 describe('rankBetween', () => {
   it('creates a first rank', () => {
@@ -44,5 +44,13 @@ describe('ranksAfter', () => {
     const ranks = ranksAfter(null, 3);
     expect(ranks).toHaveLength(3);
     expect([...ranks].sort()).toEqual(ranks);
+  });
+});
+
+describe('rankAtEnd', () => {
+  it('appends after the last rank, or starts a list', () => {
+    const first = rankAtEnd(null);
+    const second = rankAtEnd(first);
+    expect(second > first).toBe(true);
   });
 });

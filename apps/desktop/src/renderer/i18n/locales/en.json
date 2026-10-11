@@ -37,6 +37,55 @@
     "emptyTitle": "No task yet",
     "emptyBody": "Add your first task, or press <kbd>N</kbd> anywhere.",
     "addTask": "Add a task",
-    "dropHere": "Drag a task here"
+    "dropHere": "Drag a task here",
+    "add": "Add",
+    "addTaskIn": "Add a task to {{column}}"
+  },
+  "task": {
+    "newTitle": "New task title",
+    "newTitlePlaceholder": "Task title",
+    "quickAddHint": "The field stays open for the next one · <kbd>Esc</kbd> closes",
+    "title": "Task title",
+    "priority": "Priority",
+    "priorityLabel": "Priority: {{priority}}",
+    "status": "Status",
+    "start": "Start",
+    "due": "Due",
+    "dueOn": "Due:",
+    "overdueOn": "Overdue, due:",
+    "overdueBy_one": "Overdue by {{count}} day",
+    "overdueBy_other": "Overdue by {{count}} days",
+    "createdOn": "Created on {{date}}",
+    "modified": "Modified {{when}}",
+    "expand": "Expand to full screen",
+    "collapse": "Restore",
+    "moreActions": "More actions",
+    "delete": "Delete task",
+    "close": "Close",
+    "added": "Added",
+    "priorityHint": "{{priority}} · 1–5",
+    "propertyValue": "{{label}}: {{value}}",
+    "modifiedOn": "Modified on {{date}}"
+  },
+  "priority": {
+    "1": "Very low",
+    "2": "Low",
+    "3": "Medium",
+    "4": "High",
+    "5": "Very high"
+  },
+  "date": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "nextMonday": "Next Monday",
+    "inOneWeek": "In one week",
+    "endOfMonth": "End of month",
+    "none": "No date",
+    "pattern": "mm/dd/yyyy",
+    "pickStart": "Pick the start date",
+    "pickDue": "Pick the due date",
+    "notBefore": "Not before {{date}}",
+    "notAfter": "Not after {{date}}",
+    "unreadable": "Unrecognised date ({{pattern}})"
   }
 }

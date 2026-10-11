@@ -37,3 +37,21 @@ export interface SubTaskProgress {
 export function subTaskProgress(subTasksDone: readonly boolean[]): SubTaskProgress {
   return { done: subTasksDone.filter(Boolean).length, total: subTasksDone.length };
 }
+
+/** Keys are numbered per board from 1 and never reused. */
+export function nextTaskKey(maxKey: number | null): number {
+  return (maxKey ?? 0) + 1;
+}
+
+/**
+ * `completed_at` follows the column category: set when a task enters a "done"
+ * column, kept while it stays in one, cleared when it leaves.
+ */
+export function completionAfterMove(
+  completedAt: number | null,
+  targetIsDone: boolean,
+  now: number,
+): number | null {
+  if (!targetIsDone) return null;
+  return completedAt ?? now;
+}

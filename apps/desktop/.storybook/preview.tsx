@@ -1,5 +1,6 @@
 import type { Decorator, Preview } from '@storybook/react-vite';
-import { useEffect } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import '../src/renderer/i18n';
 import i18n from '../src/renderer/i18n';
 import '../src/renderer/styles/index.css';
@@ -12,8 +13,18 @@ const withAppearance: Decorator = (Story, context) => {
     document.documentElement.dataset['mode'] = mode;
     void i18n.changeLanguage(locale);
   }, [palette, mode, locale]);
-  return <Story />;
+  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
+  return (
+    <QueryClientProvider client={client}>
+      <Story />
+    </QueryClientProvider>
+  );
 };
+
+// No main process in Storybook: calls fail and optimistic updates roll back.
+window.api ??= {
+  invoke: () => Promise.resolve({ ok: false, error: { code: 'internal', message: 'Storybook' } }),
+} as unknown as typeof window.api;
 
 const preview: Preview = {
   decorators: [withAppearance],

@@ -1,6 +1,7 @@
 import type { BoardDetail, BoardSummary, CreateBoardInput } from '@ordo/contracts';
 import { DEFAULT_COLUMNS, rankBetween, ranksAfter } from '@ordo/domain';
 import { NotFoundError } from './errors';
+import { toTask } from './tasks';
 import type {
   BoardRepository,
   BoardWithCount,
@@ -8,12 +9,15 @@ import type {
   ColumnRecord,
   ColumnRepository,
   IdGenerator,
+  TaskRecord,
+  TaskRepository,
   Transactor,
 } from './ports';
 
 export interface BoardUseCasesDeps {
   readonly boards: BoardRepository;
   readonly columns: ColumnRepository;
+  readonly tasks: TaskRepository;
   readonly tx: Transactor;
   readonly clock: Clock;
   readonly ids: IdGenerator;
@@ -23,7 +27,11 @@ function toSummary(board: BoardWithCount): BoardSummary {
   return { id: board.id, name: board.name, icon: board.icon, color: board.color, taskCount: board.taskCount };
 }
 
-function toDetail(board: BoardWithCount, columns: readonly ColumnRecord[]): BoardDetail {
+function toDetail(
+  board: BoardWithCount,
+  columns: readonly ColumnRecord[],
+  tasks: readonly TaskRecord[],
+): BoardDetail {
   return {
     ...toSummary(board),
     columns: columns.map((c) => ({
@@ -35,14 +43,15 @@ function toDetail(board: BoardWithCount, columns: readonly ColumnRecord[]): Boar
       displayLimit: c.displayLimit,
       rank: c.rank,
     })),
+    tasks: tasks.map(toTask),
   };
 }
 
-export function makeBoardUseCases({ boards, columns, tx, clock, ids }: BoardUseCasesDeps) {
+export function makeBoardUseCases({ boards, columns, tasks, tx, clock, ids }: BoardUseCasesDeps) {
   const getBoard = (id: string): BoardDetail => {
     const board = boards.findById(id);
     if (!board) throw new NotFoundError('board', id);
-    return toDetail(board, columns.listByBoard(id));
+    return toDetail(board, columns.listByBoard(id), tasks.listTopLevelByBoard(id));
   };
 
   return {

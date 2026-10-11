@@ -51,3 +51,8 @@ export function ranksAfter(after: Rank | null, count: number): Rank[] {
   }
   return ranks;
 }
+
+/** Rank for an item appended after the current last one (`null` for an empty list). */
+export function rankAtEnd(last: Rank | null): Rank {
+  return rankBetween(last, null);
+}

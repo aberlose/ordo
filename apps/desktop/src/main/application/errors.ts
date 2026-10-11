@@ -4,3 +4,11 @@ export class NotFoundError extends Error {
     this.name = 'NotFoundError';
   }
 }
+
+/** A request that is well-formed but breaks a business rule (e.g. due date before start date). */
+export class RuleViolationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'RuleViolationError';
+  }
+}

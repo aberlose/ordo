@@ -1,12 +1,14 @@
 import { join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { makeBoardUseCases } from './application/boards';
+import { makeTaskUseCases } from './application/tasks';
 import { createMainWindow, trustedOrigin } from './app/window';
 import { openDatabase } from './infrastructure/db/client';
 import { sqliteTransactor } from './infrastructure/db/transactor';
 import { systemClock, uuidv7Generator } from './infrastructure/ids';
 import { boardRepository } from './infrastructure/repositories/boardRepository';
 import { columnRepository } from './infrastructure/repositories/columnRepository';
+import { taskRepository } from './infrastructure/repositories/taskRepository';
 import { createHandlers } from './ipc/handlers';
 import { registerHandlers } from './ipc/handle';
 
@@ -32,17 +34,19 @@ function start(): void {
   const database = openDatabase(dataFile, migrationsFolder());
   app.on('will-quit', () => database.close());
 
-  const boards = makeBoardUseCases({
-    boards: boardRepository(database.db),
+  const ports = {
     columns: columnRepository(database.db),
+    tasks: taskRepository(database.db),
     tx: sqliteTransactor(database.sqlite),
     clock: systemClock,
     ids: uuidv7Generator(),
-  });
+  };
+  const boards = makeBoardUseCases({ ...ports, boards: boardRepository(database.db) });
+  const tasks = makeTaskUseCases(ports);
 
   registerHandlers(
     ipcMain,
-    createHandlers(boards, () => ({
+    createHandlers(boards, tasks, () => ({
       version: app.getVersion(),
       platform: process.platform === 'darwin' || process.platform === 'win32' ? process.platform : 'linux',
       dataPath: dataFile,

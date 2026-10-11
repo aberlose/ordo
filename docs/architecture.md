@@ -77,9 +77,9 @@ ordo/
 
 ## IPC contract
 
-- One file per area in `packages/contracts` (`boards.ts`, `columns.ts`, `tasks.ts`, `tags.ts`, `search.ts`, `settings.ts`, `attachments.ts`).
+- One file per area in `packages/contracts` (`boards.ts`, `tasks.ts`, then `columns.ts`, `tags.ts`, `search.ts`, `settings.ts`, `attachments.ts` as they come), shared building blocks in `schemas.ts`, the channel map in `contract.ts`.
 - Each channel = name + input schema + output schema. Types are inferred from Zod, never written twice.
-- Errors cross the bridge as typed results (`{ ok: false, error: { code, message } }`), never as thrown Electron errors.
+- Errors cross the bridge as typed results (`{ ok: false, error: { code, message } }`), never as thrown Electron errors. Codes: `invalid_input` (schema or untrusted sender), `not_found`, `conflict` (a business rule refused the change, e.g. a due date before the start date), `internal`.
 
 ## Performance budgets
 

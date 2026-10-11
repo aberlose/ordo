@@ -18,7 +18,15 @@ export function boardRepository(db: Db): BoardRepository {
         taskCount: count(task.id),
       })
       .from(board)
-      .leftJoin(task, and(eq(task.boardId, board.id), isNull(task.deletedAt), isNull(task.parentId)))
+      .leftJoin(
+        task,
+        and(
+          eq(task.boardId, board.id),
+          isNull(task.deletedAt),
+          isNull(task.archivedAt),
+          isNull(task.parentId),
+        ),
+      )
       .groupBy(board.id);
 
   const toRecord = (

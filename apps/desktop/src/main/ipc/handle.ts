@@ -1,7 +1,7 @@
 import { contract, fail, ok, type Channel, type Contract, type Output, type Result } from '@ordo/contracts';
 import type { IpcMain, IpcMainInvokeEvent } from 'electron';
 import type { z } from 'zod';
-import { NotFoundError } from '../application/errors';
+import { NotFoundError, RuleViolationError } from '../application/errors';
 
 export type Handlers = {
   [C in Channel]: (input: z.output<Contract[C]['input']>) => Output<C> | Promise<Output<C>>;
@@ -23,6 +23,7 @@ async function dispatch<C extends Channel>(
     return ok(await handler(parsed.data as never));
   } catch (error) {
     if (error instanceof NotFoundError) return fail('not_found', error.message);
+    if (error instanceof RuleViolationError) return fail('conflict', error.message);
     console.error(`[ipc] ${channel} failed`, error);
     return fail('internal', 'Unexpected error');
   }

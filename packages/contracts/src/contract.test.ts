@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { CHANNELS } from './channels';
 import { contract } from './contract';
-import { CreateBoardInput } from './schemas';
+import { CreateBoardInput } from './boards';
+import { CreateTaskInput, UpdateTaskInput } from './tasks';
 
 describe('contract', () => {
   it('lists exactly the channels of the contract', () => {
@@ -15,5 +16,24 @@ describe('contract', () => {
     ).toBe(true);
     expect(CreateBoardInput.safeParse({ name: '', columnNames: ['a', 'b', 'c'] }).success).toBe(false);
     expect(CreateBoardInput.safeParse({ name: 'x', columnNames: ['a', 'b'] }).success).toBe(false);
+  });
+});
+
+describe('task inputs', () => {
+  const id = '0192f0a0-0000-7000-8000-000000000001';
+
+  it('trims and requires a title on creation', () => {
+    expect(CreateTaskInput.parse({ columnId: id, title: '  Relire  ' }).title).toBe('Relire');
+    expect(CreateTaskInput.safeParse({ columnId: id, title: '   ' }).success).toBe(false);
+  });
+
+  it('accepts partial updates, null to clear a date, and rejects empty ones', () => {
+    expect(UpdateTaskInput.safeParse({ id, priority: 5 }).success).toBe(true);
+    expect(UpdateTaskInput.safeParse({ id, dueDate: null }).success).toBe(true);
+    expect(UpdateTaskInput.safeParse({ id }).success).toBe(false);
+    expect(UpdateTaskInput.safeParse({ id, title: undefined }).success).toBe(false);
+    expect(UpdateTaskInput.safeParse({ id, priority: 6 }).success).toBe(false);
+    expect(UpdateTaskInput.safeParse({ id, dueDate: '2026-02-30' }).success).toBe(false);
+    expect(UpdateTaskInput.safeParse({ id, color: 'red' }).success).toBe(false);
   });
 });

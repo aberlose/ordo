@@ -1,6 +1,6 @@
 import type { IpcMainInvokeEvent } from 'electron';
 import { describe, expect, it } from 'vitest';
-import { NotFoundError } from '../application/errors';
+import { NotFoundError, RuleViolationError } from '../application/errors';
 import { registerHandlers, type Handlers } from './handle';
 
 type Listener = (event: IpcMainInvokeEvent, raw: unknown) => unknown;
@@ -16,6 +16,13 @@ function setup(overrides: Partial<Handlers> = {}) {
     'boards.create': () => {
       throw new Error('boom');
     },
+    'tasks.create': () => {
+      throw new RuleViolationError('A task needs a title');
+    },
+    'tasks.update': () => {
+      throw new Error('not used');
+    },
+    'tasks.delete': ({ id }) => ({ id }),
     ...overrides,
   };
   registerHandlers(
@@ -56,5 +63,12 @@ describe('IPC adapter', () => {
     const { invoke, event } = setup();
     expect(await invoke('boards.list', {}, event('https://evil.example'))).toMatchObject({ ok: false });
     expect(await invoke('boards.list', {}, event('file:///app/index.html', {}))).toMatchObject({ ok: false });
+  });
+
+  it('maps business-rule violations to a conflict', async () => {
+    const { invoke } = setup();
+    expect(
+      await invoke('tasks.create', { columnId: '0192f0a0-0000-7000-8000-000000000001', title: 'x' }),
+    ).toMatchObject({ ok: false, error: { code: 'conflict' } });
   });
 });

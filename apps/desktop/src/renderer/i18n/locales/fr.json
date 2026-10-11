@@ -37,6 +37,55 @@
     "emptyTitle": "Aucune tâche pour l'instant",
     "emptyBody": "Ajoutez votre première tâche, ou appuyez sur <kbd>N</kbd> n'importe où.",
     "addTask": "Ajouter une tâche",
-    "dropHere": "Glissez une tâche ici"
+    "dropHere": "Glissez une tâche ici",
+    "add": "Ajouter",
+    "addTaskIn": "Ajouter une tâche dans {{column}}"
+  },
+  "task": {
+    "newTitle": "Titre de la nouvelle tâche",
+    "newTitlePlaceholder": "Titre de la tâche",
+    "quickAddHint": "Le champ reste ouvert pour enchaîner · <kbd>Échap</kbd> ferme",
+    "title": "Titre de la tâche",
+    "priority": "Priorité",
+    "priorityLabel": "Priorité : {{priority}}",
+    "status": "Statut",
+    "start": "Début",
+    "due": "Échéance",
+    "dueOn": "Échéance :",
+    "overdueOn": "En retard, échéance :",
+    "overdueBy_one": "En retard de {{count}} jour",
+    "overdueBy_other": "En retard de {{count}} jours",
+    "createdOn": "Créée le {{date}}",
+    "modified": "Modifiée {{when}}",
+    "expand": "Agrandir en plein écran",
+    "collapse": "Réduire",
+    "moreActions": "Plus d'actions",
+    "delete": "Supprimer la tâche",
+    "close": "Fermer",
+    "added": "Ajoutée",
+    "priorityHint": "{{priority}} · 1–5",
+    "propertyValue": "{{label}} : {{value}}",
+    "modifiedOn": "Modifiée le {{date}}"
+  },
+  "priority": {
+    "1": "Très basse",
+    "2": "Basse",
+    "3": "Moyenne",
+    "4": "Haute",
+    "5": "Très haute"
+  },
+  "date": {
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "nextMonday": "Lundi prochain",
+    "inOneWeek": "Dans 1 semaine",
+    "endOfMonth": "Fin du mois",
+    "none": "Aucune date",
+    "pattern": "jj/mm/aaaa",
+    "pickStart": "Choisir la date de début",
+    "pickDue": "Choisir l'échéance",
+    "notBefore": "Pas avant le {{date}}",
+    "notAfter": "Pas après le {{date}}",
+    "unreadable": "Date non reconnue ({{pattern}})"
   }
 }
