@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@renderer/shared/ui/dropdown-menu';
 import { PriorityBar } from '@renderer/shared/ui/priority-bars';
+import { Feedback } from '@renderer/shared/ui/toast';
 import { DatePicker } from './DatePicker';
 
 export type TaskChange = Omit<UpdateTaskInput, 'id'>;
@@ -398,6 +399,8 @@ export function TaskDetailView({
               </div>
             </div>
           </div>
+          {/* The rest of the app is inert while the window is open: errors show here. */}
+          <Feedback scope="modal" />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

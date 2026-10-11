@@ -24,8 +24,8 @@
     "priority": "Priorité",
     "tags": "Tags",
     "due": "Échéance",
-    "taskCount_one": "{{count}} tâche",
-    "taskCount_other": "{{count}} tâches",
+    "taskCount_one": "{{count, number}} tâche",
+    "taskCount_other": "{{count, number}} tâches",
     "newColumn": "Nouvelle colonne",
     "loadError": "Impossible de charger ce board.",
     "toggleTheme": "Changer de thème"
@@ -87,5 +87,35 @@
     "notBefore": "Pas avant le {{date}}",
     "notAfter": "Pas après le {{date}}",
     "unreadable": "Date non reconnue ({{pattern}})"
+  },
+  "feedback": {
+    "retry": "Réessayer",
+    "close": "Fermer",
+    "failed": {
+      "create": "Ajout non enregistré : la tâche a été retirée.",
+      "update": "Modification non enregistrée : la valeur précédente est rétablie.",
+      "delete": "Suppression non enregistrée : la tâche est revenue.",
+      "move": "Déplacement non enregistré : la carte a repris sa place.",
+      "moveColumn": "Déplacement non enregistré : la colonne a repris sa place."
+    }
+  },
+  "dnd": {
+    "taskMoved": "Déplacée dans {{column}}, position {{position}} sur {{total}}",
+    "columnMoved": "Colonne {{column}} déplacée en position {{position}} sur {{total}}",
+    "column": {
+      "role": "colonne déplaçable",
+      "label_one": "{{column}}, {{count}} tâche. {{alt}} + flèches gauche et droite pour déplacer la colonne.",
+      "label_other": "{{column}}, {{count}} tâches. {{alt}} + flèches gauche et droite pour déplacer la colonne."
+    },
+    "help": {
+      "cardSelected": "1 carte sélectionnée",
+      "columnSelected": "1 colonne sélectionnée",
+      "order": "<kbd>{{alt}}</kbd> <kbd>↑↓</kbd> ordre",
+      "column": "<kbd>{{alt}}</kbd> <kbd>←→</kbd> colonne",
+      "open": "<kbd>Entrée</kbd> ouvrir",
+      "moveColumn": "<kbd>{{alt}}</kbd> <kbd>←→</kbd> déplacer"
+    },
+    "cardHint": "{{alt}} + flèches : déplacer la carte. Entrée : ouvrir.",
+    "edge": "Impossible d'aller plus loin"
   }
 }

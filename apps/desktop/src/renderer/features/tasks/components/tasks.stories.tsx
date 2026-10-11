@@ -1,9 +1,11 @@
 import type { Task } from '@ordo/contracts';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { today } from '@renderer/shared/lib/dates';
 import { board, now, tasks } from '@renderer/test/fixtures';
+import { useTaskDrag } from '../dnd/state';
+import { ColumnTasks } from './ColumnTasks';
 import { DatePicker } from './DatePicker';
 import { QuickAdd } from './QuickAdd';
 import { TaskCard } from './TaskCard';
@@ -121,3 +123,39 @@ export const DatePickerDark: Story = {
   name: 'Date picker (dark)',
   globals: { mode: 'dark' },
 };
+
+function DropSlotDemo() {
+  const column = board.columns[1]!;
+  const columnTasks = board.tasks.filter((task) => task.columnId === column.id);
+  useEffect(() => {
+    useTaskDrag.setState({
+      dragging: { taskId: board.tasks[0]!.id, columnId: board.columns[0]!.id, height: 72 },
+      target: { columnId: column.id, index: 1 },
+    });
+    return () => useTaskDrag.setState({ dragging: null, target: null });
+  }, [column.id]);
+  return (
+    <div className="flex h-screen [background:var(--canvas-bg)] p-6">
+      <div className="flex w-column flex-col">
+        <ColumnTasks
+          boardId={board.id}
+          column={column}
+          tasks={columnTasks}
+          today={today()}
+          emptyHint={null}
+          onKeyboardMove={() => true}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Approved mockup: drag-and-drop/CardDrag B — the slot opens where the card will land, column tinted. */
+export const DropSlot: Story = { render: () => <DropSlotDemo /> };
+export const DropSlotDark: Story = { ...DropSlot, globals: { mode: 'dark' } };
+
+/** Approved mockup: drag-and-drop/KeyboardMove B — a card that just moved is tinted. */
+export const MovedCard: Story = {
+  render: () => column(<TaskCard task={tasks[0]!} today={today()} flash onOpen={() => undefined} />),
+};
+export const MovedCardDark: Story = { ...MovedCard, globals: { mode: 'dark' } };

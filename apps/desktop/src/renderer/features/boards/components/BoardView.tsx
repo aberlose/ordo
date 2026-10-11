@@ -1,16 +1,21 @@
 import type { BoardDetail, Task } from '@ordo/contracts';
 import { ChevronDown, Moon, Plus, SquareKanban, Sun } from 'lucide-react';
-import { useEffect, useMemo } from 'react';
-import { Trans, useTranslation } from 'react-i18next';
-import { ColumnTasks, TaskDetail, useTaskUi } from '@renderer/features/tasks';
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
+import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
+import { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CARD_MOVE_HINT_ID, TaskDetail, useTaskMoves, useTaskUi } from '@renderer/features/tasks';
+import { altKey } from '@renderer/shared/lib/platform';
 import { useResolvedMode, useAppearance } from '@renderer/shared/appearance/store';
 import { cn } from '@renderer/shared/lib/cn';
 import { today as todayDay } from '@renderer/shared/lib/dates';
 import { useNow } from '@renderer/shared/lib/useNow';
 import { Button } from '@renderer/shared/ui/button';
-import { columnColorVar } from '@renderer/shared/ui/colors';
-import { ColumnIcon } from '@renderer/shared/ui/column-icon';
 import { Kbd } from '@renderer/shared/ui/kbd';
+import { KeyboardHelp } from '@renderer/shared/ui/keyboard-help';
+import { COLUMN_DRAG, useColumnDrag, useColumnMoves } from '../dnd/useColumnMoves';
+import { BoardColumn, ColumnSlot } from './BoardColumn';
 
 export interface BoardViewProps {
   board: BoardDetail;
@@ -31,7 +36,6 @@ export function BoardView({ board }: BoardViewProps) {
   const empty = board.tasks.length === 0;
   const today = todayDay(new Date(useNow()));
   const openQuickAdd = useTaskUi((state) => state.openQuickAdd);
-  const quickAddColumnId = useTaskUi((state) => state.quickAddColumnId);
   const firstColumnId = board.columns[0]?.id;
 
   const tasksByColumn = useMemo(() => {
@@ -44,6 +48,35 @@ export function BoardView({ board }: BoardViewProps) {
     for (const list of map.values()) list.sort((a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0));
     return map;
   }, [board.tasks]);
+
+  const taskMoves = useTaskMoves(board, tasksByColumn);
+  const columnMoves = useColumnMoves(board);
+  const draggingColumnId = useColumnDrag((state) => state.draggingId);
+  const columnTargetIndex = useColumnDrag((state) => state.targetIndex);
+
+  // While a column is dragged it leaves its place and a slot opens at the destination (mockup ColumnDrag B).
+  const columnsToShow = useMemo(() => {
+    const list: (BoardDetail['columns'][number] | 'slot')[] = board.columns.filter(
+      (c) => c.id !== draggingColumnId,
+    );
+    if (draggingColumnId && columnTargetIndex !== null) list.splice(columnTargetIndex, 0, 'slot');
+    return list;
+  }, [board.columns, draggingColumnId, columnTargetIndex]);
+
+  // The board scrolls sideways while dragging near its edges, and accepts columns past the last one.
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = scrollerRef.current;
+    if (!element) return;
+    return combine(
+      autoScrollForElements({ element }),
+      dropTargetForElements({
+        element,
+        canDrop: ({ source }) => source.data['type'] === COLUMN_DRAG.column,
+        getData: () => ({ type: COLUMN_DRAG.area }),
+      }),
+    );
+  }, []);
 
   // N opens quick add in the first column (full shortcut system: lot 7).
   useEffect(() => {
@@ -59,7 +92,7 @@ export function BoardView({ board }: BoardViewProps) {
   }, [firstColumnId, openQuickAdd]);
 
   return (
-    <main className="flex min-w-0 flex-1 flex-col">
+    <main className="relative flex min-w-0 flex-1 flex-col">
       <header className="flex h-header shrink-0 items-center gap-2.5 border-b border-border px-6">
         <SquareKanban size={16} className="text-accent" aria-hidden />
         <h1 className="m-0 text-title font-semibold">{board.name}</h1>
@@ -104,67 +137,26 @@ export function BoardView({ board }: BoardViewProps) {
         <span className="text-meta text-text-3">{t('board.taskCount', { count: board.tasks.length })}</span>
       </div>
 
-      <div className="flex min-h-0 flex-1 items-start gap-7 overflow-x-auto px-6 pt-5.5 pb-6">
-        {board.columns.map((column, index) => {
+      <div
+        ref={scrollerRef}
+        className="flex min-h-0 flex-1 items-start gap-7 overflow-x-auto px-6 pt-5.5 pb-6"
+      >
+        {columnsToShow.map((entry, index) => {
+          if (entry === 'slot') return <ColumnSlot key="column-slot" />;
+          const column = entry;
           const tasks = tasksByColumn.get(column.id) ?? [];
-          const quickAddOpen = quickAddColumnId === column.id;
+          const first = index === 0 || (index === 1 && columnsToShow[0] === 'slot');
           return (
-            <section
+            <BoardColumn
               key={column.id}
-              aria-label={column.name}
-              className="flex max-h-full w-column shrink-0 flex-col gap-3"
-            >
-              <div
-                className="flex items-center gap-2.5 border-b-2 px-0.5 pb-2.5"
-                style={{ borderColor: columnColorVar(column.color) }}
-              >
-                <ColumnIcon
-                  icon={column.icon}
-                  size={16}
-                  strokeWidth={2.2}
-                  style={{ color: columnColorVar(column.color) }}
-                />
-                <h2 className="m-0 text-sm font-semibold">{column.name}</h2>
-                <span className="text-meta text-text-3 tabular-nums">{tasks.length}</span>
-                <div className="flex-1" />
-                <button
-                  type="button"
-                  aria-label={t('column.addTaskIn', { column: column.name })}
-                  onClick={() => openQuickAdd(column.id)}
-                  className="flex rounded-md p-1 text-text-3 hover:bg-rail hover:text-text-2"
-                >
-                  <Plus size={16} aria-hidden />
-                </button>
-              </div>
-              {/* Side and top padding offset by negative margins, bottom padding inside: room for the hover
-                  shadow and focus ring, which the scroll area would clip, without breaking the 24 px bottom gap. */}
-              <div className="-mx-4 -mt-1 flex min-h-0 flex-col gap-2.5 overflow-y-auto px-4 pt-1 pb-6">
-                {empty && !quickAddOpen && index === 0 && (
-                  <div className="flex flex-col items-center gap-2.5 rounded-xl border-2 border-dashed border-border-strong bg-surface px-4.5 py-5.5 text-center">
-                    <span className="text-sm font-semibold">{t('column.emptyTitle')}</span>
-                    <span className="text-meta leading-snug text-text-3">
-                      <Trans i18nKey="column.emptyBody" components={{ kbd: <Kbd /> }} />
-                    </span>
-                    <Button variant="soft" className="mt-1" onClick={() => openQuickAdd(column.id)}>
-                      <Plus size={14} strokeWidth={2.4} aria-hidden />
-                      {t('column.addTask')}
-                    </Button>
-                  </div>
-                )}
-                {empty && !quickAddOpen && index > 0 && (
-                  <div className="flex h-19 items-center justify-center rounded-xl border-2 border-dashed border-border text-meta text-text-3">
-                    {t('column.dropHere')}
-                  </div>
-                )}
-                <ColumnTasks
-                  boardId={board.id}
-                  column={column}
-                  tasks={tasks}
-                  today={today}
-                  hideAddLink={empty}
-                />
-              </div>
-            </section>
+              boardId={board.id}
+              column={column}
+              tasks={tasks}
+              today={today}
+              emptyHint={empty ? (first ? 'first' : 'other') : null}
+              onKeyboardMoveTask={taskMoves.moveWithKeyboard}
+              onKeyboardMoveColumn={columnMoves.moveWithKeyboard}
+            />
           );
         })}
         <button
@@ -175,6 +167,10 @@ export function BoardView({ board }: BoardViewProps) {
           {t('board.newColumn')}
         </button>
       </div>
+      <KeyboardHelp />
+      <span id={CARD_MOVE_HINT_ID} hidden>
+        {t('dnd.cardHint', { alt: altKey() })}
+      </span>
       <TaskDetail board={board} today={today} />
     </main>
   );

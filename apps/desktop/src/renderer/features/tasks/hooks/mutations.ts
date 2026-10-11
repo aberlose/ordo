@@ -1,8 +1,10 @@
 import type { BoardDetail, Input, Task } from '@ordo/contracts';
-import { completionAfterMove, DEFAULT_PRIORITY, rankAtEnd } from '@ordo/domain';
+import { completionAfterMove, DEFAULT_PRIORITY, rankAtEnd, rankBetween } from '@ordo/domain';
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { call } from '@renderer/shared/api/client';
 import { boardKeys } from '@renderer/shared/api/keys';
+import { useFeedback } from '@renderer/shared/feedback/store';
+import i18n from '@renderer/i18n';
 
 type Snapshot = { previous: BoardDetail | undefined };
 
@@ -21,6 +23,13 @@ function rollback(client: QueryClient, boardId: string, snapshot: Snapshot | und
   if (snapshot?.previous) client.setQueryData(boardKeys.detail(boardId), snapshot.previous);
 }
 
+type FailedAction = 'create' | 'update' | 'delete' | 'move';
+
+/** Rolls the cache back and tells the user, with a way to try again (mockup drag-and-drop/Toast A). */
+function failed(action: FailedAction, retry: () => void) {
+  useFeedback.getState().showToast(i18n.t(`feedback.failed.${action}`), retry);
+}
+
 const isDoneColumn = (board: BoardDetail, columnId: string) =>
   board.columns.find((c) => c.id === columnId)?.category === 'done';
 
@@ -34,7 +43,7 @@ const lastRank = (board: BoardDetail, columnId: string) =>
 /** Quick add, optimistic: the card shows at once with a temporary id, replaced by the saved task. */
 export function useCreateTask(boardId: string) {
   const client = useQueryClient();
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (input: Input<'tasks.create'> & { tempId: string }) =>
       call('tasks.create', { columnId: input.columnId, title: input.title }),
     onMutate: async (input) => {
@@ -62,15 +71,19 @@ export function useCreateTask(boardId: string) {
         ...board,
         tasks: board.tasks.map((t) => (t.id === input.tempId ? task : t)),
       })),
-    onError: (_error, _input, snapshot) => rollback(client, boardId, snapshot),
+    onError: (_error, input, snapshot) => {
+      rollback(client, boardId, snapshot);
+      failed('create', () => mutation.mutate(input));
+    },
     onSettled: () => void client.invalidateQueries({ queryKey: boardKeys.all, exact: true }),
   });
+  return mutation;
 }
 
 /** Field edits from the detail window, optimistic with rollback. */
 export function useUpdateTask(boardId: string) {
   const client = useQueryClient();
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (input: Input<'tasks.update'>) => call('tasks.update', input),
     onMutate: async (input) => {
       await client.cancelQueries({ queryKey: boardKeys.detail(boardId) });
@@ -95,14 +108,18 @@ export function useUpdateTask(boardId: string) {
         ...board,
         tasks: board.tasks.map((t) => (t.id === task.id ? task : t)),
       })),
-    onError: (_error, _input, snapshot) => rollback(client, boardId, snapshot),
+    onError: (_error, input, snapshot) => {
+      rollback(client, boardId, snapshot);
+      failed('update', () => mutation.mutate(input));
+    },
   });
+  return mutation;
 }
 
 /** Soft delete (the trash comes with lot 8). */
 export function useDeleteTask(boardId: string) {
   const client = useQueryClient();
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: (id: string) => call('tasks.delete', { id }),
     onMutate: async (id) => {
       await client.cancelQueries({ queryKey: boardKeys.detail(boardId) });
@@ -112,7 +129,61 @@ export function useDeleteTask(boardId: string) {
         tasks: board.tasks.filter((t) => t.id !== id),
       }));
     },
-    onError: (_error, _id, snapshot) => rollback(client, boardId, snapshot),
+    onError: (_error, id, snapshot) => {
+      rollback(client, boardId, snapshot);
+      failed('delete', () => mutation.mutate(id));
+    },
     onSettled: () => void client.invalidateQueries({ queryKey: boardKeys.all, exact: true }),
   });
+  return mutation;
+}
+
+/**
+ * Drag and drop or ⌥/Alt + arrows, optimistic: the card takes its new column and a rank between
+ * its neighbours at once; the server writes one row.
+ */
+export function useMoveTask(boardId: string) {
+  const client = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: (input: Input<'tasks.move'>) => call('tasks.move', input),
+    onMutate: async (input) => {
+      await client.cancelQueries({ queryKey: boardKeys.detail(boardId) });
+      return patchBoard(client, boardId, (board) => {
+        const rankOf = (id: string | null) =>
+          id ? (board.tasks.find((t) => t.id === id)?.rank ?? null) : null;
+        const rank =
+          input.beforeId === null && input.afterId === null
+            ? rankAtEnd(lastRank(board, input.toColumnId))
+            : rankBetween(rankOf(input.beforeId), rankOf(input.afterId));
+        return {
+          ...board,
+          tasks: board.tasks.map((t) =>
+            t.id !== input.taskId
+              ? t
+              : {
+                  ...t,
+                  columnId: input.toColumnId,
+                  rank,
+                  completedAt:
+                    t.columnId === input.toColumnId
+                      ? t.completedAt
+                      : completionAfterMove(t.completedAt, isDoneColumn(board, input.toColumnId), Date.now()),
+                },
+          ),
+        };
+      });
+    },
+    onSuccess: (task) =>
+      patchBoard(client, boardId, (board) => ({
+        ...board,
+        tasks: board.tasks.map((t) => (t.id === task.id ? task : t)),
+      })),
+    // Moves can overlap (several quick ⌥ + arrows): restoring a snapshot would undo the others,
+    // so a failed move reloads the board from the database instead.
+    onError: (_error, input) => {
+      void client.invalidateQueries({ queryKey: boardKeys.detail(boardId) });
+      failed('move', () => mutation.mutate(input));
+    },
+  });
+  return mutation;
 }
