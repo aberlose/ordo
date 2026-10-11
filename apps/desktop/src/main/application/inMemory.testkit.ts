@@ -34,7 +34,20 @@ export function inMemoryRepositories() {
   const columns: ColumnRepository = {
     listByBoard: (id) => columnRows.filter((c) => c.boardId === id).sort(byRank),
     findById: (id) => columnRows.find((c) => c.id === id) ?? null,
+    adjacentRankInBoard: (boardId, rank, side, excludeId) => {
+      const ranks = columnRows
+        .filter((c) => c.boardId === boardId && c.id !== excludeId)
+        .map((c) => c.rank)
+        .filter((r) => (side === 'after' ? r > rank : r < rank))
+        .sort();
+      return (side === 'after' ? ranks[0] : ranks.at(-1)) ?? null;
+    },
     insertMany: (cs) => void columnRows.push(...cs),
+    update: (id, patch) => {
+      const i = columnRows.findIndex((c) => c.id === id);
+      const row = columnRows[i];
+      if (row) columnRows[i] = { ...row, ...patch };
+    },
   };
 
   const strip = ({ deletedAt: _deletedAt, ...t }: TaskRecord & { deletedAt: number | null }): TaskRecord => t;
@@ -54,6 +67,14 @@ export function inMemoryRepositories() {
         .map((t) => t.rank)
         .sort()
         .at(-1) ?? null,
+    adjacentRankInColumn: (columnId, rank, side, excludeId) => {
+      const ranks = taskRows
+        .filter((t) => t.columnId === columnId && t.id !== excludeId)
+        .map((t) => t.rank)
+        .filter((r) => (side === 'after' ? r > rank : r < rank))
+        .sort();
+      return (side === 'after' ? ranks[0] : ranks.at(-1)) ?? null;
+    },
     maxKey: (boardId) => {
       const keys = taskRows.filter((t) => t.boardId === boardId).map((t) => t.key);
       return keys.length ? Math.max(...keys) : null;

@@ -23,6 +23,12 @@ function setup(overrides: Partial<Handlers> = {}) {
       throw new Error('not used');
     },
     'tasks.delete': ({ id }) => ({ id }),
+    'tasks.move': () => {
+      throw new Error('not used');
+    },
+    'columns.move': () => {
+      throw new Error('not used');
+    },
     ...overrides,
   };
   registerHandlers(

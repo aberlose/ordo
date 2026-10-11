@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { makeBoardUseCases } from './application/boards';
+import { makeColumnUseCases } from './application/columns';
 import { makeTaskUseCases } from './application/tasks';
 import { createMainWindow, trustedOrigin } from './app/window';
 import { openDatabase } from './infrastructure/db/client';
@@ -43,10 +44,11 @@ function start(): void {
   };
   const boards = makeBoardUseCases({ ...ports, boards: boardRepository(database.db) });
   const tasks = makeTaskUseCases(ports);
+  const columns = makeColumnUseCases(ports);
 
   registerHandlers(
     ipcMain,
-    createHandlers(boards, tasks, () => ({
+    createHandlers(boards, tasks, columns, () => ({
       version: app.getVersion(),
       platform: process.platform === 'darwin' || process.platform === 'win32' ? process.platform : 'linux',
       dataPath: dataFile,
