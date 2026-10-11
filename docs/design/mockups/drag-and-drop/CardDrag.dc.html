@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — glisser une carte</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lt{--canvas:#F2F6FF;--surface:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#5F6B88;--accent:#1A52E6;--accent-fg:#FFFFFF;--accent-soft:#E2EBFF;--danger:#D92D20;--shadow:0 1px 3px rgba(15,26,51,.06),0 1px 1px rgba(15,26,51,.04);--drag:0 18px 40px rgba(15,26,51,.22),0 3px 8px rgba(15,26,51,.10)}
+.dk{--canvas:#0A1020;--surface:#121B30;--rail:#172340;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7B8BAB;--accent:#5B8CFF;--accent-fg:#06101F;--accent-soft:#16294F;--danger:#FF8A80;--shadow:0 1px 3px rgba(0,0,0,.5);--drag:0 18px 40px rgba(0,0,0,.65),0 3px 8px rgba(0,0,0,.4)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px 11px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:9px}
+.ttl{font-size:14px;font-weight:500;line-height:1.4}
+.meta{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--text-3)}
+.bars{display:flex;align-items:flex-end;gap:1.5px;height:10px}
+.bars span{width:2.5px;border-radius:1px}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 28px 32px; display: flex; flex-direction: column; gap: 26px; background: #F7F8FB; font-family: 'Figtree', system-ui, sans-serif; font-size: 14px; color: #0F1A33">
+
+<sc-for list="{{variants}}" as="v" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">{{v.title}}</h2>
+<p style="margin: 0; font-size: 13px; color: #465472; line-height: 1.5">{{v.desc}}</p>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="{{th.cls}}" style="position: relative; height: 330px; overflow: hidden; background: var(--canvas); color: var(--text); border-radius: 14px; border: 1px solid var(--border); padding: 16px 20px; box-sizing: border-box">
+<div style="font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px">{{th.name}}</div>
+<div style="display: flex; gap: 28px; align-items: flex-start">
+<sc-for list="{{v.cols}}" as="col" hint-placeholder-count="2">
+<section style="width: 280px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 2px 10px; border-bottom: 2px solid {{col.c}}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{col.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{col.icon}}"/></svg>
+<h3 style="margin: 0; font-size: 14px; font-weight: 600">{{col.name}}</h3>
+<span style="font-size: 13px; color: var(--text-3)">{{col.count}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: {{col.pad}}; margin: {{col.margin}}; border-radius: 12px; background: {{col.bg}}">
+<sc-for list="{{col.items}}" as="it" hint-placeholder-count="3">
+<sc-if value="{{it.isCard}}" hint-placeholder-val="{{true}}">
+<article class="card" style="opacity: {{it.opacity}}">
+<div class="ttl">{{it.t}}</div>
+<div class="meta"><span class="bars" aria-hidden="true"><sc-for list="{{it.bars}}" as="b" hint-placeholder-count="5"><span style="height: {{b.h}}; background: {{b.c}}"></span></sc-for></span><span style="flex: 1"></span><span>{{it.due}}</span></div>
+</article>
+</sc-if>
+<sc-if value="{{it.isLine}}" hint-placeholder-val="{{false}}">
+<div style="position: relative; height: 2px; margin: -6px 0; border-radius: 1px; background: var(--accent)"><span style="position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--accent); background: var(--canvas); box-sizing: border-box"></span></div>
+</sc-if>
+<sc-if value="{{it.isSlot}}" hint-placeholder-val="{{false}}">
+<div style="height: 66px; border-radius: 10px; border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent-soft) 60%, transparent)"></div>
+</sc-if>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</div>
+
+<article aria-hidden="true" class="card" style="position: absolute; left: {{v.px}}; top: {{v.py}}; width: 280px; box-sizing: border-box; border: 1.5px solid var(--accent); box-shadow: var(--drag); transform: {{v.tf}}; pointer-events: none">
+<div class="ttl">Rédiger le compte rendu de l'atelier</div>
+<div class="meta"><span class="bars"><span style="height: 3.6px; background: #EA580C"></span><span style="height: 5.2px; background: #EA580C"></span><span style="height: 6.8px; background: #EA580C"></span><span style="height: 8.4px; background: #EA580C"></span><span style="height: 10px; background: var(--border-strong)"></span></span><span style="flex: 1"></span><span>12 oct.</span></div>
+</article>
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" style="position: absolute; left: {{v.cx}}; top: {{v.cy}}" fill="var(--surface)" stroke="var(--text)" stroke-width="1.6" stroke-linejoin="round"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V12M11 11.5v-2a1.5 1.5 0 0 1 3 0V12M14 10.5a1.5 1.5 0 0 1 3 0V12M17 11.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-2a6 6 0 0 1-5-2.7L4.2 15a1.6 1.6 0 0 1 2.6-1.8L8 15"/></svg>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+const PC = ['#94A3B8', '#3B82F6', '#CA8A04', '#EA580C', '#DC2626'];
+const bars = (p) => [3.6, 5.2, 6.8, 8.4, 10].map((h, i) => ({ h: h + 'px', c: i < p ? PC[p - 1] : 'var(--border-strong)' }));
+const card = (t, p, due, opacity) => ({ isCard: true, isLine: false, isSlot: false, t, bars: bars(p), due, opacity: opacity ?? 1 });
+const LINE = { isCard: false, isLine: true, isSlot: false };
+const SLOT = { isCard: false, isLine: false, isSlot: true };
+const INBOX = 'M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z';
+const PLAY = 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM10 8.5v7l5.5-3.5z';
+const todo = (moving) => ({ name: 'À faire', c: '#78716C', icon: INBOX, items: [
+  card('Mettre à jour les dépendances', 2, '14 oct.'),
+  ...(moving ? [card('Rédiger le compte rendu de l’atelier', 4, '12 oct.', 0.35)] : []),
+  card('Préparer la démo client', 3, '') ] });
+const doing = (mid, tinted) => ({ name: 'En cours', c: '#2563EB', icon: PLAY, items: [
+  card('Corriger l’export PDF des factures', 4, '8 oct.'), mid, card('Intégrer le nouveau header', 5, '17 oct.') ], tinted });
+const style = (c, count) => ({ ...c, count, bg: c.tinted ? 'color-mix(in srgb, var(--accent-soft) 55%, transparent)' : 'transparent', pad: c.tinted ? '8px' : '0', margin: c.tinted ? '-8px' : '0' });
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      themes: [{ cls: 'lt', name: 'Clair' }, { cls: 'dk', name: 'Sombre' }],
+      variants: [
+        { title: 'A · Ligne d’insertion', desc: 'La carte reste à sa place, estompée. L’aperçu suit la souris, légèrement incliné ; une ligne accent avec un point montre où elle sera posée. Rien ne bouge avant le lâcher.',
+          cols: [style(todo(true), 3), style(doing(LINE, false), 2)], px: '344px', py: '178px', tf: 'rotate(2deg)', cx: '580px', cy: '222px' },
+        { title: 'B · L’espace s’ouvre', desc: 'La carte quitte sa colonne ; un emplacement en pointillés s’ouvre là où elle sera posée et la colonne visée se teinte. L’aperçu reste droit. Plus de mouvement, plus explicite.',
+          cols: [style(todo(false), 2), style(doing(SLOT, true), 3)], px: '348px', py: '196px', tf: 'none', cx: '584px', cy: '240px' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
