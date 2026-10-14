@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CHANNELS } from './channels';
 import { contract } from './contract';
-import { CreateBoardInput } from './boards';
+import { CreateBoardInput, DuplicateBoardInput, MoveBoardInput, UpdateBoardInput } from './boards';
 import { CreateColumnInput, UpdateColumnInput } from './columns';
 import { CreateTaskInput, UpdateTaskInput } from './tasks';
 
@@ -17,6 +17,32 @@ describe('contract', () => {
     ).toBe(true);
     expect(CreateBoardInput.safeParse({ name: '', columnNames: ['a', 'b', 'c'] }).success).toBe(false);
     expect(CreateBoardInput.safeParse({ name: 'x', columnNames: ['a', 'b'] }).success).toBe(false);
+    expect(
+      CreateBoardInput.safeParse({ name: 'x', columnNames: ['a', 'b', 'c'], icon: 'kanban', color: 'teal' })
+        .success,
+    ).toBe(true);
+    expect(
+      CreateBoardInput.safeParse({ name: 'x', columnNames: ['a', 'b', 'c'], icon: 'not-an-icon' }).success,
+    ).toBe(false);
+  });
+});
+
+describe('board inputs', () => {
+  const id = '0192f0a0-0000-7000-8000-000000000001';
+
+  it('accepts partial updates and rejects empty ones', () => {
+    expect(UpdateBoardInput.safeParse({ id, name: ' Perso ' }).success).toBe(true);
+    expect(UpdateBoardInput.safeParse({ id, color: 'pink', icon: 'heart' }).success).toBe(true);
+    expect(UpdateBoardInput.safeParse({ id }).success).toBe(false);
+    expect(UpdateBoardInput.safeParse({ id, name: '   ' }).success).toBe(false);
+    expect(UpdateBoardInput.safeParse({ id, color: 'black' }).success).toBe(false);
+  });
+
+  it('validates moves and duplicates', () => {
+    expect(MoveBoardInput.safeParse({ boardId: id, beforeId: null, afterId: id }).success).toBe(true);
+    expect(MoveBoardInput.safeParse({ boardId: id }).success).toBe(false);
+    expect(DuplicateBoardInput.safeParse({ id, name: 'Perso (copie)', includeTasks: true }).success).toBe(true);
+    expect(DuplicateBoardInput.safeParse({ id, name: 'Perso (copie)' }).success).toBe(false);
   });
 });
 

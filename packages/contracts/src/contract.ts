@@ -1,7 +1,19 @@
 import { z } from 'zod';
 import type { Channel } from './channels';
 import type { Result } from './result';
-import { BoardDetail, BoardSummary, Column, CreateBoardInput } from './boards';
+import {
+  ArchiveBoardInput,
+  ArchiveBoardOutput,
+  ArchivedBoard,
+  BoardDetail,
+  BoardSummary,
+  Column,
+  CreateBoardInput,
+  DuplicateBoardInput,
+  MoveBoardInput,
+  RestoreBoardInput,
+  UpdateBoardInput,
+} from './boards';
 import {
   CreateColumnInput,
   DeleteColumnInput,
@@ -21,6 +33,13 @@ export const contract = {
   'boards.list': { input: Empty, output: z.array(BoardSummary) },
   'boards.get': { input: z.object({ id: Id }).strict(), output: BoardDetail },
   'boards.create': { input: CreateBoardInput, output: BoardDetail },
+  'boards.update': { input: UpdateBoardInput, output: BoardSummary },
+  'boards.move': { input: MoveBoardInput, output: BoardSummary },
+  'boards.duplicate': { input: DuplicateBoardInput, output: BoardSummary },
+  'boards.archive': { input: ArchiveBoardInput, output: ArchiveBoardOutput },
+  'boards.restore': { input: RestoreBoardInput, output: BoardSummary },
+  /** Archived boards, most recently archived first. */
+  'boards.listArchived': { input: Empty, output: z.array(ArchivedBoard) },
   'tasks.create': { input: CreateTaskInput, output: Task },
   'tasks.update': { input: UpdateTaskInput, output: Task },
   /** Soft delete: the task goes to the trash (lot 8 lists and restores it). */
