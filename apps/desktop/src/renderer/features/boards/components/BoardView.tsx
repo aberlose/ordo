@@ -1,4 +1,5 @@
 import type { BoardDetail, Task } from '@ordo/contracts';
+import { canDeleteColumn } from '@ordo/domain';
 import { ChevronDown, Moon, Plus, SquareKanban, Sun } from 'lucide-react';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
@@ -23,6 +24,7 @@ import { Kbd } from '@renderer/shared/ui/kbd';
 import { KeyboardHelp } from '@renderer/shared/ui/keyboard-help';
 import { COLUMN_DRAG, useColumnDrag, useColumnMoves } from '../dnd/useColumnMoves';
 import { BoardColumn, ColumnSlot } from './BoardColumn';
+import { ColumnSettings } from './ColumnSettings';
 
 export interface BoardViewProps {
   board: BoardDetail;
@@ -55,6 +57,9 @@ export function BoardView({ board }: BoardViewProps) {
     for (const list of map.values()) list.sort((a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0));
     return map;
   }, [board.tasks]);
+
+  const usedColors = useMemo(() => board.columns.map((c) => c.color), [board.columns]);
+  const canDelete = canDeleteColumn(board.columns.length);
 
   const taskMoves = useTaskMoves(board, tasksByColumn);
   const columnMoves = useColumnMoves(board);
@@ -163,18 +168,30 @@ export function BoardView({ board }: BoardViewProps) {
               tasks={tasks}
               today={today}
               emptyHint={empty ? (first ? 'first' : 'other') : null}
+              usedColors={usedColors}
+              canDelete={canDelete}
               onKeyboardMoveTask={taskMoves.moveWithKeyboard}
               onKeyboardMoveColumn={columnMoves.moveWithKeyboard}
             />
           );
         })}
-        <button
-          type="button"
-          className="flex h-10 w-45 shrink-0 items-center gap-2 rounded-card px-1 text-text-3 hover:bg-rail"
-        >
-          <Plus size={16} aria-hidden />
-          {t('board.newColumn')}
-        </button>
+        <ColumnSettings
+          boardId={board.id}
+          column={null}
+          usedColors={usedColors}
+          taskCount={0}
+          canDelete={false}
+          align="start"
+          trigger={
+            <button
+              type="button"
+              className="flex h-10 w-45 shrink-0 cursor-pointer items-center gap-2 rounded-card px-1 text-text-3 hover:bg-rail data-[state=open]:bg-accent-soft data-[state=open]:text-accent data-[state=open]:outline-2 data-[state=open]:outline-accent"
+            >
+              <Plus size={16} aria-hidden />
+              {t('board.newColumn')}
+            </button>
+          }
+        />
       </div>
       <KeyboardHelp />
       <span id={CARD_MOVE_HINT_ID} hidden>

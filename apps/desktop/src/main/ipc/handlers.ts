@@ -20,5 +20,8 @@ export function createHandlers(
     'tasks.delete': ({ id }) => tasks.deleteTask(id),
     'tasks.move': (input) => tasks.moveTask(input),
     'columns.move': (input) => columns.moveColumn(input),
+    'columns.create': (input) => columns.createColumn(input),
+    'columns.update': (input) => columns.updateColumn(input),
+    'columns.delete': ({ id }) => columns.deleteColumn(id),
   };
 }

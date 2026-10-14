@@ -42,9 +42,10 @@ function start(): void {
     clock: systemClock,
     ids: uuidv7Generator(),
   };
-  const boards = makeBoardUseCases({ ...ports, boards: boardRepository(database.db) });
+  const boardRepo = boardRepository(database.db);
+  const boards = makeBoardUseCases({ ...ports, boards: boardRepo });
   const tasks = makeTaskUseCases(ports);
-  const columns = makeColumnUseCases(ports);
+  const columns = makeColumnUseCases({ ...ports, boards: boardRepo });
 
   registerHandlers(
     ipcMain,

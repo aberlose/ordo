@@ -96,7 +96,7 @@ describe('moves on SQLite', () => {
     };
     const boards = makeBoardUseCases({ ...ports, boards: boardRepository(opened.db) });
     const tasks = makeTaskUseCases(ports);
-    const columns = makeColumnUseCases(ports);
+    const columns = makeColumnUseCases({ ...ports, boards: boardRepository(opened.db) });
     const board = boards.createBoard({ name: 'Perso', columnNames: ['À faire', 'En cours', 'Terminé'] });
     const [todo, doing, done] = board.columns.map((c) => c.id) as [string, string, string];
     const a = tasks.createTask({ columnId: todo, title: 'A' });
@@ -114,5 +114,39 @@ describe('moves on SQLite', () => {
         ['A', doing],
       ]),
     );
+  });
+});
+
+describe('column settings on SQLite', () => {
+  it('creates, updates (completing tasks) and deletes a column with its tasks', () => {
+    opened = openDatabase(':memory:', migrations);
+    const ports = {
+      columns: columnRepository(opened.db),
+      tasks: taskRepository(opened.db),
+      tx: sqliteTransactor(opened.sqlite),
+      clock: { now: () => Date.now() },
+      ids: uuidv7Generator(),
+    };
+    const boards = makeBoardUseCases({ ...ports, boards: boardRepository(opened.db) });
+    const tasks = makeTaskUseCases(ports);
+    const columns = makeColumnUseCases({ ...ports, boards: boardRepository(opened.db) });
+    const board = boards.createBoard({ name: 'Perso', columnNames: ['À faire', 'En cours', 'Terminé'] });
+    const review = columns.createColumn({
+      boardId: board.id,
+      name: 'En revue',
+      icon: 'eye',
+      color: 'violet',
+      category: 'in_progress',
+      displayLimit: 5,
+    });
+    const task = tasks.createTask({ columnId: review.id, title: 'Relire' });
+    columns.updateColumn({ id: review.id, category: 'done' });
+    expect(boards.getBoard(board.id).tasks.find((t) => t.id === task.id)?.completedAt).not.toBeNull();
+    expect(boards.getBoard(board.id).columns.at(-1)).toMatchObject({ name: 'En revue', displayLimit: 5 });
+
+    expect(columns.deleteColumn(review.id).deletedTasks).toBe(1);
+    const read = boards.getBoard(board.id);
+    expect(read.columns).toHaveLength(3);
+    expect(read.taskCount).toBe(0);
   });
 });

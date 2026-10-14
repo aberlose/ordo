@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — colonnes : suppression et « Voir moins »</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lt{--canvas:#F2F6FF;--surface:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#5F6B88;--accent:#1A52E6;--accent-bg:linear-gradient(135deg,#1A52E6 0%,#2B6CF0 100%);--accent-fg:#FFFFFF;--accent-soft:#E2EBFF;--danger:#D92D20;--danger-fg:#FFFFFF;--scrim:rgba(15,26,51,.28);--shadow:0 1px 3px rgba(15,26,51,.06),0 1px 1px rgba(15,26,51,.04);--pop:0 16px 40px rgba(15,26,51,.18),0 2px 6px rgba(15,26,51,.08)}
+.dk{--canvas:#0A1020;--surface:#121B30;--rail:#172340;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7B8BAB;--accent:#5B8CFF;--accent-bg:linear-gradient(135deg,#3D73FF 0%,#4FA3FF 100%);--accent-fg:#06101F;--accent-soft:#16294F;--danger:#FF8A80;--danger-fg:#1A0705;--scrim:rgba(0,0,0,.5);--shadow:0 1px 3px rgba(0,0,0,.5);--pop:0 16px 40px rgba(0,0,0,.6)}
+button{font:inherit;color:inherit;cursor:pointer}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;box-shadow:var(--shadow);font-size:14px;font-weight:500}
+.fl{font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px;display:block}
+.btn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:13px}
+.danger{height:32px;padding:0 14px;border:0;border-radius:8px;background:var(--danger);color:var(--danger-fg);font-size:13px;font-weight:600}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1560px; box-sizing: border-box; padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; background: #F7F8FB; font-family: 'Figtree', system-ui, sans-serif; font-size: 14px; color: #0F1A33">
+
+<sc-for list="{{variants}}" as="v" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">{{v.title}}</h2>
+<p style="margin: 0; font-size: 13px; color: #465472; line-height: 1.5">{{v.desc}}</p>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="{{th.cls}}" style="position: relative; height: 300px; overflow: hidden; background: var(--canvas); color: var(--text); border-radius: 14px; border: 1px solid var(--border); padding: 16px 20px; box-sizing: border-box">
+<div style="font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px">{{th.name}}</div>
+
+<sc-if value="{{v.isDelete}}" hint-placeholder-val="{{true}}">
+<section role="dialog" aria-label="Réglages de la colonne" style="position: relative; width: 340px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--pop); overflow: hidden">
+<div style="padding: 14px 16px 12px; border-bottom: 1px solid var(--border); font-size: 15px; font-weight: 600">Réglages de la colonne</div>
+<div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; opacity: {{v.bodyOpacity}}">
+<span class="fl">Nom</span>
+<div style="height: 34px; border: 1px solid var(--border-strong); border-radius: 8px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 14px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></svg>En revue</div>
+<span style="font-size: 12px; color: var(--text-3); margin-top: 6px">Couleur, icône, type de statut, tâches affichées…</span>
+</div>
+<sc-if value="{{v.isA}}" hint-placeholder-val="{{true}}">
+<div role="alertdialog" aria-label="Confirmer la suppression" style="display: flex; flex-direction: column; gap: 10px; padding: 12px 16px; border-top: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border)); background: color-mix(in srgb, var(--danger) 8%, var(--surface))">
+<span style="font-size: 13px; font-weight: 600; color: var(--danger)">Supprimer « En revue » et ses 4 tâches ?</span>
+<span style="font-size: 12px; color: var(--text-2)">Elles iront à la corbeille, restaurables pendant 30 jours.</span>
+<div style="display: flex; gap: 8px; justify-content: flex-end"><button class="btn">Annuler</button><button class="danger">Supprimer</button></div>
+</div>
+</sc-if>
+<sc-if value="{{v.isB}}" hint-placeholder-val="{{false}}">
+<div style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); opacity: .45"><span style="color: var(--danger); font-size: 13px; font-weight: 500">Supprimer</span><div style="flex: 1"></div><button class="btn">Annuler</button><button class="btn">Enregistrer</button></div>
+<div style="position: absolute; inset: 0; background: var(--scrim)"></div>
+<div role="alertdialog" aria-label="Confirmer la suppression" style="position: absolute; left: 20px; right: 20px; top: 62px; padding: 16px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--pop); display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600"><span style="width: 26px; height: 26px; border-radius: 50%; background: color-mix(in srgb, var(--danger) 14%, transparent); display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></span>Supprimer la colonne « En revue » ?</span>
+<span style="font-size: 12.5px; color: var(--text-2); line-height: 1.45">Ses 4 tâches iront à la corbeille. Vous pourrez les restaurer pendant 30 jours.</span>
+<div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px"><button class="btn">Annuler</button><button class="danger">Supprimer</button></div>
+</div>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{v.isMore}}" hint-placeholder-val="{{false}}">
+<section style="width: 296px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 2px 9px; border-bottom: 2px solid #2563EB">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM10 8.5v7l5.5-3.5z"/></svg>
+<h3 style="margin: 0; font-size: 14px; font-weight: 600">En cours</h3>
+<span style="font-size: 13px; color: var(--text-3)">7</span>
+<div style="flex: 1"></div>
+<sc-if value="{{v.isB}}" hint-placeholder-val="{{false}}"><button style="height: 24px; padding: 0 8px; border: 0; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>Replier</button></sc-if>
+</div>
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="5"><div class="card">{{c}}</div></sc-for>
+<sc-if value="{{v.isA}}" hint-placeholder-val="{{true}}">
+<button style="height: 34px; border: 0; border-radius: 10px; background: var(--rail); color: var(--text-2); font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>Voir moins</button>
+</sc-if>
+<button style="height: 30px; border: 0; background: none; color: var(--text-3); font-size: 13px; display: flex; align-items: center; gap: 6px; padding: 0 4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Ajouter</button>
+</section>
+</sc-if>
+
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const base = { isDelete: false, isMore: false, isA: false, isB: false, bodyOpacity: 1 };
+    return {
+      themes: [{ cls: 'lt', name: 'Clair' }, { cls: 'dk', name: 'Sombre' }],
+      cards: ['Intégrer le nouveau header', 'Corriger l’export PDF', 'Relire le contrat', 'Préparer la démo'],
+      variants: [
+        { ...base, isDelete: true, isA: true, title: 'Suppression A · Confirmation dans le pied de la fenêtre', desc: 'Le pied de la fenêtre de réglages se transforme : question en rouge, rappel de la corbeille, Annuler / Supprimer. Reste au même endroit, pas de nouvelle fenêtre.' },
+        { ...base, isDelete: true, isB: true, bodyOpacity: 0.45, title: 'Suppression B · Petite fenêtre de confirmation', desc: 'Une fenêtre d’alerte s’ouvre par-dessus les réglages (assombris), avec icône, titre et explication. Plus solennel, un clic de plus pour l’œil.' },
+        { ...base, isMore: true, isA: true, title: 'Voir moins A · Bouton en bas de la colonne', desc: 'Une fois dépliée, la colonne se termine par « Voir moins », au même endroit et dans le même style que « Voir N de plus ».' },
+        { ...base, isMore: true, isB: true, title: 'Voir moins B · « Replier » dans l’en-tête', desc: 'Le bouton passe dans l’en-tête de la colonne, toujours visible même quand on a défilé loin dans une longue colonne.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 import type { Priority } from '@ordo/domain';
-import { and, asc, desc, eq, gt, isNull, lt, max, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNotNull, isNull, lt, max, ne } from 'drizzle-orm';
 import type { TaskRecord, TaskRepository } from '../../application/ports';
 import type { Db } from '../db/client';
 import { task } from '../db/schema';
@@ -83,6 +83,33 @@ export function taskRepository(db: Db): TaskRepository {
 
     update: (id, patch) => {
       db.update(task).set(patch).where(eq(task.id, id)).run();
+    },
+
+    softDeleteByColumn: (columnId, now) => {
+      const topLevel = db
+        .select({ id: task.id })
+        .from(task)
+        .where(and(eq(task.columnId, columnId), live, isNull(task.parentId)))
+        .all().length;
+      db.update(task)
+        .set({ deletedAt: now, updatedAt: now })
+        .where(and(eq(task.columnId, columnId), live))
+        .run();
+      return topLevel;
+    },
+
+    completeAllInColumn: (columnId, now) => {
+      db.update(task)
+        .set({ completedAt: now, updatedAt: now })
+        .where(and(eq(task.columnId, columnId), live, isNull(task.completedAt)))
+        .run();
+    },
+
+    reopenAllInColumn: (columnId, now) => {
+      db.update(task)
+        .set({ completedAt: null, updatedAt: now })
+        .where(and(eq(task.columnId, columnId), live, isNotNull(task.completedAt)))
+        .run();
     },
 
     softDelete: (id, now) => {

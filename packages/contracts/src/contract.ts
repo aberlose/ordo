@@ -2,7 +2,13 @@ import { z } from 'zod';
 import type { Channel } from './channels';
 import type { Result } from './result';
 import { BoardDetail, BoardSummary, Column, CreateBoardInput } from './boards';
-import { MoveColumnInput } from './columns';
+import {
+  CreateColumnInput,
+  DeleteColumnInput,
+  DeleteColumnOutput,
+  MoveColumnInput,
+  UpdateColumnInput,
+} from './columns';
 import { AppInfo, Empty, Id } from './schemas';
 import { CreateTaskInput, DeleteTaskInput, MoveTaskInput, Task, UpdateTaskInput } from './tasks';
 
@@ -21,6 +27,9 @@ export const contract = {
   'tasks.delete': { input: DeleteTaskInput, output: z.object({ id: Id }) },
   'tasks.move': { input: MoveTaskInput, output: Task },
   'columns.move': { input: MoveColumnInput, output: Column },
+  'columns.create': { input: CreateColumnInput, output: Column },
+  'columns.update': { input: UpdateColumnInput, output: Column },
+  'columns.delete': { input: DeleteColumnInput, output: DeleteColumnOutput },
 } as const satisfies Record<Channel, { input: z.ZodType; output: z.ZodType }>;
 
 export type Contract = typeof contract;

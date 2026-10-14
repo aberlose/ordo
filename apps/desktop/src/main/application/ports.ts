@@ -53,7 +53,15 @@ export interface ColumnRepository {
   listByBoard(boardId: string): ColumnRecord[];
   findById(id: string): ColumnRecord | null;
   insertMany(columns: readonly ColumnRecord[]): void;
-  update(id: string, patch: Partial<Pick<ColumnRecord, 'rank'>> & { readonly updatedAt: number }): void;
+  update(
+    id: string,
+    patch: Partial<Pick<ColumnRecord, 'rank' | 'name' | 'icon' | 'color' | 'category' | 'displayLimit'>> & {
+      readonly updatedAt: number;
+    },
+  ): void;
+  /** Highest rank among the board's columns, deleted ones included. */
+  lastRankInBoard(boardId: string): Rank | null;
+  softDelete(id: string, now: number): void;
   /** The rank right after or right before `rank` among the board's columns, `excludeId` ignored. */
   adjacentRankInBoard(boardId: string, rank: Rank, side: 'after' | 'before', excludeId: string): Rank | null;
 }
@@ -100,4 +108,10 @@ export interface TaskRepository {
   insert(task: TaskRecord): void;
   update(id: string, patch: TaskPatch): void;
   softDelete(id: string, now: number): void;
+  /** Soft-deletes the live tasks of a column (sub-tasks included); returns how many top-level tasks went. */
+  softDeleteByColumn(columnId: string, now: number): number;
+  /** Column moved to a "done" category: its live tasks without a completion date get `now`. */
+  completeAllInColumn(columnId: string, now: number): void;
+  /** Column left the "done" category: its live tasks lose their completion date. */
+  reopenAllInColumn(columnId: string, now: number): void;
 }

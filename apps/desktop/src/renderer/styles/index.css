@@ -20,6 +20,9 @@
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
+  --color-danger-fg: var(--danger-fg);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
   --color-scrim: var(--scrim);
   --color-inverse: var(--inverse);
   --color-inverse-fg: var(--inverse-fg);
@@ -53,6 +56,8 @@
   --spacing-rail: 64px;
   --spacing-header: 54px;
   --spacing-column: 296px;
+  --spacing-popover: 340px;
+  --spacing-icon-grid: 148px;
   --spacing-detail: 1040px;
   --spacing-detail-full: 1120px;
   --spacing-detail-props: 300px;
@@ -60,6 +65,7 @@
   --radius-kbd: 5px;
   --radius-tile: 9px;
   --radius-card: 10px;
+  --radius-popover: 12px;
   --radius-window: 14px;
   --radius-logo: 18px;
 }

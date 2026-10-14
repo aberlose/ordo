@@ -5,6 +5,7 @@ import { cn } from '../lib/cn';
 export const Popover = PopoverPrimitive.Root;
 export const PopoverTrigger = PopoverPrimitive.Trigger;
 export const PopoverAnchor = PopoverPrimitive.Anchor;
+export const PopoverClose = PopoverPrimitive.Close;
 
 /** Floating panel (mockups: filter menus, date picker). Keeps 24 px from the window edges. */
 export function PopoverContent({

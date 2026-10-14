@@ -11,6 +11,7 @@ import type {
 export function inMemoryRepositories() {
   const boardRows: BoardRecord[] = [];
   const columnRows: ColumnRecord[] = [];
+  const deletedColumns: ColumnRecord[] = [];
   const taskRows: (TaskRecord & { deletedAt: number | null })[] = [];
   const byRank = <T extends { rank: string }>(a: T, b: T) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0);
   const liveTasks = () => taskRows.filter((t) => t.deletedAt === null);
@@ -43,6 +44,17 @@ export function inMemoryRepositories() {
       return (side === 'after' ? ranks[0] : ranks.at(-1)) ?? null;
     },
     insertMany: (cs) => void columnRows.push(...cs),
+    lastRankInBoard: (boardId) =>
+      [...columnRows, ...deletedColumns]
+        .filter((c) => c.boardId === boardId)
+        .map((c) => c.rank)
+        .sort()
+        .at(-1) ?? null,
+    softDelete: (id) => {
+      const i = columnRows.findIndex((c) => c.id === id);
+      const [removed] = columnRows.splice(i, 1);
+      if (removed) deletedColumns.push(removed);
+    },
     update: (id, patch) => {
       const i = columnRows.findIndex((c) => c.id === id);
       const row = columnRows[i];
@@ -84,6 +96,23 @@ export function inMemoryRepositories() {
       const i = taskRows.findIndex((t) => t.id === id);
       const row = taskRows[i];
       if (row) taskRows[i] = { ...row, ...patch };
+    },
+    softDeleteByColumn: (columnId, now) => {
+      const rows = taskRows.filter((t) => t.columnId === columnId && t.deletedAt === null);
+      for (const row of rows) row.deletedAt = now;
+      return rows.filter((t) => t.parentId === null).length;
+    },
+    completeAllInColumn: (columnId, now) => {
+      for (const row of taskRows)
+        if (row.columnId === columnId && row.deletedAt === null && row.completedAt === null) {
+          Object.assign(row, { completedAt: now, updatedAt: now });
+        }
+    },
+    reopenAllInColumn: (columnId, now) => {
+      for (const row of taskRows)
+        if (row.columnId === columnId && row.deletedAt === null && row.completedAt !== null) {
+          Object.assign(row, { completedAt: null, updatedAt: now });
+        }
     },
     softDelete: (id, now) => {
       const row = taskRows.find((t) => t.id === id);
