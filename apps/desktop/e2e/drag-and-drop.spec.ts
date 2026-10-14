@@ -60,12 +60,17 @@ test('move cards and columns with the mouse and the keyboard, and keep the order
   );
   await expect.poll(() => cardTitles(window, 'À faire')).toEqual(['Préparer la démo', 'Relire le contrat']);
 
-  // Keyboard: open a card and close it with Escape, the focus comes back to the card;
-  // ⌥/Alt + → then moves it to the next column, the help bar shows.
-  await window.getByRole('button', { name: /Relire le contrat/ }).click();
-  await expect(window.getByRole('dialog')).toBeVisible();
-  await window.keyboard.press('Escape');
-  await expect(window.getByRole('button', { name: /Relire le contrat/ })).toBeFocused();
+  // Keyboard: open a card and close it (with the × button, then with Escape): the focus comes
+  // back to the card each time, with the help bar; ⌥/Alt + → then moves it to the next column.
+  for (const close of ['button', 'escape'] as const) {
+    await window.getByRole('button', { name: /Relire le contrat/ }).click();
+    await expect(window.getByRole('dialog')).toBeVisible();
+    if (close === 'escape') await window.keyboard.press('Escape');
+    else await window.getByRole('dialog').getByRole('button', { name: 'Fermer' }).click();
+    await expect(window.getByRole('dialog')).toBeHidden();
+    await expect(window.getByRole('button', { name: /Relire le contrat/ })).toBeFocused();
+    await expect(window.getByText('1 carte sélectionnée')).toBeVisible();
+  }
   await window.keyboard.press('Alt+ArrowRight');
   await expect
     .poll(() => cardTitles(window, 'En cours'))

@@ -31,7 +31,6 @@ import {
 } from '@renderer/shared/ui/dropdown-menu';
 import { PriorityBar } from '@renderer/shared/ui/priority-bars';
 import { Feedback } from '@renderer/shared/ui/toast';
-import { isUsingKeyboard } from '@renderer/shared/keyboard/focus';
 import { DatePicker } from './DatePicker';
 
 export type TaskChange = Omit<UpdateTaskInput, 'id'>;
@@ -220,13 +219,13 @@ export function TaskDetailView({
           onEscapeKeyDown={(event) => {
             if ((event.target as HTMLElement | null)?.closest('[data-escape-local]')) event.preventDefault();
           }}
-          // Give the focus back to the task's card (it may have moved column while the window was open),
-          // so ⌥/Alt + arrows work right after closing with Escape.
+          // Give the focus back to the task's card, visibly, however the window was closed (Escape,
+          // ×, click outside): ⌥/Alt + arrows then work right away. The card may have changed column.
           onCloseAutoFocus={(event) => {
             const card = document.querySelector<HTMLElement>(`[data-task-id="${task.id}"]`);
             if (!card) return;
             event.preventDefault();
-            card.focus({ focusVisible: isUsingKeyboard() } as FocusOptions);
+            card.focus({ focusVisible: true } as FocusOptions);
           }}
           className={cn(
             'fixed z-40 flex flex-col overflow-hidden bg-surface text-text outline-none',

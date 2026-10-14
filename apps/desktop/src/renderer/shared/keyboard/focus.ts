@@ -15,11 +15,6 @@ if (typeof window !== 'undefined') {
   window.addEventListener('pointerdown', () => (usingKeyboard = false), true);
 }
 
-/** True when the last input came from the keyboard (not the mouse). */
-export function isUsingKeyboard(): boolean {
-  return usingKeyboard;
-}
-
 /** Focus handlers for an element that shows the help bar while it has keyboard (not mouse) focus. */
 export function keyboardTargetHandlers(target: Exclude<KeyboardTarget, null>) {
   return {
