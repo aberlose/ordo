@@ -6,6 +6,7 @@ export const DRAG = {
   taskTarget: 'ordo/task-target',
   slot: 'ordo/task-slot',
   columnBody: 'ordo/column-body',
+  board: 'ordo/task-board',
 } as const;
 
 export interface TaskDragData {
@@ -53,3 +54,13 @@ export const useTaskDrag = create<TaskDragState>((set, get) => ({
   focused: () => set({ focus: null }),
   clearFlash: () => set({ flashTaskId: null }),
 }));
+
+/**
+ * Drop data for a whole column (header and empty space included) receiving a dragged card: the card
+ * goes below the last one, unless the slot is already open there. Less precision needed. The column
+ * element is also a column drop target, so the board merges both into one registration.
+ */
+export const cardDropDataForColumn = (columnId: string) => ({ type: DRAG.columnBody, columnId });
+
+/** Drop data for the board area: gaps between columns keep the slot where it is. */
+export const cardDropDataForBoard = () => ({ type: DRAG.board });

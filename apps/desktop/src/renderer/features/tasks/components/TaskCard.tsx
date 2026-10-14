@@ -53,7 +53,7 @@ export const TaskCard = memo(function TaskCard({
       {...cardFocus}
       className={cn(
         'flex w-full flex-col gap-2.25 rounded-card border border-border bg-surface px-3.5 pt-3 pb-2.75 text-left shadow-card transition-[transform,box-shadow,border-color,background-color] duration-150',
-        'cursor-pointer hover:-translate-y-px hover:border-border-strong hover:shadow-lift',
+        'cursor-pointer hover:-translate-y-px hover:border-border-strong hover:shadow-lift focus-visible:translate-y-0',
         (highlighted || flash) && 'border-accent/35 bg-accent-soft/70',
         pending && 'cursor-progress',
       )}

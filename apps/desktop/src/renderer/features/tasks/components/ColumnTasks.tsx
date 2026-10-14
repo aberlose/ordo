@@ -24,12 +24,10 @@ const HIGHLIGHT_MS = 1600;
 const ESTIMATED_CARD = 72;
 /** Gap between cards (px): `gap-2.5`, as in the board mockup. */
 const GAP = 10;
-/** Padding kept around the dragged card's snapshot so its shadow is not cut. */
-const PREVIEW_PADDING = 24;
-/** Drag preview (mockup drag-and-drop/CardDrag B: straight, accent border, strong shadow). */
-const PREVIEW_CLASSES = ['border-accent', 'shadow-drag'];
+/** Drag preview (mockup drag-and-drop/CardDrag B: straight, accent border; no shadow, asked 2026-10-14). */
+const PREVIEW_CLASSES = ['border-accent', 'shadow-none'];
 /** Classes of a card's transient states, dropped from its drag preview. */
-const TRANSIENT_CLASSES = ['bg-accent-soft/70', 'border-accent/35'];
+const TRANSIENT_CLASSES = ['bg-accent-soft/70', 'border-accent/35', 'shadow-card'];
 
 const ARROWS: Record<string, MoveDirection> = {
   ArrowUp: 'up',
@@ -114,8 +112,8 @@ const DraggableCard = memo(function DraggableCard({
           setCustomNativeDragPreview({
             nativeSetDragImage,
             getOffset: () => ({
-              x: location.current.input.clientX - rect.left + PREVIEW_PADDING,
-              y: location.current.input.clientY - rect.top + PREVIEW_PADDING,
+              x: location.current.input.clientX - rect.left,
+              y: location.current.input.clientY - rect.top,
             }),
             render: ({ container }) => {
               const clone = card.cloneNode(true) as HTMLElement;
@@ -123,7 +121,6 @@ const DraggableCard = memo(function DraggableCard({
               clone.style.transform = 'none';
               clone.classList.remove(...TRANSIENT_CLASSES);
               clone.classList.add(...PREVIEW_CLASSES);
-              container.style.padding = `${PREVIEW_PADDING}px`;
               container.appendChild(clone);
             },
           });
@@ -332,7 +329,7 @@ export const ColumnTasks = memo(function ColumnTasks({
 
   return (
     // Side and top padding offset by negative margins, bottom padding inside: room for the hover
-    // shadow and focus ring, which the scroll area would clip, without breaking the 24 px bottom gap.
+    // shadow and focus ring (4 px, plus the 1 px hover lift), which the scroll area would clip, without breaking the 24 px bottom gap.
     // The scroll padding keeps a focused card clear of the keyboard help bar.
     <div
       ref={scrollRef}
@@ -343,7 +340,7 @@ export const ColumnTasks = memo(function ColumnTasks({
         focusedId.current = null;
       }}
       className={cn(
-        '-mx-4 -mt-1 flex min-h-0 scroll-pb-16 flex-col gap-2.5 overflow-y-auto rounded-xl px-4 pt-1 pb-6 transition-colors',
+        '-mx-4 -mt-2 flex min-h-0 scroll-pb-16 flex-col gap-2.5 overflow-y-auto rounded-xl px-4 pt-2 pb-6 transition-colors',
         slotIndex !== null && 'bg-drop-tint',
       )}
     >

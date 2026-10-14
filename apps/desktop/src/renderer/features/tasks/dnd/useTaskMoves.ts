@@ -58,7 +58,8 @@ export function useTaskMoves(board: BoardDetail, tasksByColumn: ReadonlyMap<stri
       if (!inner) return state.setTarget(null);
       const type = inner.data['type'];
       const columnId = inner.data['columnId'] as string;
-      if (type === DRAG.slot) return;
+      // Over the slot itself or between columns: keep the slot where it is.
+      if (type === DRAG.slot || type === DRAG.board) return;
       if (type === DRAG.taskTarget) {
         const edge = extractClosestEdge(inner.data);
         const index = dropIndex(

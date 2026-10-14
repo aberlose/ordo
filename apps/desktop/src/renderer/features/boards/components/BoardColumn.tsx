@@ -7,7 +7,7 @@ import type { MoveDirection } from '@ordo/domain';
 import { Plus } from 'lucide-react';
 import { memo, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ColumnTasks, useTaskUi } from '@renderer/features/tasks';
+import { cardDropDataForColumn, ColumnTasks, isTaskDrag, useTaskUi } from '@renderer/features/tasks';
 import { keyboardTargetHandlers } from '@renderer/shared/keyboard/focus';
 import { altKey } from '@renderer/shared/lib/platform';
 import { columnColorVar } from '@renderer/shared/ui/colors';
@@ -15,7 +15,7 @@ import { ColumnIcon } from '@renderer/shared/ui/column-icon';
 import { COLUMN_DRAG, isColumnDrag, useColumnDrag } from '../dnd/useColumnMoves';
 
 /** Classes of the column drag preview (mockup drag-and-drop/ColumnDrag B: straight, accent outline). */
-const PREVIEW_CLASSES = ['rounded-xl', 'bg-canvas', 'p-2.5', 'shadow-drag', 'ring-[1.5px]', 'ring-accent'];
+const PREVIEW_CLASSES = ['rounded-xl', 'bg-canvas', 'p-2.5', 'ring-[1.5px]', 'ring-accent'];
 const PREVIEW_PADDING = 24;
 const PREVIEW_MAX_HEIGHT = 420;
 
@@ -81,14 +81,17 @@ export const BoardColumn = memo(
             });
           },
         }),
+        // One registration for both: columns reorder around it, cards land in it.
         dropTargetForElements({
           element,
-          canDrop: ({ source }) => isColumnDrag(source.data),
-          getData: ({ input }) =>
-            attachClosestEdge(
-              { type: COLUMN_DRAG.columnTarget, columnId: column.id },
-              { element, input, allowedEdges: ['left', 'right'] },
-            ),
+          canDrop: ({ source }) => isColumnDrag(source.data) || isTaskDrag(source.data),
+          getData: ({ input, source }) =>
+            isTaskDrag(source.data)
+              ? cardDropDataForColumn(column.id)
+              : attachClosestEdge(
+                  { type: COLUMN_DRAG.columnTarget, columnId: column.id },
+                  { element, input, allowedEdges: ['left', 'right'] },
+                ),
         }),
       );
     }, [column.id]);

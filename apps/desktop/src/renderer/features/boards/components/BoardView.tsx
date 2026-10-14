@@ -5,7 +5,14 @@ import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CARD_MOVE_HINT_ID, TaskDetail, useTaskMoves, useTaskUi } from '@renderer/features/tasks';
+import {
+  CARD_MOVE_HINT_ID,
+  cardDropDataForBoard,
+  isTaskDrag,
+  TaskDetail,
+  useTaskMoves,
+  useTaskUi,
+} from '@renderer/features/tasks';
 import { altKey } from '@renderer/shared/lib/platform';
 import { useResolvedMode, useAppearance } from '@renderer/shared/appearance/store';
 import { cn } from '@renderer/shared/lib/cn';
@@ -72,8 +79,10 @@ export function BoardView({ board }: BoardViewProps) {
       autoScrollForElements({ element }),
       dropTargetForElements({
         element,
-        canDrop: ({ source }) => source.data['type'] === COLUMN_DRAG.column,
-        getData: () => ({ type: COLUMN_DRAG.area }),
+        // Columns land past the last one; cards keep their slot while crossing the gaps.
+        canDrop: ({ source }) => source.data['type'] === COLUMN_DRAG.column || isTaskDrag(source.data),
+        getData: ({ source }) =>
+          isTaskDrag(source.data) ? cardDropDataForBoard() : { type: COLUMN_DRAG.area },
       }),
     );
   }, []);
@@ -139,7 +148,7 @@ export function BoardView({ board }: BoardViewProps) {
 
       <div
         ref={scrollerRef}
-        className="flex min-h-0 flex-1 items-start gap-7 overflow-x-auto px-6 pt-5.5 pb-6"
+        className="flex min-h-0 flex-1 items-stretch gap-7 overflow-x-auto px-6 pt-5.5 pb-6"
       >
         {columnsToShow.map((entry, index) => {
           if (entry === 'slot') return <ColumnSlot key="column-slot" />;
