@@ -48,6 +48,19 @@ export function columnRepository(db: Db): ColumnRepository {
       db.update(boardColumn).set(patch).where(eq(boardColumn.id, id)).run();
     },
 
+    lastRankInBoard: (boardId) =>
+      db
+        .select({ rank: boardColumn.rank })
+        .from(boardColumn)
+        .where(eq(boardColumn.boardId, boardId))
+        .orderBy(desc(boardColumn.rank))
+        .limit(1)
+        .get()?.rank ?? null,
+
+    softDelete: (id, now) => {
+      db.update(boardColumn).set({ deletedAt: now, updatedAt: now }).where(eq(boardColumn.id, id)).run();
+    },
+
     insertMany: (columns) => {
       if (columns.length > 0)
         db.insert(boardColumn)

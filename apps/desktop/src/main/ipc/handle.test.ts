@@ -29,6 +29,13 @@ function setup(overrides: Partial<Handlers> = {}) {
     'columns.move': () => {
       throw new Error('not used');
     },
+    'columns.create': () => {
+      throw new Error('not used');
+    },
+    'columns.update': () => {
+      throw new Error('not used');
+    },
+    'columns.delete': ({ id }) => ({ id, deletedTasks: 0 }),
     ...overrides,
   };
   registerHandlers(
