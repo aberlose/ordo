@@ -17,25 +17,26 @@ Rejected palettes (kept in the canvas history only): sage, encre, prune, nuit.
 
 ## Tokens
 
-| Token                                                               | Use                                                                                            |
-| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `--canvas`                                                          | Page background (solid fallback)                                                               |
-| `--canvas-bg`                                                       | Page background, may be a gradient                                                             |
-| `--surface`                                                         | Cards, popovers, inputs                                                                        |
-| `--side` / `--side-bg`                                              | Sidebar background (solid / may be a gradient)                                                 |
-| `--rail`                                                            | Soft fills (show more, highlighted rows)                                                       |
-| `--border`, `--border-strong`                                       | Hairlines, dashed placeholders                                                                 |
-| `--text`, `--text-2`, `--text-3`                                    | Primary, secondary, tertiary text                                                              |
-| `--accent`                                                          | Links, focus, active states                                                                    |
-| `--accent-bg`                                                       | Primary button background, may be a gradient                                                   |
-| `--accent-fg`                                                       | Text on the accent                                                                             |
-| `--accent-soft`                                                     | Selected/active background                                                                     |
-| `--danger`                                                          | Overdue dates, destructive actions                                                             |
-| `--side-text*`, `--side-active`, `--side-border`                    | Sidebar-scoped overrides (allows a dark sidebar in a light theme)                              |
-| `--shadow-card`, `--shadow-pop`, `--scrim`                          | Card shadow, floating elements, modal backdrop                                                 |
-| `--shadow-lift`, `--shadow-drag`                                    | Card on hover; card or column being dragged                                                    |
-| `--slot-border`, `--slot-fill`, `--drop-tint`                       | Drop slot (dashed) and the tint of the column a card is dragged over (derived from the accent) |
-| `--inverse`, `--inverse-fg`, `--inverse-danger`, `--inverse-accent` | Error toast in inverse colours (derived: text as background, canvas as text)                   |
+| Token                                                               | Use                                                                                                                                                                   |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--canvas`                                                          | Page background (solid fallback)                                                                                                                                      |
+| `--canvas-bg`                                                       | Page background, may be a gradient                                                                                                                                    |
+| `--surface`                                                         | Cards, popovers, inputs                                                                                                                                               |
+| `--side` / `--side-bg`                                              | Sidebar background (solid / may be a gradient)                                                                                                                        |
+| `--rail`                                                            | Soft fills (show more, highlighted rows)                                                                                                                              |
+| `--border`, `--border-strong`                                       | Hairlines, dashed placeholders                                                                                                                                        |
+| `--text`, `--text-2`, `--text-3`                                    | Primary, secondary, tertiary text                                                                                                                                     |
+| `--accent`                                                          | Links, focus, active states                                                                                                                                           |
+| `--accent-bg`                                                       | Primary button background, may be a gradient                                                                                                                          |
+| `--accent-fg`                                                       | Text on the accent                                                                                                                                                    |
+| `--accent-soft`                                                     | Selected/active background                                                                                                                                            |
+| `--danger`                                                          | Overdue dates, destructive actions                                                                                                                                    |
+| `--side-text*`, `--side-active`, `--side-border`                    | Sidebar-scoped overrides (allows a dark sidebar in a light theme)                                                                                                     |
+| `--shadow-card`, `--shadow-pop`, `--scrim`                          | Card shadow, floating elements, modal backdrop                                                                                                                        |
+| `--shadow-lift`, `--shadow-drag`                                    | Card on hover; card or column being dragged                                                                                                                           |
+| `--danger-fg`, `--danger-soft`, `--danger-line`                     | Text on a filled danger button; background and top border of a destructive confirmation (derived from `--danger`; the soft tint is 4 % in light, 8 % in dark, for AA) |
+| `--slot-border`, `--slot-fill`, `--drop-tint`                       | Drop slot (dashed) and the tint of the column a card is dragged over (derived from the accent)                                                                        |
+| `--inverse`, `--inverse-fg`, `--inverse-danger`, `--inverse-accent` | Error toast in inverse colours (derived: text as background, canvas as text)                                                                                          |
 
 ## Ciel — values
 
@@ -70,4 +71,5 @@ Ciel values were darkened on 2026-10-10 so text and accent reach WCAG AA (4.5:1)
 
 - Figtree 400/500/600/700, bundled; IBM Plex Mono for keyboard hints only.
 - Base 14 px; card title 14/500; meta 12; labels 11.5.
-- Radius: cards 10, buttons and inputs 8, tags 4, popovers 10, palette 14.
+- Radius: cards 10, buttons and inputs 8, tags 4, menus and date picker 10, settings popover 12 (`--radius-popover`), palette 14.
+- Sizes: column 296, settings popover 340 (`--spacing-popover`), icon grid of the column settings 148 high (`--spacing-icon-grid`).

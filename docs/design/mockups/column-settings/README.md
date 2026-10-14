@@ -23,4 +23,5 @@ Design canvas "Ordo — Maquettes", page "Colonnes — tour 1".
 | --- | --- | --- |
 | Deleting a column | **A** | The popover footer turns into the confirmation: "Supprimer « name » et ses N tâches ?" in danger, a reminder that tasks go to the trash (restorable 30 days), Annuler / Supprimer (danger filled). The column and its tasks go to the trash together. The last column of a board cannot be deleted |
 | Show less | **B** | Past the display limit the column ends with "Voir N de plus" (rail button, board mockup); once expanded, a "Replier" button (accent-soft, chevron up) sits in the column header, so it stays reachable in a long column. Not remembered across restarts |
+| Last column of a board | — | Decided 2026-10-14 (no mockup): "Supprimer" stays in place, dimmed (`aria-disabled`, still focusable), and a line under the footer buttons says "Un board garde au moins une colonne." |
 | New column defaults | — | From the approved popover: added at the right end, status type "En cours", no limit |
