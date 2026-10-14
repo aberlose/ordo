@@ -60,8 +60,12 @@ test('move cards and columns with the mouse and the keyboard, and keep the order
   );
   await expect.poll(() => cardTitles(window, 'À faire')).toEqual(['Préparer la démo', 'Relire le contrat']);
 
-  // Keyboard: ⌥/Alt + → moves the focused card to the next column, the help bar shows.
-  await window.getByRole('button', { name: /Relire le contrat/ }).focus();
+  // Keyboard: open a card and close it with Escape, the focus comes back to the card;
+  // ⌥/Alt + → then moves it to the next column, the help bar shows.
+  await window.getByRole('button', { name: /Relire le contrat/ }).click();
+  await expect(window.getByRole('dialog')).toBeVisible();
+  await window.keyboard.press('Escape');
+  await expect(window.getByRole('button', { name: /Relire le contrat/ })).toBeFocused();
   await window.keyboard.press('Alt+ArrowRight');
   await expect
     .poll(() => cardTitles(window, 'En cours'))
