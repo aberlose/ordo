@@ -11,12 +11,15 @@ interface TaskUiState {
   quickAddRequest: number;
   /** Task just created by quick add, briefly highlighted. */
   highlightedTaskId: string | null;
+  /** Columns showing every task past their display limit ("Voir N de plus"); not remembered across restarts. */
+  expandedColumnIds: ReadonlySet<string>;
   openTask: (id: string) => void;
   closeTask: () => void;
   toggleExpanded: () => void;
   openQuickAdd: (columnId: string) => void;
   closeQuickAdd: () => void;
   highlight: (id: string | null) => void;
+  setColumnExpanded: (columnId: string, expanded: boolean) => void;
 }
 
 /** Ephemeral UI state for tasks (never persisted). */
@@ -26,6 +29,7 @@ export const useTaskUi = create<TaskUiState>((set) => ({
   quickAddColumnId: null,
   quickAddRequest: 0,
   highlightedTaskId: null,
+  expandedColumnIds: new Set(),
   openTask: (id) => set({ openTaskId: id }),
   closeTask: () => set({ openTaskId: null, expanded: false }),
   toggleExpanded: () => set((state) => ({ expanded: !state.expanded })),
@@ -33,4 +37,12 @@ export const useTaskUi = create<TaskUiState>((set) => ({
     set((state) => ({ quickAddColumnId: columnId, quickAddRequest: state.quickAddRequest + 1 })),
   closeQuickAdd: () => set({ quickAddColumnId: null }),
   highlight: (id) => set({ highlightedTaskId: id }),
+  setColumnExpanded: (columnId, expanded) =>
+    set((state) => {
+      if (state.expandedColumnIds.has(columnId) === expanded) return state;
+      const next = new Set(state.expandedColumnIds);
+      if (expanded) next.add(columnId);
+      else next.delete(columnId);
+      return { expandedColumnIds: next };
+    }),
 }));

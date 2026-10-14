@@ -1,7 +1,14 @@
 import type { BoardDetail, Task } from '@ordo/contracts';
 import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { extractClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
-import { dropIndex, isSamePlace, keyboardTaskMove, placeAt, type MoveDirection } from '@ordo/domain';
+import {
+  dropIndex,
+  isPastDisplayLimit,
+  isSamePlace,
+  keyboardTaskMove,
+  placeAt,
+  type MoveDirection,
+} from '@ordo/domain';
 import { useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFeedback } from '@renderer/shared/feedback/store';
@@ -38,6 +45,10 @@ export function useTaskMoves(board: BoardDetail, tasksByColumn: ReadonlyMap<stri
         .getState()
         .announce(t('dnd.taskMoved', { column: column?.name ?? '', position: placement.index + 1, total }));
       useTaskUi.getState().highlight(null);
+      // A card landing past the display limit stays visible: the column expands.
+      if (column && isPastDisplayLimit(placement.index, column.displayLimit)) {
+        useTaskUi.getState().setColumnExpanded(toColumnId, true);
+      }
       useTaskDrag.getState().moved(taskId, focus ? toColumnId : null);
     },
     // idsOf reads the latest board through a ref.

@@ -1,6 +1,6 @@
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
-import type { ButtonHTMLAttributes } from 'react';
+import type { ComponentProps } from 'react';
 import { cn } from '../lib/cn';
 
 const buttonVariants = cva(
@@ -12,6 +12,7 @@ const buttonVariants = cva(
         secondary: 'border border-border bg-surface text-text hover:bg-rail',
         ghost: 'text-text-2 hover:bg-rail',
         soft: 'bg-accent-soft text-accent font-semibold hover:brightness-95',
+        danger: 'bg-danger text-danger-fg font-semibold hover:brightness-105',
       },
       size: {
         sm: 'h-8 px-3',
@@ -23,8 +24,7 @@ const buttonVariants = cva(
   },
 );
 
-export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+export interface ButtonProps extends ComponentProps<'button'>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 

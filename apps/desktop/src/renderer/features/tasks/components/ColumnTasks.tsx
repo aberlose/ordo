@@ -4,7 +4,7 @@ import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-d
 import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview';
 import { attachClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
-import type { MoveDirection } from '@ordo/domain';
+import { visibleCount, type MoveDirection } from '@ordo/domain';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
 import { Plus } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, type KeyboardEvent } from 'react';
@@ -238,6 +238,7 @@ export const ColumnTasks = memo(function ColumnTasks({
   emptyHint,
   onKeyboardMove,
 }: ColumnTasksProps) {
+  const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   /** Card holding the focus: kept rendered even when scrolled out of the virtual window. */
   const focusedId = useRef<string | null>(null);
@@ -265,11 +266,18 @@ export const ColumnTasks = memo(function ColumnTasks({
   const { openQuickAdd, closeQuickAdd, openTask, highlight } = useTaskUi.getState();
   const create = useCreateTask(boardId);
 
-  const rows = useMemo<Row[]>(() => {
-    const cards: Row[] = tasks.filter((t) => t.id !== draggingId).map((task) => ({ kind: 'card', task }));
+  const expanded = useTaskUi((state) => state.expandedColumnIds.has(column.id));
+
+  // Past the display limit the column ends with "Voir N de plus" until expanded (mockup column-settings/ColumnStates B).
+  const { rows, hidden } = useMemo(() => {
+    const remaining = tasks.filter((t) => t.id !== draggingId);
+    const { shown, hidden } = expanded
+      ? { shown: remaining.length, hidden: 0 }
+      : visibleCount(remaining.length, column.displayLimit);
+    const cards: Row[] = remaining.slice(0, shown).map((task) => ({ kind: 'card', task }));
     if (slotIndex !== null) cards.splice(Math.min(slotIndex, cards.length), 0, { kind: 'slot' });
-    return cards;
-  }, [tasks, draggingId, slotIndex]);
+    return { rows: cards, hidden };
+  }, [tasks, draggingId, slotIndex, expanded, column.displayLimit]);
 
   // TanStack Virtual returns functions the React Compiler cannot memoise; this component is memoised by hand.
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -377,6 +385,21 @@ export const ColumnTasks = memo(function ColumnTasks({
           })}
         </div>
       )}
+      {hidden > 0 && (
+        <button
+          type="button"
+          onClick={(event) => {
+            // From the keyboard, the focus goes to the first card revealed (the button disappears).
+            const first = event.detail === 0 ? rows.filter((r) => r.kind === 'card').length : -1;
+            const revealed = tasks.filter((t) => t.id !== draggingId)[first];
+            useTaskUi.getState().setColumnExpanded(column.id, true);
+            if (revealed) useTaskDrag.setState({ focus: { taskId: revealed.id, columnId: column.id } });
+          }}
+          className="flex h-8.5 shrink-0 cursor-pointer items-center justify-center rounded-card bg-rail text-meta text-text-2 hover:text-text"
+        >
+          {t('column.showMore', { count: hidden })}
+        </button>
+      )}
       {(open || emptyHint === null) && (
         <QuickAdd
           open={open}
@@ -385,6 +408,10 @@ export const ColumnTasks = memo(function ColumnTasks({
           onClose={closeQuickAdd}
           onSubmit={(title) => {
             const tempId = `${TEMP_ID_PREFIX}${++tempCounter}`;
+            // The new task goes to the bottom: show it even past the display limit.
+            if (column.displayLimit !== null && tasks.length >= column.displayLimit) {
+              useTaskUi.getState().setColumnExpanded(column.id, true);
+            }
             highlight(tempId);
             create.mutate(
               { columnId: column.id, title, tempId },

@@ -251,10 +251,17 @@
   --slot-fill: color-mix(in srgb, var(--accent-soft) 60%, transparent);
   --drop-tint: color-mix(in srgb, var(--accent-soft) 55%, transparent);
   --shadow-drag: 0 18px 40px rgb(15 26 51 / 0.22), 0 3px 8px rgb(15 26 51 / 0.1);
+  /* Destructive confirmation (mockup column-settings/ColumnStates A). */
+  --danger-fg: #ffffff;
+  --danger-soft: color-mix(in srgb, var(--danger) 4%, var(--surface));
+  --danger-line: color-mix(in srgb, var(--danger) 30%, var(--border));
 }
 
 :root[data-mode='dark'] {
   --inverse-danger: color-mix(in srgb, var(--danger) 70%, black);
   --inverse-accent: color-mix(in srgb, var(--accent) 65%, black);
   --shadow-drag: 0 18px 40px rgb(0 0 0 / 0.65), 0 3px 8px rgb(0 0 0 / 0.4);
+  --danger-fg: #1a0705;
+  /* The mockup's 8 % tint keeps AA in dark; light needs 4 % for 13 px danger text. */
+  --danger-soft: color-mix(in srgb, var(--danger) 8%, var(--surface));
 }
