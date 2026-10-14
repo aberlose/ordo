@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CHANNELS } from './channels';
 import { contract } from './contract';
 import { CreateBoardInput } from './boards';
+import { CreateColumnInput, UpdateColumnInput } from './columns';
 import { CreateTaskInput, UpdateTaskInput } from './tasks';
 
 describe('contract', () => {
@@ -35,5 +36,30 @@ describe('task inputs', () => {
     expect(UpdateTaskInput.safeParse({ id, priority: 6 }).success).toBe(false);
     expect(UpdateTaskInput.safeParse({ id, dueDate: '2026-02-30' }).success).toBe(false);
     expect(UpdateTaskInput.safeParse({ id, color: 'red' }).success).toBe(false);
+  });
+});
+
+describe('column inputs', () => {
+  const id = '0192f0a0-0000-7000-8000-000000000001';
+  const base = {
+    boardId: id,
+    name: ' En revue ',
+    icon: 'eye',
+    color: 'violet',
+    category: 'in_progress',
+    displayLimit: null,
+  };
+
+  it('validates a new column', () => {
+    expect(CreateColumnInput.parse(base).name).toBe('En revue');
+    expect(CreateColumnInput.safeParse({ ...base, displayLimit: 0 }).success).toBe(false);
+    expect(CreateColumnInput.safeParse({ ...base, color: '#ff0000' }).success).toBe(false);
+    expect(CreateColumnInput.safeParse({ ...base, icon: '<svg>' }).success).toBe(false);
+  });
+
+  it('accepts partial updates only', () => {
+    expect(UpdateColumnInput.safeParse({ id, displayLimit: 8 }).success).toBe(true);
+    expect(UpdateColumnInput.safeParse({ id, displayLimit: null }).success).toBe(true);
+    expect(UpdateColumnInput.safeParse({ id }).success).toBe(false);
   });
 });
