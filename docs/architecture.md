@@ -24,8 +24,10 @@ packages/contracts (channels + Zod schemas + types) is imported by renderer, pre
 1. The screen updates the TanStack Query cache immediately (optimistic).
 2. The IPC client calls `tasks.move({ taskId, toColumnId, beforeId, afterId })`.
 3. The main-process adapter validates the input with the contract's Zod schema.
-4. The `moveTask` use case asks the domain for a rank between the neighbours and writes the single row in a transaction.
-5. On error the cache rolls back and a toast is shown.
+4. The `moveTask` use case checks the neighbours, ranks the task between `before` and its true successor in the database (so a stale client can never create a duplicate rank) and writes the single row in a transaction. `columns.move` works the same way for columns.
+5. On error the board is reloaded from the database (moves can overlap, so no snapshot rollback) and the error toast offers to retry.
+
+Columns are virtualised (TanStack Virtual): only the visible cards plus a small overscan are in the DOM; the focused card is always kept rendered. `e2e/performance.spec.ts` seeds 10,000 tasks and checks the cold-start budget, the virtualisation and a keyboard move.
 
 ## Folder structure
 

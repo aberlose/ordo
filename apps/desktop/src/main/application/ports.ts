@@ -53,6 +53,9 @@ export interface ColumnRepository {
   listByBoard(boardId: string): ColumnRecord[];
   findById(id: string): ColumnRecord | null;
   insertMany(columns: readonly ColumnRecord[]): void;
+  update(id: string, patch: Partial<Pick<ColumnRecord, 'rank'>> & { readonly updatedAt: number }): void;
+  /** The rank right after or right before `rank` among the board's columns, `excludeId` ignored. */
+  adjacentRankInBoard(boardId: string, rank: Rank, side: 'after' | 'before', excludeId: string): Rank | null;
 }
 
 export interface TaskRecord {
@@ -82,6 +85,16 @@ export interface TaskRepository {
   findById(id: string): TaskRecord | null;
   /** Highest rank in the column, deleted tasks included (a restored task must not collide). */
   lastRankInColumn(columnId: string): Rank | null;
+  /**
+   * The rank right after (`'after'`) or right before (`'before'`) `rank` in the column, deleted tasks
+   * included and `excludeId` ignored: the true neighbour, whatever the client believed.
+   */
+  adjacentRankInColumn(
+    columnId: string,
+    rank: Rank,
+    side: 'after' | 'before',
+    excludeId: string,
+  ): Rank | null;
   /** Highest key ever given on the board, deleted tasks included (keys are never reused). */
   maxKey(boardId: string): number | null;
   insert(task: TaskRecord): void;

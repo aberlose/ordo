@@ -21,12 +21,20 @@
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
   --color-scrim: var(--scrim);
+  --color-inverse: var(--inverse);
+  --color-inverse-fg: var(--inverse-fg);
+  --color-inverse-danger: var(--inverse-danger);
+  --color-inverse-accent: var(--inverse-accent);
+  --color-slot-border: var(--slot-border);
+  --color-slot-fill: var(--slot-fill);
+  --color-drop-tint: var(--drop-tint);
   --color-kbd-on-accent: var(--kbd-on-accent);
   --color-tint-violet: var(--tint-violet);
   --color-col-violet: var(--col-violet);
   --shadow-card: var(--shadow-card);
   --shadow-lift: var(--shadow-lift);
   --shadow-pop: var(--shadow-pop);
+  --shadow-drag: var(--shadow-drag);
 
   /* Type scale from the approved mockups (px). */
   --text-kbd: 11px;

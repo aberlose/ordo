@@ -10,6 +10,8 @@ export const CHANNELS = [
   'tasks.create',
   'tasks.update',
   'tasks.delete',
+  'tasks.move',
+  'columns.move',
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
 

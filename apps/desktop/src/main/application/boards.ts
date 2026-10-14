@@ -1,6 +1,7 @@
 import type { BoardDetail, BoardSummary, CreateBoardInput } from '@ordo/contracts';
 import { DEFAULT_COLUMNS, rankBetween, ranksAfter } from '@ordo/domain';
 import { NotFoundError } from './errors';
+import { toColumn } from './columns';
 import { toTask } from './tasks';
 import type {
   BoardRepository,
@@ -34,15 +35,7 @@ function toDetail(
 ): BoardDetail {
   return {
     ...toSummary(board),
-    columns: columns.map((c) => ({
-      id: c.id,
-      name: c.name,
-      icon: c.icon,
-      color: c.color,
-      category: c.category,
-      displayLimit: c.displayLimit,
-      rank: c.rank,
-    })),
+    columns: columns.map(toColumn),
     tasks: tasks.map(toTask),
   };
 }

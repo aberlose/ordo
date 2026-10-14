@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Feedback } from '@renderer/shared/ui/toast';
 import {
   BoardView,
   FirstLaunch,
@@ -34,6 +35,7 @@ function Layout() {
         onSelectBoard={(boardId) => void navigate({ to: '/boards/$boardId', params: { boardId } })}
       />
       <Outlet />
+      <Feedback />
     </div>
   );
 }

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — réordonner les colonnes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lt{--canvas:#F2F6FF;--surface:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#5F6B88;--accent:#1A52E6;--accent-soft:#E2EBFF;--shadow:0 1px 3px rgba(15,26,51,.06),0 1px 1px rgba(15,26,51,.04);--drag:0 18px 40px rgba(15,26,51,.22),0 3px 8px rgba(15,26,51,.10)}
+.dk{--canvas:#0A1020;--surface:#121B30;--rail:#172340;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7B8BAB;--accent:#5B8CFF;--accent-soft:#16294F;--shadow:0 1px 3px rgba(0,0,0,.5);--drag:0 18px 40px rgba(0,0,0,.65),0 3px 8px rgba(0,0,0,.4)}
+.mini{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow);font-size:13px;font-weight:500;line-height:1.35}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 28px 32px; display: flex; flex-direction: column; gap: 26px; background: #F7F8FB; font-family: 'Figtree', system-ui, sans-serif; font-size: 14px; color: #0F1A33">
+
+<sc-for list="{{variants}}" as="v" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">{{v.title}}</h2>
+<p style="margin: 0; font-size: 13px; color: #465472; line-height: 1.5">{{v.desc}}</p>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="{{th.cls}}" style="position: relative; height: 330px; overflow: hidden; background: var(--canvas); color: var(--text); border-radius: 14px; border: 1px solid var(--border); padding: 16px 20px; box-sizing: border-box">
+<div style="font-size: 11.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px">{{th.name}}</div>
+<div style="display: flex; gap: 20px; align-items: stretch; height: 250px">
+<sc-for list="{{v.items}}" as="it" hint-placeholder-count="3">
+<sc-if value="{{it.isLine}}" hint-placeholder-val="{{false}}">
+<div style="position: relative; width: 2px; margin: 0 -11px; border-radius: 1px; background: var(--accent)"><span style="position: absolute; top: -4px; left: -3px; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--accent); background: var(--canvas); box-sizing: border-box"></span></div>
+</sc-if>
+<sc-if value="{{it.isSlot}}" hint-placeholder-val="{{false}}">
+<div style="width: 180px; flex-shrink: 0; border-radius: 12px; border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent-soft) 55%, transparent)"></div>
+</sc-if>
+<sc-if value="{{it.isCol}}" hint-placeholder-val="{{true}}">
+<section style="width: 180px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; opacity: {{it.opacity}}">
+<div style="display: flex; align-items: center; gap: 8px; padding: 0 2px 9px; border-bottom: 2px solid {{it.c}}; cursor: {{it.cursor}}">
+<sc-if value="{{it.grip}}" hint-placeholder-val="{{false}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="var(--text-3)" aria-hidden="true" style="margin-left: -4px"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></sc-if>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{it.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{it.icon}}"/></svg>
+<h3 style="margin: 0; font-size: 13.5px; font-weight: 600">{{it.name}}</h3>
+<span style="font-size: 12.5px; color: var(--text-3)">{{it.count}}</span>
+</div>
+<sc-for list="{{it.cards}}" as="c" hint-placeholder-count="2"><div class="mini">{{c}}</div></sc-for>
+</section>
+</sc-if>
+</sc-for>
+</div>
+
+<section aria-hidden="true" style="position: absolute; left: {{v.px}}; top: 58px; width: 180px; display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; background: var(--canvas); border: 1.5px solid var(--accent); box-shadow: var(--drag); transform: {{v.tf}}; pointer-events: none">
+<div style="display: flex; align-items: center; gap: 8px; padding: 0 2px 9px; border-bottom: 2px solid #16A34A">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12l3 3 5-6"/></svg>
+<h3 style="margin: 0; font-size: 13.5px; font-weight: 600">Terminé</h3><span style="font-size: 12.5px; color: var(--text-3)">2</span>
+</div>
+<div class="mini">Choisir l'hébergeur</div>
+<div class="mini">Relire le contrat</div>
+</section>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+const INBOX = 'M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z';
+const PLAY = 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM10 8.5v7l5.5-3.5z';
+const CHECK = 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8 12l3 3 5-6';
+const col = (name, c, icon, cards, extra) => ({ isCol: true, isLine: false, isSlot: false, name, c, icon, cards, count: cards.length, opacity: 1, grip: false, cursor: 'default', ...extra });
+const TODO = (x) => col('À faire', '#78716C', INBOX, ['Mettre à jour les dépendances', 'Préparer la démo'], x);
+const DOING = (x) => col('En cours', '#2563EB', PLAY, ['Intégrer le nouveau header'], x);
+const DONE = (x) => col('Terminé', '#16A34A', CHECK, ['Choisir l’hébergeur', 'Relire le contrat'], x);
+const LINE = { isCol: false, isLine: true, isSlot: false };
+const SLOT = { isCol: false, isLine: false, isSlot: true };
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      themes: [{ cls: 'lt', name: 'Clair' }, { cls: 'dk', name: 'Sombre' }],
+      variants: [
+        { title: 'A · Poignée et ligne verticale', desc: 'Une poignée ⋮⋮ apparaît au survol de l’en-tête : on attrape la colonne par là. Elle reste estompée à sa place, une ligne verticale montre où elle ira. Au clavier : ⌥ ← → sur l’en-tête focalisé.',
+          items: [TODO(), LINE, DOING(), DONE({ opacity: 0.35, grip: true })], px: '150px', tf: 'rotate(1.5deg)' },
+        { title: 'B · Tout l’en-tête se saisit', desc: 'Pas de poignée : on attrape l’en-tête entier (curseur main). La colonne quitte sa place et un emplacement en pointillés s’ouvre à l’arrivée ; les autres colonnes glissent. Même raccourci clavier.',
+          items: [TODO(), SLOT, DOING({ cursor: 'grab' })], px: '236px', tf: 'none' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

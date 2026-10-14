@@ -5,7 +5,7 @@ This file is the entry point for every coding agent. Read it fully before any ch
 
 ## Status
 
-Milestones 1 (mockups) and 2 (skeleton) are done: approved mockups are in `docs/design/mockups/`, tokens in `docs/design/tokens.md`. Milestone 3 (MVP) is in progress, one lot per PR: lot 1 (tasks: quick add, cards, detail window) is done.
+Milestones 1 (mockups) and 2 (skeleton) are done: approved mockups are in `docs/design/mockups/`, tokens in `docs/design/tokens.md`. Milestone 3 (MVP) is in progress, one lot per PR: lot 1 (tasks: quick add, cards, detail window) and lot 2 (drag and drop, keyboard moves, virtualised columns, error toast) are done.
 See `docs/roadmap.md`.
 
 ## Stack (decided — see `docs/adr/`)
@@ -15,7 +15,7 @@ See `docs/roadmap.md`.
 - SQLite via better-sqlite3 (WAL, FTS5), Drizzle ORM + drizzle-kit migrations
 - Typed IPC contract in `packages/contracts`, validated with Zod in the main process
 - React 19, TanStack Query, TanStack Router (memory history), TanStack Virtual, Zustand (ephemeral UI state only)
-- shadcn/ui (Radix) + Tailwind CSS, Lucide icons, cmdk, Tiptap editor, Pragmatic drag and drop, react-day-picker (shadcn Calendar)
+- shadcn/ui (Radix) + Tailwind CSS, Lucide icons, cmdk, Tiptap editor, Pragmatic drag and drop (core, hitbox, auto-scroll), react-day-picker (shadcn Calendar)
 - i18next + react-i18next (French default, English), date-fns
 - Vitest, Testing Library, Playwright (Electron), Storybook, ESLint, Prettier, dependency-cruiser, GitHub Actions (macOS + Windows)
 

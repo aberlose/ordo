@@ -241,4 +241,20 @@
   /* Keyboard hint drawn on the accent button. */
   --kbd-on-accent: rgb(255 255 255 / 0.2);
   --tint-violet: color-mix(in srgb, var(--col-violet) 12%, var(--surface));
+  /* Inverse surface (error toast): the text colour as background (mockup drag-and-drop/Toast A). */
+  --inverse: var(--text);
+  --inverse-fg: var(--canvas);
+  --inverse-danger: color-mix(in srgb, var(--danger) 55%, white);
+  --inverse-accent: color-mix(in srgb, var(--accent) 50%, white);
+  /* Drop slot and target column tint (mockup drag-and-drop/CardDrag B). */
+  --slot-border: color-mix(in srgb, var(--accent) 55%, transparent);
+  --slot-fill: color-mix(in srgb, var(--accent-soft) 60%, transparent);
+  --drop-tint: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+  --shadow-drag: 0 18px 40px rgb(15 26 51 / 0.22), 0 3px 8px rgb(15 26 51 / 0.1);
+}
+
+:root[data-mode='dark'] {
+  --inverse-danger: color-mix(in srgb, var(--danger) 70%, black);
+  --inverse-accent: color-mix(in srgb, var(--accent) 65%, black);
+  --shadow-drag: 0 18px 40px rgb(0 0 0 / 0.65), 0 3px 8px rgb(0 0 0 / 0.4);
 }

@@ -1,5 +1,5 @@
 import type { Priority } from '@ordo/domain';
-import { and, asc, desc, eq, isNull, max } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNull, lt, max, ne } from 'drizzle-orm';
 import type { TaskRecord, TaskRepository } from '../../application/ports';
 import type { Db } from '../db/client';
 import { task } from '../db/schema';
@@ -52,6 +52,21 @@ export function taskRepository(db: Db): TaskRepository {
         .from(task)
         .where(eq(task.columnId, columnId))
         .orderBy(desc(task.rank))
+        .limit(1)
+        .get()?.rank ?? null,
+
+    adjacentRankInColumn: (columnId, rank, side, excludeId) =>
+      db
+        .select({ rank: task.rank })
+        .from(task)
+        .where(
+          and(
+            eq(task.columnId, columnId),
+            ne(task.id, excludeId),
+            side === 'after' ? gt(task.rank, rank) : lt(task.rank, rank),
+          ),
+        )
+        .orderBy(side === 'after' ? asc(task.rank) : desc(task.rank))
         .limit(1)
         .get()?.rank ?? null,
 

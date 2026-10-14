@@ -1,6 +1,7 @@
-import type { CreateTaskInput, Task, UpdateTaskInput } from '@ordo/contracts';
+import type { CreateTaskInput, MoveTaskInput, Task, UpdateTaskInput } from '@ordo/contracts';
 import {
   areDatesOrdered,
+  rankBetween,
   completionAfterMove,
   DEFAULT_PRIORITY,
   nextTaskKey,
@@ -112,6 +113,53 @@ export function makeTaskUseCases({ tasks, columns, tx, clock, ids }: TaskUseCase
           throw new RuleViolationError('The due date cannot be before the start date');
         }
 
+        tasks.update(current.id, patch);
+        return toTask({ ...current, ...patch });
+      }),
+
+    /**
+     * Drag and drop or ⌥/Alt + arrows: rank the task between its new neighbours in the target
+     * column (one row written). Neighbours must be live top-level tasks of that column, in order.
+     */
+    moveTask: (input: MoveTaskInput): Task =>
+      tx.run(() => {
+        const current = requireTask(input.taskId);
+        if (current.parentId !== null) throw new RuleViolationError('Sub-tasks are not moved on the board');
+        const target = requireColumn(input.toColumnId);
+        if (target.boardId !== current.boardId) {
+          throw new RuleViolationError('A task cannot move to another board');
+        }
+        const neighbour = (id: string | null) => {
+          if (id === null) return null;
+          if (id === current.id) throw new RuleViolationError('A task cannot be its own neighbour');
+          const task = requireTask(id);
+          if (task.columnId !== target.id || task.parentId !== null) {
+            throw new RuleViolationError('Neighbours must be tasks of the target column');
+          }
+          return task;
+        };
+        const before = neighbour(input.beforeId);
+        const after = neighbour(input.afterId);
+        if (before && after && before.rank >= after.rank) {
+          throw new RuleViolationError('Neighbours are out of order');
+        }
+        // Rank against the true neighbours in the database: a stale client can never produce a
+        // duplicate rank. "Just after `before`" wins; "just before `after`" when there is no `before`.
+        const rank = before
+          ? rankBetween(before.rank, tasks.adjacentRankInColumn(target.id, before.rank, 'after', current.id))
+          : after
+            ? rankBetween(tasks.adjacentRankInColumn(target.id, after.rank, 'before', current.id), after.rank)
+            : rankAtEnd(tasks.lastRankInColumn(target.id));
+        const now = clock.now();
+        const patch = {
+          columnId: target.id,
+          rank,
+          completedAt:
+            target.id === current.columnId
+              ? current.completedAt
+              : completionAfterMove(current.completedAt, target.category === 'done', now),
+          updatedAt: now,
+        };
         tasks.update(current.id, patch);
         return toTask({ ...current, ...patch });
       }),

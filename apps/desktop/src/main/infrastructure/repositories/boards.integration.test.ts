@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { makeBoardUseCases } from '../../application/boards';
+import { makeColumnUseCases } from '../../application/columns';
 import { makeTaskUseCases } from '../../application/tasks';
 import { openDatabase, type OpenedDatabase } from '../db/client';
 import { sqliteTransactor } from '../db/transactor';
@@ -80,5 +81,38 @@ describe('tasks on SQLite', () => {
     tasks.deleteTask(a.id);
     expect(boards.getBoard(board.id).tasks.map((t) => t.id)).toEqual([b.id]);
     expect(tasks.createTask({ columnId: todo, title: 'Encore' }).key).toBe(3);
+  });
+});
+
+describe('moves on SQLite', () => {
+  it('reorders tasks and columns', () => {
+    opened = openDatabase(':memory:', migrations);
+    const ports = {
+      columns: columnRepository(opened.db),
+      tasks: taskRepository(opened.db),
+      tx: sqliteTransactor(opened.sqlite),
+      clock: { now: () => Date.now() },
+      ids: uuidv7Generator(),
+    };
+    const boards = makeBoardUseCases({ ...ports, boards: boardRepository(opened.db) });
+    const tasks = makeTaskUseCases(ports);
+    const columns = makeColumnUseCases(ports);
+    const board = boards.createBoard({ name: 'Perso', columnNames: ['À faire', 'En cours', 'Terminé'] });
+    const [todo, doing, done] = board.columns.map((c) => c.id) as [string, string, string];
+    const a = tasks.createTask({ columnId: todo, title: 'A' });
+    const b = tasks.createTask({ columnId: todo, title: 'B' });
+
+    tasks.moveTask({ taskId: b.id, toColumnId: todo, beforeId: null, afterId: a.id });
+    tasks.moveTask({ taskId: a.id, toColumnId: doing, beforeId: null, afterId: null });
+    columns.moveColumn({ columnId: done, beforeId: null, afterId: todo });
+
+    const read = boards.getBoard(board.id);
+    expect(read.columns.map((c) => c.id)).toEqual([done, todo, doing]);
+    expect(read.tasks.map((t) => [t.title, t.columnId])).toEqual(
+      expect.arrayContaining([
+        ['B', todo],
+        ['A', doing],
+      ]),
+    );
   });
 });

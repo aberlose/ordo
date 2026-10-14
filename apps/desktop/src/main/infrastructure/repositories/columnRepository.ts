@@ -1,5 +1,5 @@
 import type { ColumnColor } from '@ordo/domain';
-import { and, asc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, isNull, lt, ne } from 'drizzle-orm';
 import type { ColumnRecord, ColumnRepository } from '../../application/ports';
 import type { Db } from '../db/client';
 import { boardColumn } from '../db/schema';
@@ -27,6 +27,25 @@ export function columnRepository(db: Db): ColumnRepository {
         .where(and(eq(boardColumn.id, id), isNull(boardColumn.deletedAt)))
         .get();
       return row ? toRecord(row) : null;
+    },
+
+    adjacentRankInBoard: (boardId, rank, side, excludeId) =>
+      db
+        .select({ rank: boardColumn.rank })
+        .from(boardColumn)
+        .where(
+          and(
+            eq(boardColumn.boardId, boardId),
+            ne(boardColumn.id, excludeId),
+            side === 'after' ? gt(boardColumn.rank, rank) : lt(boardColumn.rank, rank),
+          ),
+        )
+        .orderBy(side === 'after' ? asc(boardColumn.rank) : desc(boardColumn.rank))
+        .limit(1)
+        .get()?.rank ?? null,
+
+    update: (id, patch) => {
+      db.update(boardColumn).set(patch).where(eq(boardColumn.id, id)).run();
     },
 
     insertMany: (columns) => {

@@ -24,8 +24,8 @@
     "priority": "Priority",
     "tags": "Tags",
     "due": "Due date",
-    "taskCount_one": "{{count}} task",
-    "taskCount_other": "{{count}} tasks",
+    "taskCount_one": "{{count, number}} task",
+    "taskCount_other": "{{count, number}} tasks",
     "newColumn": "New column",
     "loadError": "This board could not be loaded.",
     "toggleTheme": "Toggle theme"
@@ -87,5 +87,35 @@
     "notBefore": "Not before {{date}}",
     "notAfter": "Not after {{date}}",
     "unreadable": "Unrecognised date ({{pattern}})"
+  },
+  "feedback": {
+    "retry": "Retry",
+    "close": "Close",
+    "failed": {
+      "create": "Not saved: the new task was removed.",
+      "update": "Change not saved: the previous value is back.",
+      "delete": "Not deleted: the task is back.",
+      "move": "Move not saved: the card went back to its place.",
+      "moveColumn": "Move not saved: the column went back to its place."
+    }
+  },
+  "dnd": {
+    "taskMoved": "Moved to {{column}}, position {{position}} of {{total}}",
+    "columnMoved": "Column {{column}} moved to position {{position}} of {{total}}",
+    "column": {
+      "role": "movable column",
+      "label_one": "{{column}}, {{count}} task. {{alt}} + left and right arrows to move the column.",
+      "label_other": "{{column}}, {{count}} tasks. {{alt}} + left and right arrows to move the column."
+    },
+    "help": {
+      "cardSelected": "1 card selected",
+      "columnSelected": "1 column selected",
+      "order": "<kbd>{{alt}}</kbd> <kbd>↑↓</kbd> order",
+      "column": "<kbd>{{alt}}</kbd> <kbd>←→</kbd> column",
+      "open": "<kbd>Enter</kbd> open",
+      "moveColumn": "<kbd>{{alt}}</kbd> <kbd>←→</kbd> move"
+    },
+    "cardHint": "{{alt}} + arrows: move the card. Enter: open.",
+    "edge": "Cannot move further"
   }
 }

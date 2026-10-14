@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import type { Channel } from './channels';
 import type { Result } from './result';
-import { BoardDetail, BoardSummary, CreateBoardInput } from './boards';
+import { BoardDetail, BoardSummary, Column, CreateBoardInput } from './boards';
+import { MoveColumnInput } from './columns';
 import { AppInfo, Empty, Id } from './schemas';
-import { CreateTaskInput, DeleteTaskInput, Task, UpdateTaskInput } from './tasks';
+import { CreateTaskInput, DeleteTaskInput, MoveTaskInput, Task, UpdateTaskInput } from './tasks';
 
 /**
  * The IPC contract: one entry per channel, input and output validated with Zod.
@@ -18,6 +19,8 @@ export const contract = {
   'tasks.update': { input: UpdateTaskInput, output: Task },
   /** Soft delete: the task goes to the trash (lot 8 lists and restores it). */
   'tasks.delete': { input: DeleteTaskInput, output: z.object({ id: Id }) },
+  'tasks.move': { input: MoveTaskInput, output: Task },
+  'columns.move': { input: MoveColumnInput, output: Column },
 } as const satisfies Record<Channel, { input: z.ZodType; output: z.ZodType }>;
 
 export type Contract = typeof contract;
