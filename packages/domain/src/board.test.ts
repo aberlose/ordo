@@ -14,13 +14,30 @@ describe('board rules', () => {
   });
 
   it('defaults to the board icon and the first unused colour', () => {
-    expect(newBoardDefaults([])).toEqual({ icon: 'kanban', color: 'slate' });
+    expect(newBoardDefaults([])).toEqual({ icon: 'kanban', color: 'blue' });
     expect(newBoardDefaults(['slate', null, 'blue'])).toEqual({ icon: 'kanban', color: 'cyan' });
+    expect(
+      newBoardDefaults(['blue', 'cyan', 'teal', 'green', 'amber', 'orange', 'red', 'pink', 'violet']),
+    ).toEqual({
+      icon: 'kanban',
+      color: 'slate',
+    });
   });
 
-  it('falls back to slate when every colour is used', () => {
-    const all = ['slate', 'blue', 'cyan', 'teal', 'green', 'amber', 'orange', 'red', 'pink', 'violet'] as const;
-    expect(newBoardDefaults(all).color).toBe('slate');
+  it('falls back to blue when every colour is used', () => {
+    const all = [
+      'slate',
+      'blue',
+      'cyan',
+      'teal',
+      'green',
+      'amber',
+      'orange',
+      'red',
+      'pink',
+      'violet',
+    ] as const;
+    expect(newBoardDefaults(all).color).toBe('blue');
   });
 });
 

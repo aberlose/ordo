@@ -41,7 +41,9 @@ describe('board inputs', () => {
   it('validates moves and duplicates', () => {
     expect(MoveBoardInput.safeParse({ boardId: id, beforeId: null, afterId: id }).success).toBe(true);
     expect(MoveBoardInput.safeParse({ boardId: id }).success).toBe(false);
-    expect(DuplicateBoardInput.safeParse({ id, name: 'Perso (copie)', includeTasks: true }).success).toBe(true);
+    expect(DuplicateBoardInput.safeParse({ id, name: 'Perso (copie)', includeTasks: true }).success).toBe(
+      true,
+    );
     expect(DuplicateBoardInput.safeParse({ id, name: 'Perso (copie)' }).success).toBe(false);
   });
 });

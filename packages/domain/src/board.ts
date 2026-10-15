@@ -8,14 +8,20 @@ export function normalizeBoardName(raw: string): string {
 }
 
 /**
+ * Board colours in the order a new board picks them: blue first, the grey slate last (boards from
+ * first launch have no colour, so starting at slate would make most new boards grey).
+ */
+const BOARD_COLOR_ORDER: readonly ColumnColor[] = [...COLUMN_COLORS.filter((c) => c !== 'slate'), 'slate'];
+
+/**
  * Icon and colour of a new board when none is picked (first launch, or the board popover's
- * initial values): the board icon and the first colour no live board uses yet.
+ * initial values): the board icon and the first colour no live board uses yet, from blue.
  */
 export function newBoardDefaults(usedColors: readonly (ColumnColor | null)[]): {
   icon: ColumnIconName;
   color: ColumnColor;
 } {
-  const color = COLUMN_COLORS.find((c) => !usedColors.includes(c)) ?? 'slate';
+  const color = BOARD_COLOR_ORDER.find((c) => !usedColors.includes(c)) ?? 'blue';
   return { icon: 'kanban', color };
 }
 
