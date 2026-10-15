@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Ordo — archives</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lt{--canvas:#F2F6FF;--canvas-bg:linear-gradient(180deg,#E6EFFF 0%,#F4F7FD 280px);--surface:#FFFFFF;--side:#FFFFFF;--rail:#E9EFFC;--border:#DFE6F3;--border-strong:#C4D0E6;--text:#0F1A33;--text-2:#465472;--text-3:#5F6B88;--accent:#1A52E6;--accent-bg:linear-gradient(135deg,#1A52E6 0%,#2B6CF0 100%);--accent-fg:#FFFFFF;--accent-soft:#E2EBFF;--danger:#D92D20;--scrim:rgba(15,26,51,.38);--card:0 1px 3px rgba(15,26,51,.06),0 1px 1px rgba(15,26,51,.04);--pop:0 24px 64px rgba(15,26,51,.22),0 2px 8px rgba(15,26,51,.08);--drag:0 18px 40px rgba(15,26,51,.22),0 3px 8px rgba(15,26,51,.1);--slot-border:color-mix(in srgb,var(--accent) 55%,transparent);--slot-fill:color-mix(in srgb,var(--accent-soft) 60%,transparent)}
+.dk{--canvas:#0A1020;--canvas-bg:linear-gradient(180deg,#0F1C3A 0%,#0A1020 300px);--surface:#121B30;--side:#0C1426;--rail:#0A1120;--border:#20304F;--border-strong:#2E4068;--text:#E7EEFB;--text-2:#A2B1CE;--text-3:#7B8BAB;--accent:#5B8CFF;--accent-bg:linear-gradient(135deg,#3D73FF 0%,#4FA3FF 100%);--accent-fg:#06101F;--accent-soft:#16294F;--danger:#FF8A80;--scrim:rgba(0,0,0,.55);--card:0 1px 3px rgba(0,0,0,.5);--pop:0 24px 64px rgba(0,0,0,.6);--drag:0 18px 40px rgba(0,0,0,.65),0 3px 8px rgba(0,0,0,.4);--slot-border:color-mix(in srgb,var(--accent) 55%,transparent);--slot-fill:color-mix(in srgb,var(--accent-soft) 60%,transparent)}
+button{font:inherit;color:inherit;cursor:pointer}
+input{font:inherit;color:inherit}
+.vg{position:relative;overflow:hidden;background:var(--canvas-bg);color:var(--text);border-radius:14px;border:1px solid var(--border);display:flex;font-family:'Figtree',system-ui,sans-serif;font-size:14px;box-sizing:border-box}
+.tag{position:absolute;right:14px;top:12px;z-index:9;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3)}
+.side{width:232px;flex-shrink:0;display:flex;flex-direction:column;gap:2px;padding:12px 10px;box-sizing:border-box;background:var(--side);border-right:1px solid var(--border)}
+.rail{width:64px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 0;box-sizing:border-box;background:var(--side);border-right:1px solid var(--border)}
+.row{display:flex;align-items:center;gap:9px;height:30px;padding:0 8px;border-radius:6px;color:var(--text-2);box-sizing:border-box}
+.on{background:var(--accent-soft);color:var(--text);font-weight:500}
+.hov{background:var(--rail);color:var(--text)}
+.nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnt{font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.hd{display:flex;align-items:center;padding:6px 8px 4px;color:var(--text-3);font-size:11.5px;font-weight:500}
+.pop{position:absolute;z-index:5;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--pop);overflow:hidden;display:flex;flex-direction:column}
+.menu{position:absolute;z-index:5;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--pop);padding:4px;width:236px;box-sizing:border-box}
+.mi{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:6px;font-size:13.5px;color:var(--text);border:0;background:none;width:100%;text-align:left}
+.mi.hi{background:var(--rail)}
+.mi.dg{color:var(--danger)}
+.k{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-3)}
+.sep{height:1px;background:var(--border);margin:4px 2px}
+.btn{height:32px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:13px}
+.primary{height:32px;padding:0 14px;border:0;border-radius:8px;background:var(--accent-bg);color:var(--accent-fg);font-size:13px;font-weight:600}
+.fl{font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:6px;display:block}
+.hint{font-size:12px;color:var(--text-3);line-height:1.4}
+.ph{height:54px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 24px;border-bottom:1px solid var(--border)}
+.col{width:220px;flex-shrink:0;display:flex;flex-direction:column;gap:10px}
+.colh{display:flex;align-items:center;gap:8px;padding:0 2px 9px;font-size:14px;font-weight:600}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-shadow:var(--card);font-size:13.5px;font-weight:500}
+.kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:1px 6px;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text-2)}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1596px; box-sizing: border-box; padding: 28px 32px; display: flex; flex-direction: column; gap: 28px; background: #F7F8FB; font-family: 'Figtree', system-ui, sans-serif; font-size: 14px; color: #0F1A33">
+<sc-for list="{{variants}}" as="v" hint-placeholder-count="2">
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">{{v.title}}</h2>
+<p style="margin: 0; font-size: 13px; color: #465472; line-height: 1.5; max-width: 1100px">{{v.desc}}</p>
+</div>
+<sc-for list="{{v.scenes}}" as="sc" hint-placeholder-count="1">
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+<sc-for list="{{THEMES}}" as="th" hint-placeholder-count="2">
+<div class="{{th.cls}}" style="height: 440px">
+<span class="tag">{{th.name}} · {{sc.label}}</span>
+<sc-if value="{{sc.isPage}}" hint-placeholder-val="{{true}}"><aside class="side">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 6px; margin-bottom: 10px">
+<div style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--text); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px">O</div>
+<span style="font-weight: 600; flex: 1">Ordo</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.panel}}"/></svg>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); font-size: 13px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.search}}"/></svg><span style="flex: 1">Rechercher</span><span class="kbd">⌘K</span></div>
+<div class="hd"><span style="flex: 1">Boards</span><button aria-label="Nouveau board" style="border: 0; border-radius: 5px; padding: 3px; display: flex; background: {{sc.side.plusBg}}; color: {{sc.side.plusFg}}; outline: {{sc.side.plusRing}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.plus}}"/></svg></button></div>
+<sc-for list="{{sc.side.rows}}" as="r" hint-placeholder-count="4">
+<sc-if value="{{r.isRow}}" hint-placeholder-val="{{true}}"><div class="{{r.cls}}" style="opacity: {{r.op}}; outline: {{r.ring}}; outline-offset: -1px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{r.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"/></svg><span class="nm">{{r.name}}</span><sc-if value="{{r.dots}}" hint-placeholder-val="{{false}}"><span aria-label="Actions du board" style="width: 22px; height: 22px; margin-right: -4px; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: {{r.dotsBg}}; color: {{r.dotsFg}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></span></sc-if><span class="cnt" style="display: {{r.cntDisplay}}">{{r.count}}</span></div></sc-if>
+<sc-if value="{{r.isRename}}" hint-placeholder-val="{{false}}"><label style="display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 7px; box-sizing: border-box; border: 1.5px solid var(--accent); border-radius: 6px; background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{r.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"/></svg><input aria-label="Nom du board" value="{{r.renameValue}}" style="flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 14px"></label></sc-if>
+<sc-if value="{{r.isSlot}}" hint-placeholder-val="{{false}}"><div style="height: 30px; box-sizing: border-box; border: 1.5px dashed var(--slot-border); border-radius: 6px; background: var(--slot-fill)"></div></sc-if>
+<sc-if value="{{r.isLine}}" hint-placeholder-val="{{false}}"><div style="position: relative; height: 2px; margin: -1px 6px; border-radius: 1px; background: var(--accent)"><span style="position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--accent); background: var(--side)"></span></div></sc-if>
+</sc-for>
+<div style="flex: 1"></div>
+<div class="{{sc.side.archCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.archive}}"/></svg>Archives</div>
+<div class="row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.trash}}"/></svg>Corbeille</div>
+<div class="row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.sliders}}"/></svg>Réglages</div>
+</aside>
+<main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<div class="ph"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.archive}}"/></svg><h1 style="margin: 0; font-size: 15px; font-weight: 600">Archives</h1><span class="cnt">3 boards</span></div>
+<div style="padding: 24px; display: flex; flex-direction: column; gap: 12px; max-width: 640px">
+<p class="hint" style="margin: 0; font-size: 13px">Les boards archivés gardent leurs colonnes et leurs tâches. Ils n’apparaissent plus dans la barre latérale ni dans la recherche.</p>
+<div style="background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden"><sc-for list="{{sc.arch}}" as="b" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border)">
+<span style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--rail)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{b.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.d}}"/></svg></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 500">{{b.name}}</span><span class="hint">{{b.meta}}</span></span>
+<button class="btn" style="display: flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.restore}}"/></svg>Restaurer</button>
+</div>
+</sc-for></div>
+</div>
+</main>
+</sc-if>
+<sc-if value="{{sc.isWindow}}" hint-placeholder-val="{{false}}"><aside class="side">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 6px; margin-bottom: 10px">
+<div style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--text); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px">O</div>
+<span style="font-weight: 600; flex: 1">Ordo</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.panel}}"/></svg>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); font-size: 13px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.search}}"/></svg><span style="flex: 1">Rechercher</span><span class="kbd">⌘K</span></div>
+<div class="hd"><span style="flex: 1">Boards</span><button aria-label="Nouveau board" style="border: 0; border-radius: 5px; padding: 3px; display: flex; background: {{sc.side.plusBg}}; color: {{sc.side.plusFg}}; outline: {{sc.side.plusRing}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.plus}}"/></svg></button></div>
+<sc-for list="{{sc.side.rows}}" as="r" hint-placeholder-count="4">
+<sc-if value="{{r.isRow}}" hint-placeholder-val="{{true}}"><div class="{{r.cls}}" style="opacity: {{r.op}}; outline: {{r.ring}}; outline-offset: -1px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{r.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"/></svg><span class="nm">{{r.name}}</span><sc-if value="{{r.dots}}" hint-placeholder-val="{{false}}"><span aria-label="Actions du board" style="width: 22px; height: 22px; margin-right: -4px; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: {{r.dotsBg}}; color: {{r.dotsFg}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></span></sc-if><span class="cnt" style="display: {{r.cntDisplay}}">{{r.count}}</span></div></sc-if>
+<sc-if value="{{r.isRename}}" hint-placeholder-val="{{false}}"><label style="display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 7px; box-sizing: border-box; border: 1.5px solid var(--accent); border-radius: 6px; background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{r.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"/></svg><input aria-label="Nom du board" value="{{r.renameValue}}" style="flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 14px"></label></sc-if>
+<sc-if value="{{r.isSlot}}" hint-placeholder-val="{{false}}"><div style="height: 30px; box-sizing: border-box; border: 1.5px dashed var(--slot-border); border-radius: 6px; background: var(--slot-fill)"></div></sc-if>
+<sc-if value="{{r.isLine}}" hint-placeholder-val="{{false}}"><div style="position: relative; height: 2px; margin: -1px 6px; border-radius: 1px; background: var(--accent)"><span style="position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--accent); background: var(--side)"></span></div></sc-if>
+</sc-for>
+<div style="flex: 1"></div>
+<div class="{{sc.side.archCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.archive}}"/></svg>Archives</div>
+<div class="row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.trash}}"/></svg>Corbeille</div>
+<div class="row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.sliders}}"/></svg>Réglages</div>
+</aside><main style="flex: 1; min-width: 0; display: flex; flex-direction: column; opacity: {{sc.area.op}}">
+<div class="ph"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{sc.area.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sc.area.d}}"/></svg><h1 style="margin: 0; font-size: 15px; font-weight: 600">{{sc.area.name}}</h1><span style="color: var(--text-3)">/ Kanban</span></div>
+<div style="display: flex; gap: 24px; padding: 22px 24px">
+<sc-for list="{{sc.area.cols}}" as="c" hint-placeholder-count="3">
+<section class="col"><div class="colh" style="border-bottom: 2px solid {{c.c}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{c.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.d}}"/></svg>{{c.name}}</div>
+<sc-for list="{{c.cards}}" as="k" hint-placeholder-count="2"><div class="card">{{k}}</div></sc-for></section>
+</sc-for>
+</div>
+</main>
+<div style="position: absolute; inset: 0; z-index: 4; background: var(--scrim)"></div>
+<section class="pop" role="dialog" aria-label="Archives" style="left: 50%; top: 48px; transform: translateX(-50%); width: 520px; border-radius: 14px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px 20px; border-bottom: 1px solid var(--border)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.archive}}"/></svg><h2 style="margin: 0; font-size: 15px; font-weight: 600; flex: 1">Archives</h2><span class="cnt">3 boards</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.x}}"/></svg></div>
+<div><sc-for list="{{sc.arch}}" as="b" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border)">
+<span style="width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--rail)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{b.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.d}}"/></svg></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 500">{{b.name}}</span><span class="hint">{{b.meta}}</span></span>
+<button class="btn" style="display: flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.restore}}"/></svg>Restaurer</button>
+</div>
+</sc-for></div>
+<div style="padding: 12px 20px"><span class="hint">Restaurer remet le board à la fin de la barre latérale.</span></div>
+</section>
+</sc-if>
+<sc-if value="{{sc.isEmpty}}" hint-placeholder-val="{{false}}"><aside class="side">
+<div style="display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 6px; margin-bottom: 10px">
+<div style="width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--text); box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px">O</div>
+<span style="font-weight: 600; flex: 1">Ordo</span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.panel}}"/></svg>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-3); font-size: 13px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.search}}"/></svg><span style="flex: 1">Rechercher</span><span class="kbd">⌘K</span></div>
+<div class="hd"><span style="flex: 1">Boards</span><button aria-label="Nouveau board" style="border: 0; border-radius: 5px; padding: 3px; display: flex; background: {{sc.side.plusBg}}; color: {{sc.side.plusFg}}; outline: {{sc.side.plusRing}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.plus}}"/></svg></button></div>
+<sc-for list="{{sc.side.rows}}" as="r" hint-placeholder-count="4">
+<sc-if value="{{r.isRow}}" hint-placeholder-val="{{true}}"><div class="{{r.cls}}" style="opacity: {{r.op}}; outline: {{r.ring}}; outline-offset: -1px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{r.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"/></svg><span class="nm">{{r.name}}</span><sc-if value="{{r.dots}}" hint-placeholder-val="{{false}}"><span aria-label="Actions du board" style="width: 22px; height: 22px; margin-right: -4px; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: {{r.dotsBg}}; color: {{r.dotsFg}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></span></sc-if><span class="cnt" style="display: {{r.cntDisplay}}">{{r.count}}</span></div></sc-if>
+<sc-if value="{{r.isRename}}" hint-placeholder-val="{{false}}"><label style="display: flex; align-items: center; gap: 9px; height: 30px; padding: 0 7px; box-sizing: border-box; border: 1.5px solid var(--accent); border-radius: 6px; background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{r.c}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.d}}"/></svg><input aria-label="Nom du board" value="{{r.renameValue}}" style="flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 14px"></label></sc-if>
+<sc-if value="{{r.isSlot}}" hint-placeholder-val="{{false}}"><div style="height: 30px; box-sizing: border-box; border: 1.5px dashed var(--slot-border); border-radius: 6px; background: var(--slot-fill)"></div></sc-if>
+<sc-if value="{{r.isLine}}" hint-placeholder-val="{{false}}"><div style="position: relative; height: 2px; margin: -1px 6px; border-radius: 1px; background: var(--accent)"><span style="position: absolute; left: -4px; top: -3px; width: 8px; height: 8px; box-sizing: border-box; border-radius: 50%; border: 2px solid var(--accent); background: var(--side)"></span></div></sc-if>
+</sc-for>
+<div style="flex: 1"></div>
+<div class="{{sc.side.archCls}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.archive}}"/></svg>Archives</div>
+<div class="row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.trash}}"/></svg>Corbeille</div>
+<div class="row"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.sliders}}"/></svg>Réglages</div>
+</aside>
+<main style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<div class="ph"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{P.archive}}"/></svg><h1 style="margin: 0; font-size: 15px; font-weight: 600">Archives</h1></div>
+<div style="margin: 24px; max-width: 640px; padding: 28px; border: 2px dashed var(--border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center">
+<span style="font-weight: 600">Aucun board archivé</span><span class="hint" style="font-size: 13px">Archivez un board depuis son menu ⋯ dans la barre latérale : il quitte la liste sans rien perdre.</span></div>
+</main>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1596}}'>
+
+const P = {
+  kanban: 'M4.5 3h4A1.5 1.5 0 0 1 10 4.5v15A1.5 1.5 0 0 1 8.5 21h-4A1.5 1.5 0 0 1 3 19.5v-15A1.5 1.5 0 0 1 4.5 3zM15.5 3h4A1.5 1.5 0 0 1 21 4.5v8a1.5 1.5 0 0 1-1.5 1.5h-4A1.5 1.5 0 0 1 14 12.5v-8A1.5 1.5 0 0 1 15.5 3z',
+  house: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  bulb: 'M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z',
+  box: 'M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8',
+  rocket: 'M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1zM12 15l-3-3a22 22 0 0 1 2-3.9A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2zM9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5',
+  briefcase: 'M3 7h18v13H3zM8 7V4h8v3M3 13h18',
+  heart: 'M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z',
+  book: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5',
+  plane: 'M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z',
+  code: 'm16 18 6-6-6-6M8 6l-6 6 6 6',
+  target: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12zM12 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4z',
+  calendar: 'M3 5h18v16H3zM16 3v4M8 3v4M3 11h18',
+  star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z',
+  music: 'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
+  cap: 'M22 10 12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5',
+  cart: 'M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L22 7H6M9 21h.01M18 21h.01',
+  plus: 'M12 5v14M5 12h14',
+  pencil: 'M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z',
+  copy: 'M8 8h12v12H8zM16 8V4H4v12h4',
+  archive: 'M3 4h18v4H3zM5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4',
+  brush: 'M12 2a10 10 0 1 0 0 20c1 0 1.5-.8 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a6 6 0 0 0 6-6c0-4.9-4.5-8.9-10-8.9zM7.5 10.5h.01M12 7.5h.01M16.5 10.5h.01',
+  chevron: 'm9 18 6-6-6-6',
+  restore: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
+  x: 'M18 6 6 18M6 6l12 12',
+  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-3.5-3.5',
+  trash: 'M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14',
+  sliders: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  panel: 'M3 4h18v16H3zM9 4v16M16 10l-2 2 2 2',
+  check: 'm5 12 5 5 9-10',
+  grip: 'M9 5h.01M9 12h.01M9 19h.01M15 5h.01M15 12h.01M15 19h.01'
+};
+const C = { slate: '#78716C', blue: '#2563EB', cyan: '#0891B2', teal: '#0F766E', green: '#16A34A', amber: '#CA8A04', orange: '#D97706', red: '#DC2626', pink: '#DB2777', violet: '#7C3AED' };
+const THEMES = [{ cls: 'vg lt', name: 'Clair' }, { cls: 'vg dk', name: 'Sombre' }];
+const BOARDS = [
+  { id: 'web', name: 'Refonte site client', icon: 'kanban', color: 'blue', count: 16, ini: 'RS' },
+  { id: 'perso', name: 'Perso', icon: 'house', color: 'green', count: 9, ini: 'P' },
+  { id: 'veille', name: 'Veille tech', icon: 'bulb', color: 'violet', count: 23, ini: 'VT' },
+  { id: 'demenagement', name: 'Déménagement', icon: 'box', color: 'amber', count: 12, ini: 'D' }
+];
+/** Sidebar rows: `state` maps a board id to on | hov | dim | drag | rename, `extra` inserts slot or line before an index. */
+function rows(opts) {
+  const o = opts || {};
+  const list = (o.order || BOARDS.map((b) => b.id)).map((id) => BOARDS.find((b) => b.id === id));
+  const out = [];
+  list.forEach((b, i) => {
+    if (o.slotAt === i) out.push({ isSlot: true });
+    if (o.lineAt === i) out.push({ isLine: true });
+    const st = (o.state || {})[b.id] || (b.id === (o.active || 'web') ? 'on' : '');
+    if (st === 'gone') return;
+    out.push({ isRow: st !== 'rename', isRename: st === 'rename', name: b.name, count: b.count, d: P[b.icon], c: C[b.color],
+      cls: 'row ' + (st === 'on' || st === 'focus' ? 'on' : st === 'hov' || st === 'menu' ? 'hov' : ''),
+      op: st === 'dim' ? 0.4 : 1, ring: st === 'focus' ? '2px solid var(--accent)' : 'none',
+      dots: st === 'hov' || st === 'menu', cntDisplay: st === 'hov' || st === 'menu' ? 'none' : 'inline', dotsBg: st === 'menu' ? 'var(--accent-soft)' : 'transparent', dotsFg: st === 'menu' ? 'var(--accent)' : 'var(--text-3)',
+      renameValue: o.renameValue || b.name });
+  });
+  if (o.slotAt === list.length) out.push({ isSlot: true });
+  if (o.lineAt === list.length) out.push({ isLine: true });
+  return out;
+}
+function side(opts) {
+  const o = opts || {};
+  return { rows: rows(o), plusBg: o.plusOn ? 'var(--accent-soft)' : 'transparent', plusFg: o.plusOn ? 'var(--accent)' : 'var(--text-3)', plusRing: o.plusOn ? '2px solid var(--accent)' : 'none',
+    archCls: o.archOn ? 'row on' : 'row' };
+}
+const MINI_COLS = [
+  { name: 'À faire', c: C.slate, d: 'M22 12h-6l-2 3h-4l-2-3H2M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z', cards: ['Maquetter la page tarifs', 'Rédiger la FAQ livraison'] },
+  { name: 'En cours', c: C.blue, d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM10 8.5v7l5.5-3.5z', cards: ['Intégrer le nouveau header'] },
+  { name: 'Terminé', c: C.green, d: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM8.5 12l2.5 2.5 4.5-5', cards: ['Arborescence du site'] }
+];
+
+
+const ARCHIVED = [
+  { name: 'Mariage de Julie', d: P.heart, c: C.pink, meta: '31 tâches · archivé le 2 oct.' },
+  { name: 'Site v1 (2025)', d: P.code, c: C.cyan, meta: '58 tâches · archivé le 14 sept.' },
+  { name: 'Voyage au Portugal', d: P.plane, c: C.orange, meta: '17 tâches · archivé le 30 août' }
+];
+const AREA = { op: 0.55, name: 'Refonte site client', d: P.kanban, c: C.blue, cols: MINI_COLS };
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      P, THEMES,
+      variants: [
+        { title: 'A · Page Archives à la place du board', desc: '« Archives » en bas de la barre latérale devient l’élément actif ; la zone principale liste les boards archivés (icône, nom, nombre de tâches, date) avec « Restaurer ». Même logique que la future Corbeille (lot 8). Archiver depuis le menu ⋯ ouvre le board suivant, sans confirmation : c’est réversible.',
+          scenes: [
+            { label: 'Liste', isPage: true, side: side({ archOn: true, active: 'none' }), arch: ARCHIVED },
+            { label: 'Vide', isEmpty: true, side: side({ archOn: true, active: 'none' }) }
+          ] },
+        { title: 'B · Fenêtre Archives par-dessus le board', desc: 'Une fenêtre centrée sur le board assombri, comme les Réglages. On reste sur son board ; la liste est la même. Plus léger, mais la fenêtre se ferme à chaque restauration pour montrer le board revenu.',
+          scenes: [
+            { label: 'Liste', isWindow: true, side: side({ archOn: true }), area: AREA, arch: ARCHIVED }
+          ] }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

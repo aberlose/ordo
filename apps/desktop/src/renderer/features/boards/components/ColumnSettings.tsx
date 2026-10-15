@@ -1,7 +1,6 @@
 import type { Column } from '@ordo/contracts';
 import {
   COLUMN_CATEGORIES,
-  COLUMN_COLORS,
   COLUMN_NAME_MAX_LENGTH,
   DISPLAY_LIMIT_MAX,
   DISPLAY_LIMIT_MIN,
@@ -12,7 +11,7 @@ import {
   type ColumnIconName,
   isColumnIconName,
 } from '@ordo/domain';
-import { Search, Trash2, X } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import {
   useEffect,
   useId,
@@ -24,18 +23,23 @@ import {
   type ReactNode,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import i18n from '@renderer/i18n';
 import { cn } from '@renderer/shared/lib/cn';
 import { Button } from '@renderer/shared/ui/button';
-import { columnColorVar } from '@renderer/shared/ui/colors';
-import { COLUMN_ICON_NAMES, COLUMN_ICONS, ColumnIcon, foldText } from '@renderer/shared/ui/column-icon';
-import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from '@renderer/shared/ui/popover';
+import { Popover, PopoverClose, PopoverTrigger } from '@renderer/shared/ui/popover';
 import { radioGroupKeyDown } from '@renderer/shared/ui/radio-group-keys';
 import { useCreateColumn, useDeleteColumn, useUpdateColumn } from '../hooks/queries';
+import {
+  ColorPicker,
+  FieldLabel,
+  Hint,
+  IconPicker,
+  NameField,
+  SettingsHeader,
+  SettingsPopoverContent,
+} from './SettingsPopover';
 
 /** Display limit offered when "No limit" is unticked on a column that had none. */
 const DEFAULT_LIMIT = 10;
-const ICONS_PER_ROW = 8;
 
 const CATEGORY_LABEL: Record<ColumnCategory, string> = {
   todo: 'column.todo',
@@ -77,25 +81,12 @@ export function ColumnSettings({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent
+      <SettingsPopoverContent
         align={align}
-        aria-labelledby={titleId}
-        // The name field takes the focus, not the close button.
-        onOpenAutoFocus={(event) => {
-          event.preventDefault();
-          (event.currentTarget as HTMLElement | null)?.querySelector<HTMLInputElement>('input')?.focus();
-        }}
+        titleId={titleId}
         onCloseAutoFocus={(event) => {
           if (deleted.current) event.preventDefault();
         }}
-        // Escape in a filled icon search clears it rather than closing the settings.
-        onEscapeKeyDown={(event) => {
-          const target = event.target;
-          if (target instanceof HTMLInputElement && target.type === 'search' && target.value) {
-            event.preventDefault();
-          }
-        }}
-        className="flex max-h-(--radix-popover-content-available-height) w-popover flex-col rounded-popover"
       >
         <ColumnSettingsForm
           {...props}
@@ -103,7 +94,7 @@ export function ColumnSettings({
           onDeleted={() => (deleted.current = true)}
           onDone={() => setOpen(false)}
         />
-      </PopoverContent>
+      </SettingsPopoverContent>
     </Popover>
   );
 }
@@ -152,7 +143,6 @@ function ColumnSettingsForm({
 
   const normalized = normalizeColumnName(name);
   const displayLimit = noLimit ? null : limit;
-  const colorVar = columnColorVar(color);
 
   const save = (event: FormEvent) => {
     event.preventDefault();
@@ -175,66 +165,33 @@ function ColumnSettingsForm({
 
   return (
     <form onSubmit={save} className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-2 border-b border-border pt-3.5 pr-3 pb-3 pl-4">
-        <h2 id={titleId} className="m-0 flex-1 text-title font-semibold">
-          {t(column ? 'columnSettings.title' : 'columnSettings.newTitle')}
-        </h2>
-        <PopoverClose
-          aria-label={t('columnSettings.close')}
-          className="flex size-7 cursor-pointer items-center justify-center rounded-md text-text-3 hover:bg-rail hover:text-text-2"
-        >
-          <X size={15} aria-hidden />
-        </PopoverClose>
-      </div>
+      <SettingsHeader
+        titleId={titleId}
+        title={t(column ? 'columnSettings.title' : 'columnSettings.newTitle')}
+      />
 
       {/* While the delete confirmation shows, the settings cannot be changed or saved. */}
       <div inert={confirming} className="flex min-h-0 flex-1 flex-col gap-4.5 overflow-y-auto p-4">
-        <label className="block">
-          <FieldLabel>{t('columnSettings.name')}</FieldLabel>
-          <span className="flex h-9.5 items-center gap-2 rounded-lg border-[1.5px] border-border-strong bg-surface px-2.5 focus-within:border-accent">
-            <ColumnIcon icon={icon} size={15} strokeWidth={2.2} style={{ color: colorVar }} aria-hidden />
-            <input
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder={t('columnSettings.namePlaceholder')}
-              maxLength={COLUMN_NAME_MAX_LENGTH}
-              required
-              className="min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-text-3"
-            />
-          </span>
-        </label>
+        <NameField
+          label={t('columnSettings.name')}
+          icon={icon}
+          color={color}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder={t('columnSettings.namePlaceholder')}
+          maxLength={COLUMN_NAME_MAX_LENGTH}
+        />
 
-        <div>
-          <FieldLabel id={`${ids}-color`}>{t('columnSettings.color')}</FieldLabel>
-          <div
-            role="radiogroup"
-            aria-labelledby={`${ids}-color`}
-            onKeyDown={(event) => radioGroupKeyDown(event)}
-            className="flex flex-wrap gap-1.5"
-          >
-            {COLUMN_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                role="radio"
-                aria-checked={c === color}
-                aria-label={t(`colors.${c}`)}
-                title={t(`colors.${c}`)}
-                tabIndex={c === color ? 0 : -1}
-                onClick={() => setColor(c)}
-                // Selected: a ring in the colour; keyboard focus: the accent outline around it.
-                className="size-6 cursor-pointer rounded-full outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent"
-                style={{
-                  background: columnColorVar(c),
-                  boxShadow:
-                    c === color ? `0 0 0 2px var(--surface), 0 0 0 4px ${columnColorVar(c)}` : undefined,
-                }}
-              />
-            ))}
-          </div>
-        </div>
+        <ColorPicker value={color} onChange={setColor} />
 
-        <IconPicker icon={icon} colorVar={colorVar} query={query} onQuery={setQuery} onPick={setIcon} />
+        <IconPicker
+          icon={icon}
+          color={color}
+          query={query}
+          onQuery={setQuery}
+          onPick={setIcon}
+          searchPlaceholder={t('columnSettings.iconSearchPlaceholder')}
+        />
 
         <div>
           <FieldLabel id={`${ids}-category`}>{t('columnSettings.category')}</FieldLabel>
@@ -394,131 +351,6 @@ function ColumnSettingsForm({
 
 /** i18n key segment of a category (`in_progress` → `inProgress`). */
 const categoryKey = (category: ColumnCategory) => (category === 'in_progress' ? 'inProgress' : category);
-
-interface IconEntry {
-  name: ColumnIconName;
-  label: string;
-  haystack: string;
-}
-
-/** Searchable grid of the icon catalogue, 8 per row (accent-insensitive, current language + English). */
-function IconPicker({
-  icon,
-  colorVar,
-  query,
-  onQuery,
-  onPick,
-}: {
-  icon: ColumnIconName;
-  colorVar: string;
-  query: string;
-  onQuery: (query: string) => void;
-  onPick: (icon: ColumnIconName) => void;
-}) {
-  const { t, i18n: instance } = useTranslation();
-  const ids = useId();
-  const language = instance.language;
-  const entries = useMemo<IconEntry[]>(() => {
-    const english = i18n.getFixedT('en');
-    const local = i18n.getFixedT(language);
-    return COLUMN_ICON_NAMES.map((name) => {
-      const words = local(`icons.${name}`);
-      return {
-        name,
-        label: words.split(',')[0]?.trim() ?? name,
-        haystack: foldText(`${words} ${english(`icons.${name}`)} ${name}`),
-      };
-    });
-  }, [language]);
-  const terms = foldText(query).split(/\s+/).filter(Boolean);
-  const shown = entries.filter((entry) => terms.every((term) => entry.haystack.includes(term)));
-  const tabbable = shown.some((entry) => entry.name === icon) ? icon : shown[0]?.name;
-
-  return (
-    <div>
-      <FieldLabel id={`${ids}-label`} className="flex justify-between">
-        {t('columnSettings.icon')}
-        <span className="font-normal text-text-3">
-          {t('columnSettings.iconCount', { count: shown.length })}
-        </span>
-      </FieldLabel>
-      <label className="mb-2 flex h-8 items-center gap-2 rounded-lg border border-border px-2.5 focus-within:border-accent">
-        <Search size={14} className="text-text-3" aria-hidden />
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => onQuery(event.target.value)}
-          onKeyDown={(event) => {
-            // Enter searches; it must not submit the settings. Escape clears a filled search.
-            if (event.key === 'Enter') event.preventDefault();
-            if (event.key === 'Escape' && query) {
-              event.preventDefault();
-              onQuery('');
-            }
-          }}
-          aria-label={t('columnSettings.iconSearch')}
-          placeholder={t('columnSettings.iconSearchPlaceholder')}
-          className="min-w-0 flex-1 border-0 bg-transparent text-meta outline-none placeholder:text-text-3"
-        />
-      </label>
-      {shown.length > 0 ? (
-        <div
-          role="radiogroup"
-          aria-labelledby={`${ids}-label`}
-          onKeyDown={(event) => radioGroupKeyDown(event, ICONS_PER_ROW)}
-          className="grid max-h-icon-grid grid-cols-8 gap-1 overflow-y-auto p-1"
-        >
-          {shown.map((entry) => {
-            const Icon = COLUMN_ICONS[entry.name];
-            const selected = entry.name === icon;
-            return (
-              <button
-                key={entry.name}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                aria-label={entry.label}
-                title={entry.label}
-                tabIndex={entry.name === tabbable ? 0 : -1}
-                onClick={() => onPick(entry.name)}
-                className="flex h-8 cursor-pointer items-center justify-center rounded-md border border-border bg-surface text-text-2 hover:bg-rail"
-                style={
-                  selected
-                    ? {
-                        borderColor: colorVar,
-                        color: colorVar,
-                        background: `color-mix(in srgb, ${colorVar} 12%, var(--surface))`,
-                      }
-                    : undefined
-                }
-              >
-                {Icon && <Icon size={16} strokeWidth={2} aria-hidden />}
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <Hint>{t('columnSettings.noIcon')}</Hint>
-      )}
-    </div>
-  );
-}
-
-function FieldLabel({ id, className, children }: { id?: string; className?: string; children: ReactNode }) {
-  return (
-    <span id={id} className={cn('mb-1.5 block text-small font-semibold text-text-2', className)}>
-      {children}
-    </span>
-  );
-}
-
-function Hint({ id, children }: { id?: string; children: ReactNode }) {
-  return (
-    <div id={id} className="mt-1.5 text-small leading-snug text-text-3">
-      {children}
-    </div>
-  );
-}
 
 /** − / + of the display limit; at 1 or 99 it stays focusable (aria-disabled) so the focus is not lost. */
 function StepButton({

@@ -1,8 +1,9 @@
 import type { Priority } from '@ordo/domain';
 import { and, asc, desc, eq, gt, isNotNull, isNull, lt, max, ne } from 'drizzle-orm';
-import type { TaskRecord, TaskRepository } from '../../application/ports';
+import type { TaskRecord, TaskRepository, TaskWithDescription } from '../../application/ports';
 import type { Db } from '../db/client';
 import { task } from '../db/schema';
+import { chunked } from './chunks';
 
 const columnsOfRecord = {
   id: task.id,
@@ -24,6 +25,12 @@ type Row = { [K in keyof typeof columnsOfRecord]: (typeof columnsOfRecord)[K]['_
 
 const toRecord = (row: Row): TaskRecord => ({ ...(row as TaskRecord), priority: row.priority as Priority });
 
+const columnsWithDescription = {
+  ...columnsOfRecord,
+  descriptionJson: task.descriptionJson,
+  descriptionText: task.descriptionText,
+};
+
 export function taskRepository(db: Db): TaskRepository {
   const live = isNull(task.deletedAt);
   return {
@@ -35,6 +42,15 @@ export function taskRepository(db: Db): TaskRepository {
         .orderBy(asc(task.columnId), asc(task.rank))
         .all()
         .map(toRecord),
+
+    listLiveWithDescriptionByBoard: (boardId) =>
+      db
+        .select(columnsWithDescription)
+        .from(task)
+        .where(and(eq(task.boardId, boardId), live, isNull(task.archivedAt)))
+        .orderBy(asc(task.rank))
+        .all()
+        .map((row): TaskWithDescription => ({ ...row, priority: row.priority as Priority })),
 
     findById: (id) => {
       const row = db
@@ -79,6 +95,12 @@ export function taskRepository(db: Db): TaskRepository {
 
     insert: (record) => {
       db.insert(task).values(record).run();
+    },
+
+    // Chunked: one multi-row INSERT would exceed SQLite's bound-variable cap on large boards.
+    // The caller's transaction keeps the chunks all-or-nothing.
+    insertMany: (records) => {
+      for (const rows of chunked(records)) db.insert(task).values(rows).run();
     },
 
     update: (id, patch) => {

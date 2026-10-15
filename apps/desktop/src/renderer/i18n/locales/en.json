@@ -8,7 +8,44 @@
     "trash": "Trash",
     "settings": "Settings",
     "collapse": "Collapse sidebar",
-    "expand": "Expand sidebar"
+    "expand": "Expand sidebar",
+    "boardActions": "Actions for board {{name}}",
+    "boardName": "Board name",
+    "boardHint": "{{alt}} + up and down arrows to move the board. F2 to rename.",
+    "tileHint": "{{alt}} + up and down arrows to move the board.",
+    "boardMoved": "Board {{board}} moved to position {{position}} of {{total}}",
+    "boardSelected": "1 board selected",
+    "created": "Board {{name}} created"
+  },
+  "boardMenu": {
+    "rename": "Rename",
+    "iconColor": "Icon and colour…",
+    "duplicate": "Duplicate…",
+    "archive": "Archive",
+    "archived": "Board {{name}} archived",
+    "duplicated": "Copy {{name}} created"
+  },
+  "boardSettings": {
+    "newTitle": "New board",
+    "title": "Icon and colour",
+    "name": "Name",
+    "namePlaceholder": "E.g. Newsletter launch",
+    "iconSearchPlaceholder": "Search for an icon (e.g. house, rocket)",
+    "hint": "It starts with three columns: {{todo}}, {{inProgress}}, {{done}}.",
+    "cancel": "Cancel",
+    "create": "Create board",
+    "save": "Save"
+  },
+  "boardDuplicate": {
+    "title": "Duplicate “{{name}}”",
+    "name": "Name of the copy",
+    "defaultName": "{{name}} (copy)",
+    "includeTasks_zero": "No task to include",
+    "includeTasks_one": "Include the task",
+    "includeTasks_other": "Include the {{count, number}} tasks",
+    "hint": "Columns and their settings are always copied.",
+    "cancel": "Cancel",
+    "submit": "Duplicate"
   },
   "welcome": {
     "title": "Welcome to Ordo",
@@ -91,10 +128,28 @@
     "notAfter": "Not after {{date}}",
     "unreadable": "Unrecognised date ({{pattern}})"
   },
+  "archives": {
+    "title": "Archives",
+    "count_one": "{{count, number}} board",
+    "count_other": "{{count, number}} boards",
+    "intro": "Archived boards keep their columns and tasks. They no longer appear in the sidebar or in search.",
+    "listLabel": "Archived boards",
+    "meta_one": "{{count, number}} task · archived {{date}}",
+    "meta_other": "{{count, number}} tasks · archived {{date}}",
+    "dateFormat": "MMM d",
+    "dateFormatWithYear": "MMM d, yyyy",
+    "restore": "Restore",
+    "restoreLabel": "Restore “{{name}}”",
+    "restored": "“{{name}}” restored at the end of the sidebar.",
+    "emptyTitle": "No archived boards",
+    "emptyBody": "Archive a board from its ⋯ menu in the sidebar: it leaves the list without losing anything.",
+    "loadError": "Could not load the archives."
+  },
   "feedback": {
     "retry": "Retry",
     "close": "Close",
     "failed": {
+      "restoreBoard": "Restore not saved: the board stayed in the archives.",
       "create": "Not saved: the new task was removed.",
       "update": "Change not saved: the previous value is back.",
       "delete": "Not deleted: the task is back.",
@@ -102,7 +157,12 @@
       "moveColumn": "Move not saved: the column went back to its place.",
       "createColumn": "Not saved: the column was not added.",
       "updateColumn": "Not saved: the previous settings are back.",
-      "deleteColumn": "Not deleted: the column is back."
+      "deleteColumn": "Not deleted: the column is back.",
+      "createBoard": "Not created: the board was not added.",
+      "updateBoard": "Not saved: the board is back to its name and style.",
+      "moveBoard": "Not moved: the board is back in its place.",
+      "duplicateBoard": "Not duplicated: the copy was not created.",
+      "archiveBoard": "Not archived: the board is back."
     }
   },
   "dnd": {

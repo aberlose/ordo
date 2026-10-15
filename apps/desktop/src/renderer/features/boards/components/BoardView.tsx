@@ -21,7 +21,6 @@ import { today as todayDay } from '@renderer/shared/lib/dates';
 import { useNow } from '@renderer/shared/lib/useNow';
 import { Button } from '@renderer/shared/ui/button';
 import { Kbd } from '@renderer/shared/ui/kbd';
-import { KeyboardHelp } from '@renderer/shared/ui/keyboard-help';
 import { COLUMN_DRAG, useColumnDrag, useColumnMoves } from '../dnd/useColumnMoves';
 import { BoardColumn, ColumnSlot } from './BoardColumn';
 import { ColumnSettings } from './ColumnSettings';
@@ -193,7 +192,6 @@ export function BoardView({ board }: BoardViewProps) {
           }
         />
       </div>
-      <KeyboardHelp />
       <span id={CARD_MOVE_HINT_ID} hidden>
         {t('dnd.cardHint', { alt: altKey() })}
       </span>

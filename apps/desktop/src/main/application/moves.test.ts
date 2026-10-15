@@ -128,6 +128,30 @@ describe('moveColumn', () => {
     );
   });
 
+  it('ranks around a deleted column sitting between the neighbours', () => {
+    const { board, todo, doing, done } = setup();
+    const gone = columns.createColumn({
+      boardId: board.id,
+      name: 'Jetée',
+      icon: 'inbox',
+      color: 'slate',
+      category: 'todo',
+      displayLimit: null,
+    });
+    columns.moveColumn({ columnId: gone.id, beforeId: todo, afterId: doing });
+    const goneRank = repos.columns.findById(gone.id)!.rank;
+    columns.deleteColumn(gone.id);
+
+    const afterTodo = columns.moveColumn({ columnId: done, beforeId: todo, afterId: doing });
+    expect(afterTodo.rank).not.toBe(goneRank);
+    expect(boards.getBoard(board.id).columns.map((c) => c.id)).toEqual([todo, done, doing]);
+
+    const beforeDoing = columns.moveColumn({ columnId: done, beforeId: null, afterId: doing });
+    expect(beforeDoing.rank).not.toBe(goneRank);
+    expect(beforeDoing.rank > goneRank && beforeDoing.rank < repos.columns.findById(doing)!.rank).toBe(true);
+    expect(boards.getBoard(board.id).columns.map((c) => c.id)).toEqual([todo, done, doing]);
+  });
+
   it('refuses a column move with no neighbour', () => {
     const { todo } = setup();
     expect(() => columns.moveColumn({ columnId: todo, beforeId: null, afterId: null })).toThrow(

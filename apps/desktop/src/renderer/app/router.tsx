@@ -3,17 +3,21 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   Navigate,
   Outlet,
+  useMatchRoute,
   useNavigate,
   useParams,
 } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { MainArea } from '@renderer/shared/ui/keyboard-help';
 import { Feedback } from '@renderer/shared/ui/toast';
 import {
   BoardView,
   FirstLaunch,
+  loadArchives,
   Sidebar,
   useBoard,
   useBoards,
@@ -25,6 +29,7 @@ function Layout() {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const params = useParams({ strict: false });
+  const matchRoute = useMatchRoute();
   return (
     <div className="flex h-full overflow-hidden">
       <Sidebar
@@ -33,8 +38,13 @@ function Layout() {
         collapsed={collapsed}
         onToggle={() => setCollapsed((value) => !value)}
         onSelectBoard={(boardId) => void navigate({ to: '/boards/$boardId', params: { boardId } })}
+        archivesActive={Boolean(matchRoute({ to: '/archives' }))}
+        onOpenArchives={() => void navigate({ to: '/archives' })}
+        onNoBoardLeft={() => void navigate({ to: '/' })}
       />
-      <Outlet />
+      <MainArea>
+        <Outlet />
+      </MainArea>
       <Feedback />
     </div>
   );
@@ -82,9 +92,15 @@ const boardRoute = createRoute({
   path: '/boards/$boardId',
   component: BoardPage,
 });
+const archivesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/archives',
+  // Secondary view: loaded on first visit (performance rule "lazy-load secondary views").
+  component: lazyRouteComponent(loadArchives, 'ArchivesPage'),
+});
 
 export const router = createRouter({
-  routeTree: rootRoute.addChildren([homeRoute, boardRoute]),
+  routeTree: rootRoute.addChildren([homeRoute, boardRoute, archivesRoute]),
   history: createMemoryHistory({ initialEntries: ['/'] }),
 });
 

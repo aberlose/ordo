@@ -1,5 +1,5 @@
 import type { ColumnColor } from '@ordo/domain';
-import { and, asc, count, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, isNotNull, isNull, lt, ne } from 'drizzle-orm';
 import type { BoardRepository, BoardWithCount } from '../../application/ports';
 import type { Db } from '../db/client';
 import { board, task } from '../db/schema';
@@ -13,6 +13,7 @@ export function boardRepository(db: Db): BoardRepository {
         icon: board.icon,
         color: board.color,
         rank: board.rank,
+        archivedAt: board.archivedAt,
         createdAt: board.createdAt,
         updatedAt: board.updatedAt,
         taskCount: count(task.id),
@@ -44,6 +45,13 @@ export function boardRepository(db: Db): BoardRepository {
         .all()
         .map(toRecord),
 
+    listArchived: () =>
+      withCount()
+        .where(and(isNull(board.deletedAt), isNotNull(board.archivedAt)))
+        .orderBy(desc(board.archivedAt), asc(board.rank))
+        .all()
+        .map(toRecord),
+
     findById: (id) => {
       const row = withCount()
         .where(and(eq(board.id, id), isNull(board.deletedAt)))
@@ -54,8 +62,21 @@ export function boardRepository(db: Db): BoardRepository {
     lastRank: () =>
       db.select({ rank: board.rank }).from(board).orderBy(desc(board.rank)).limit(1).get()?.rank ?? null,
 
+    adjacentRank: (rank, side, excludeId) =>
+      db
+        .select({ rank: board.rank })
+        .from(board)
+        .where(and(ne(board.id, excludeId), side === 'after' ? gt(board.rank, rank) : lt(board.rank, rank)))
+        .orderBy(side === 'after' ? asc(board.rank) : desc(board.rank))
+        .limit(1)
+        .get()?.rank ?? null,
+
     insert: (record) => {
       db.insert(board).values(record).run();
+    },
+
+    update: (id, patch) => {
+      db.update(board).set(patch).where(eq(board.id, id)).run();
     },
   };
 }

@@ -25,9 +25,16 @@ export interface BoardRecord {
   readonly updatedAt: number;
 }
 
+/** A board as read back: its live top-level task count and, when archived, the archive date. */
 export interface BoardWithCount extends BoardRecord {
   readonly taskCount: number;
+  readonly archivedAt: number | null;
 }
+
+export type BoardPatch = Partial<Pick<BoardRecord, 'name' | 'icon' | 'color' | 'rank'>> & {
+  readonly archivedAt?: number | null;
+  readonly updatedAt: number;
+};
 
 export interface ColumnRecord {
   readonly id: string;
@@ -43,10 +50,21 @@ export interface ColumnRecord {
 }
 
 export interface BoardRepository {
+  /** Live boards that are not archived, ordered by rank (the sidebar). */
   listActive(): BoardWithCount[];
+  /** Archived boards that are not deleted, most recently archived first. */
+  listArchived(): BoardWithCount[];
+  /** A board that is not deleted (archived or not). */
   findById(id: string): BoardWithCount | null;
+  /** Highest rank among all boards, archived and deleted ones included. */
   lastRank(): Rank | null;
+  /**
+   * The rank right after (`'after'`) or right before (`'before'`) `rank` among all boards, archived
+   * and deleted ones included and `excludeId` ignored: the true neighbour, whatever the client believed.
+   */
+  adjacentRank(rank: Rank, side: 'after' | 'before', excludeId: string): Rank | null;
   insert(board: BoardRecord): void;
+  update(id: string, patch: BoardPatch): void;
 }
 
 export interface ColumnRepository {
@@ -62,7 +80,10 @@ export interface ColumnRepository {
   /** Highest rank among the board's columns, deleted ones included. */
   lastRankInBoard(boardId: string): Rank | null;
   softDelete(id: string, now: number): void;
-  /** The rank right after or right before `rank` among the board's columns, `excludeId` ignored. */
+  /**
+   * The rank right after or right before `rank` among the board's columns, deleted ones included and
+   * `excludeId` ignored.
+   */
   adjacentRankInBoard(boardId: string, rank: Rank, side: 'after' | 'before', excludeId: string): Rank | null;
 }
 
@@ -80,6 +101,12 @@ export interface TaskRecord {
   readonly completedAt: number | null;
   readonly createdAt: number;
   readonly updatedAt: number;
+}
+
+/** A task with its description: what a board duplication reads and writes. */
+export interface TaskWithDescription extends TaskRecord {
+  readonly descriptionJson: string | null;
+  readonly descriptionText: string | null;
 }
 
 export type TaskPatch = Partial<
@@ -103,9 +130,16 @@ export interface TaskRepository {
     side: 'after' | 'before',
     excludeId: string,
   ): Rank | null;
+  /**
+   * Live (not deleted, not archived) tasks of a board, sub-tasks included, with their description.
+   * Ordered by rank.
+   */
+  listLiveWithDescriptionByBoard(boardId: string): TaskWithDescription[];
   /** Highest key ever given on the board, deleted tasks included (keys are never reused). */
   maxKey(boardId: string): number | null;
   insert(task: TaskRecord): void;
+  /** Bulk insert (board duplication); parents must come before their sub-tasks. */
+  insertMany(tasks: readonly TaskWithDescription[]): void;
   update(id: string, patch: TaskPatch): void;
   softDelete(id: string, now: number): void;
   /** Soft-deletes the live tasks of a column (sub-tasks included); returns how many top-level tasks went. */

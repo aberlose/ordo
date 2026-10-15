@@ -234,7 +234,7 @@ export function ColumnSlot() {
     <div
       ref={ref}
       aria-hidden
-      className="h-full min-h-60 w-column shrink-0 rounded-xl border-[1.5px] border-dashed border-slot-border bg-slot-fill"
+      className="h-full min-h-60 w-column shrink-0 rounded-xl border-strong border-dashed border-slot-border bg-slot-fill"
     />
   );
 }

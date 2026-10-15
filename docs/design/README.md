@@ -41,3 +41,4 @@ The clarity of Jira, the restraint of LiteLLM, with a vivid blue/violet identity
 - **Settings** — layout chosen 2026-10-10: `mockups/settings/`.
 - **Empty states** — approved 2026-10-10: `mockups/empty-states/`.
 - **Command palette** — approved 2026-10-10: `mockups/command-palette/`.
+- **Boards** (create, menu, archives, reorder) — approved 2026-10-14: `mockups/boards/`.

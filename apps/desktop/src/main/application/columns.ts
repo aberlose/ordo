@@ -11,6 +11,7 @@ import {
   normalizeColumnName,
   rankAtEnd,
   rankBetween,
+  type Rank,
 } from '@ordo/domain';
 import { NotFoundError, RuleViolationError } from './errors';
 import type {
@@ -131,11 +132,21 @@ export function makeColumnUseCases({ boards, columns, tasks, tx, clock, ids }: C
         if (before && after && before.rank >= after.rank) {
           throw new RuleViolationError('Neighbours are out of order');
         }
-        if (!before && !after) throw new RuleViolationError('A move needs at least one neighbour');
-        const patch = {
-          rank: rankBetween(before?.rank ?? null, after?.rank ?? null),
-          updatedAt: clock.now(),
-        };
+        // Rank against the true neighbours in the database (deleted columns keep their ranks in the
+        // gaps): "just after `before`" wins; "just before `after`" when there is no `before`.
+        let rank: Rank;
+        if (before) {
+          rank = rankBetween(
+            before.rank,
+            columns.adjacentRankInBoard(current.boardId, before.rank, 'after', current.id),
+          );
+        } else if (after) {
+          rank = rankBetween(
+            columns.adjacentRankInBoard(current.boardId, after.rank, 'before', current.id),
+            after.rank,
+          );
+        } else throw new RuleViolationError('A move needs at least one neighbour');
+        const patch = { rank, updatedAt: clock.now() };
         columns.update(current.id, patch);
         return toColumn({ ...current, ...patch });
       }),

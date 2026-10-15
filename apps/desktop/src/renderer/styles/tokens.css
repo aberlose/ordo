@@ -255,6 +255,17 @@
   --danger-fg: #ffffff;
   --danger-soft: color-mix(in srgb, var(--danger) 4%, var(--surface));
   --danger-line: color-mix(in srgb, var(--danger) 30%, var(--border));
+  /* Board colours as small text (rail initials): AA 4.5:1 on every palette's sidebar, hover and active tile. */
+  --col-slate-text: #6c6661;
+  --col-blue-text: #235edf;
+  --col-cyan-text: #06718b;
+  --col-teal-text: #0f746c;
+  --col-green-text: #107736;
+  --col-amber-text: #8b5f03;
+  --col-orange-text: #9c5604;
+  --col-red-text: #c82323;
+  --col-pink-text: #c12269;
+  --col-violet-text: #7c3aed;
 }
 
 :root[data-mode='dark'] {
@@ -264,4 +275,15 @@
   --danger-fg: #1a0705;
   /* The mockup's 8 % tint keeps AA in dark; light needs 4 % for 13 px danger text. */
   --danger-soft: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  /* Board colours as small text, lightened for dark sidebars (AA 4.5:1). */
+  --col-slate-text: #96908c;
+  --col-blue-text: #628ff1;
+  --col-cyan-text: #269ebb;
+  --col-teal-text: #559e98;
+  --col-green-text: #1fa751;
+  --col-amber-text: #ca8a04;
+  --col-orange-text: #d97808;
+  --col-red-text: #e76b6b;
+  --col-pink-text: #e5669e;
+  --col-violet-text: #a679f3;
 }

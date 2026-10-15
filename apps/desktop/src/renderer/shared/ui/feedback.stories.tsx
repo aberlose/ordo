@@ -43,3 +43,7 @@ export const CardHelpBar: Story = { render: () => <Help target="card" /> };
 export const CardHelpBarDark: Story = { ...CardHelpBar, globals: { mode: 'dark' } };
 export const ColumnHelpBar: Story = { render: () => <Help target="column" /> };
 export const ColumnHelpBarDark: Story = { ...ColumnHelpBar, globals: { mode: 'dark' } };
+
+/** Approved mockup: boards/BoardReorder A (a sidebar board has keyboard focus). */
+export const BoardHelpBar: Story = { render: () => <Help target="board" /> };
+export const BoardHelpBarDark: Story = { ...BoardHelpBar, globals: { mode: 'dark' } };

@@ -8,7 +8,44 @@
     "trash": "Corbeille",
     "settings": "Réglages",
     "collapse": "Réduire la barre latérale",
-    "expand": "Ouvrir la barre latérale"
+    "expand": "Ouvrir la barre latérale",
+    "boardActions": "Actions du board {{name}}",
+    "boardName": "Nom du board",
+    "boardHint": "{{alt}} + flèches haut et bas pour déplacer le board. F2 pour renommer.",
+    "tileHint": "{{alt}} + flèches haut et bas pour déplacer le board.",
+    "boardMoved": "Board {{board}} déplacé en position {{position}} sur {{total}}",
+    "boardSelected": "1 board sélectionné",
+    "created": "Board {{name}} créé"
+  },
+  "boardMenu": {
+    "rename": "Renommer",
+    "iconColor": "Icône et couleur…",
+    "duplicate": "Dupliquer…",
+    "archive": "Archiver",
+    "archived": "Board {{name}} archivé",
+    "duplicated": "Copie {{name}} créée"
+  },
+  "boardSettings": {
+    "newTitle": "Nouveau board",
+    "title": "Icône et couleur",
+    "name": "Nom",
+    "namePlaceholder": "Ex. : Lancement newsletter",
+    "iconSearchPlaceholder": "Rechercher une icône (ex. : maison, fusée)",
+    "hint": "Il démarre avec trois colonnes : {{todo}}, {{inProgress}}, {{done}}.",
+    "cancel": "Annuler",
+    "create": "Créer le board",
+    "save": "Enregistrer"
+  },
+  "boardDuplicate": {
+    "title": "Dupliquer « {{name}} »",
+    "name": "Nom de la copie",
+    "defaultName": "{{name}} (copie)",
+    "includeTasks_zero": "Aucune tâche à inclure",
+    "includeTasks_one": "Inclure la tâche",
+    "includeTasks_other": "Inclure les {{count, number}} tâches",
+    "hint": "Les colonnes et leurs réglages sont toujours copiés.",
+    "cancel": "Annuler",
+    "submit": "Dupliquer"
   },
   "welcome": {
     "title": "Bienvenue dans Ordo",
@@ -91,10 +128,28 @@
     "notAfter": "Pas après le {{date}}",
     "unreadable": "Date non reconnue ({{pattern}})"
   },
+  "archives": {
+    "title": "Archives",
+    "count_one": "{{count, number}} board",
+    "count_other": "{{count, number}} boards",
+    "intro": "Les boards archivés gardent leurs colonnes et leurs tâches. Ils n'apparaissent plus dans la barre latérale ni dans la recherche.",
+    "listLabel": "Boards archivés",
+    "meta_one": "{{count, number}} tâche · archivé le {{date}}",
+    "meta_other": "{{count, number}} tâches · archivé le {{date}}",
+    "dateFormat": "d MMM",
+    "dateFormatWithYear": "d MMM yyyy",
+    "restore": "Restaurer",
+    "restoreLabel": "Restaurer « {{name}} »",
+    "restored": "« {{name}} » restauré à la fin de la barre latérale.",
+    "emptyTitle": "Aucun board archivé",
+    "emptyBody": "Archivez un board depuis son menu ⋯ dans la barre latérale : il quitte la liste sans rien perdre.",
+    "loadError": "Impossible de charger les archives."
+  },
   "feedback": {
     "retry": "Réessayer",
     "close": "Fermer",
     "failed": {
+      "restoreBoard": "Restauration non enregistrée : le board est resté dans les archives.",
       "create": "Ajout non enregistré : la tâche a été retirée.",
       "update": "Modification non enregistrée : la valeur précédente est rétablie.",
       "delete": "Suppression non enregistrée : la tâche est revenue.",
@@ -102,7 +157,12 @@
       "moveColumn": "Déplacement non enregistré : la colonne a repris sa place.",
       "createColumn": "Ajout non enregistré : la colonne n'a pas été créée.",
       "updateColumn": "Modification non enregistrée : les réglages précédents sont rétablis.",
-      "deleteColumn": "Suppression non enregistrée : la colonne est revenue."
+      "deleteColumn": "Suppression non enregistrée : la colonne est revenue.",
+      "createBoard": "Création non enregistrée : le board n'a pas été créé.",
+      "updateBoard": "Modification non enregistrée : le board a repris son nom et son style.",
+      "moveBoard": "Déplacement non enregistré : le board a repris sa place.",
+      "duplicateBoard": "Duplication non enregistrée : la copie n'a pas été créée.",
+      "archiveBoard": "Archivage non enregistré : le board est revenu."
     }
   },
   "dnd": {

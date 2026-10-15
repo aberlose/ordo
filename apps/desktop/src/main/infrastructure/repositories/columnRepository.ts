@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gt, isNull, lt, ne } from 'drizzle-orm';
 import type { ColumnRecord, ColumnRepository } from '../../application/ports';
 import type { Db } from '../db/client';
 import { boardColumn } from '../db/schema';
+import { chunked } from './chunks';
 
 const toRecord = ({ deletedAt: _deletedAt, ...row }: typeof boardColumn.$inferSelect): ColumnRecord => ({
   ...row,
@@ -62,10 +63,7 @@ export function columnRepository(db: Db): ColumnRepository {
     },
 
     insertMany: (columns) => {
-      if (columns.length > 0)
-        db.insert(boardColumn)
-          .values([...columns])
-          .run();
+      for (const rows of chunked(columns)) db.insert(boardColumn).values(rows).run();
     },
   };
 }
