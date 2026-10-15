@@ -5,7 +5,7 @@ This file is the entry point for every coding agent. Read it fully before any ch
 
 ## Status
 
-Milestones 1 (mockups) and 2 (skeleton) are done: approved mockups are in `docs/design/mockups/`, tokens in `docs/design/tokens.md`. Milestone 3 (MVP) is in progress, one lot per PR: lot 1 (tasks: quick add, cards, detail window) lot 2 (drag and drop, keyboard moves, virtualised columns, error toast) and lot 3 (columns: add, settings popover, show more / collapse, delete to the trash) are done.
+Milestones 1 (mockups) and 2 (skeleton) are done: approved mockups are in `docs/design/mockups/`, tokens in `docs/design/tokens.md`. Milestone 3 (MVP) is in progress, one lot per PR: lot 1 (tasks: quick add, cards, detail window) lot 2 (drag and drop, keyboard moves, virtualised columns, error toast), lot 3 (columns: add, settings popover, show more / collapse, delete to the trash) and lot 4 (boards: create with icon and colour, rename, duplicate, archive and restore, reorder) are done.
 See `docs/roadmap.md`.
 
 ## Stack (decided — see `docs/adr/`)

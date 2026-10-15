@@ -10,3 +10,11 @@ Design canvas "Ordo — Maquettes", page "Boards — lot 4". Each file shows var
 | Reorder boards | `BoardReorder.dc.html` | **A** | As cards and columns (lot 2): the row follows the pointer with an accent border, the list closes up and a dashed slot opens at the destination; same with tiles in the collapsed rail. Keyboard: ⌥/Alt + ↑↓ on a focused board, with the help bar ("1 board sélectionné · ⌥ ↑↓ ordre · ↵ ouvrir") |
 
 Colours in these files use the AA-adjusted Ciel values (see `../../tokens.md`).
+
+## Decisions taken at review (2026-10-15)
+
+- **Collapsed rail initials** use `--col-<name>-text`, a per-mode variant of the board colour tuned to 4.5:1 (the mockup's raw colours failed AA for 13 px text). See `../../tokens.md`.
+- **Archiving the last board** shows the first-launch screen.
+- **Archives button in the collapsed rail**: kept (no mockup; approved by the user).
+- **Archives load error** (no mockup; approved by the user): the empty state's dashed box with the message and a "Réessayer" button, as in the error toast.
+- **Default colour of a new board**: the first colour no board uses, starting from blue; slate (grey) comes last.
