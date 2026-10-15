@@ -45,7 +45,7 @@ export function QuickAdd({ open, focusRequest = 0, onOpen, onClose, onSubmit }: 
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="flex h-9.5 items-center gap-2 rounded-card border-[1.5px] border-border-strong bg-surface pr-2 pl-3 focus-within:border-accent focus-within:ring-3 focus-within:ring-accent-soft">
+      <label className="flex h-9.5 items-center gap-2 rounded-card border-strong border-border-strong bg-surface pr-2 pl-3 focus-within:border-accent focus-within:ring-3 focus-within:ring-accent-soft">
         <Plus size={14} className="shrink-0 text-text-3" aria-hidden />
         <input
           ref={input}

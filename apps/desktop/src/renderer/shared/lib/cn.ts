@@ -13,9 +13,20 @@ const FONT_SIZES = [
   'heading',
   'heading-lg',
   'display',
+  'input',
 ];
 
-const merge = extendTailwindMerge({ extend: { classGroups: { 'font-size': [{ text: FONT_SIZES }] } } });
+/** Border widths of index.css (`--border-width-*`), so `border-strong border-accent` keeps both. */
+const BORDER_WIDTHS = ['strong'];
+
+const merge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [{ text: FONT_SIZES }],
+      'border-w': [{ border: BORDER_WIDTHS }],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]): string {
   return merge(clsx(inputs));

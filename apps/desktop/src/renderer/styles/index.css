@@ -50,6 +50,11 @@
   --text-heading: 22px;
   --text-heading-lg: 30px;
   --text-display: 28px;
+  /* Text fields (rename field, name of a copy): the 14 px base size, set explicitly on inputs. */
+  --text-input: 14px;
+
+  /* Strong border (text fields, drag previews, drop slots). */
+  --border-width-strong: 1.5px;
 
   /* Layout sizes from the approved mockups. */
   --spacing-sidebar: 232px;
@@ -57,6 +62,8 @@
   --spacing-header: 54px;
   --spacing-column: 296px;
   --spacing-popover: 340px;
+  --spacing-popover-sm: 320px;
+  --spacing-menu: 236px;
   --spacing-icon-grid: 148px;
   --spacing-detail: 1040px;
   --spacing-detail-full: 1120px;

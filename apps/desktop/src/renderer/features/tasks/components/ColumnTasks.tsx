@@ -196,7 +196,7 @@ function Slot({
     >
       <div
         aria-hidden
-        className="rounded-card border-[1.5px] border-dashed border-slot-border bg-slot-fill"
+        className="rounded-card border-strong border-dashed border-slot-border bg-slot-fill"
         style={{ height }}
       />
     </div>

@@ -1,8 +1,11 @@
 import type { FocusEvent } from 'react';
 import { create } from 'zustand';
 
-/** What has keyboard focus on the board, to show the matching help bar (mockup drag-and-drop/KeyboardMove B). */
-export type KeyboardTarget = 'card' | 'column' | null;
+/**
+ * What has keyboard focus, to show the matching help bar (mockups drag-and-drop/KeyboardMove B for
+ * cards and columns, boards/BoardReorder A for a sidebar board).
+ */
+export type KeyboardTarget = 'card' | 'column' | 'board' | null;
 
 export const useKeyboardTarget = create<{ target: KeyboardTarget; set: (target: KeyboardTarget) => void }>(
   (set) => ({ target: null, set: (target) => set({ target }) }),

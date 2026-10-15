@@ -62,14 +62,17 @@ Ciel values were darkened on 2026-10-10 so text and accent reach WCAG AA (4.5:1)
 
 ## Fixed colours (all themes)
 
-| Use                                  | Values                                                                                                                                                                                    |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Priority 1 → 5                       | `#94A3B8`, `#3B82F6`, `#CA8A04`, `#EA580C`, `#DC2626`                                                                                                                                     |
-| Tag / column palette (user-pickable) | slate `#78716C`, blue `#2563EB`, cyan `#0891B2`, teal `#0F766E`, green `#16A34A`, amber `#CA8A04`, orange `#D97706`, red `#DC2626`, pink `#DB2777`, violet `#7C3AED` (CSS `--col-<name>`) |
+| Use                                  | Values                                                                                                                                                                                                                                                            |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Priority 1 → 5                       | `#94A3B8`, `#3B82F6`, `#CA8A04`, `#EA580C`, `#DC2626`                                                                                                                                                                                                             |
+| Tag / column palette (user-pickable) | slate `#78716C`, blue `#2563EB`, cyan `#0891B2`, teal `#0F766E`, green `#16A34A`, amber `#CA8A04`, orange `#D97706`, red `#DC2626`, pink `#DB2777`, violet `#7C3AED` (CSS `--col-<name>`)                                                                         |
+| Board colours as small text          | `--col-<name>-text`, per mode: the palette darkened in light (amber `#8B5F03`, green `#107736`…) and lightened in dark (violet `#A679F3`, blue `#628FF1`…) to keep 4.5:1 on every palette's sidebar, hover and active tile. Used by the collapsed rail's initials |
 
 ## Typography and shape
 
 - Figtree 400/500/600/700, bundled; IBM Plex Mono for keyboard hints only.
 - Base 14 px; card title 14/500; meta 12; labels 11.5.
+- Type scale (`--text-*` in `styles/index.css`, Tailwind `text-<name>`): kbd 11, caption 11.5, small 12, label 12.5, meta 13, body 13.5, input 14 (text fields set the 14 px base explicitly: rename field, name of a copy), title 15, heading 22, display 28, heading-lg 30.
+- Strong border 1.5 px (`--border-width-strong`, Tailwind `border-strong`): text fields, drag previews, drop slots. Hairlines stay 1 px.
 - Radius: cards 10, buttons and inputs 8, tags 4, menus and date picker 10, settings popover 12 (`--radius-popover`), palette 14.
-- Sizes: column 296, settings popover 340 (`--spacing-popover`), icon grid of the column settings 148 high (`--spacing-icon-grid`).
+- Sizes: column 296, settings popover 340 (`--spacing-popover`), small popover 320 (`--spacing-popover-sm`, duplicate a board), board menu 236 (`--spacing-menu`), icon grid of the column settings 148 high (`--spacing-icon-grid`).

@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { userEvent, within } from 'storybook/test';
 import { useTaskUi } from '@renderer/features/tasks';
 import i18n from '@renderer/i18n';
+import { MainArea } from '@renderer/shared/ui/keyboard-help';
 import { BoardView } from './BoardView';
 import { FirstLaunch } from './FirstLaunch';
 import { board as boardWithTasks, emptyBoard } from '@renderer/test/fixtures';
@@ -49,7 +50,9 @@ export const NewBoard: Story = {
           onToggle={() => undefined}
           onSelectBoard={() => undefined}
         />
-        <BoardView board={board} />
+        <MainArea>
+          <BoardView board={board} />
+        </MainArea>
       </>,
     ),
 };
@@ -65,7 +68,9 @@ export const CollapsedSidebar: Story = {
           onToggle={() => undefined}
           onSelectBoard={() => undefined}
         />
-        <BoardView board={board} />
+        <MainArea>
+          <BoardView board={board} />
+        </MainArea>
       </>,
     ),
 };
@@ -105,7 +110,9 @@ export const WithTasks: Story = {
           onToggle={() => undefined}
           onSelectBoard={() => undefined}
         />
-        <BoardView board={boardWithTasks} />
+        <MainArea>
+          <BoardView board={boardWithTasks} />
+        </MainArea>
       </>,
     ),
 };

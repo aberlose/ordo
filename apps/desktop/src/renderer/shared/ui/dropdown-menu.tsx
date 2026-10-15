@@ -52,3 +52,7 @@ export function DropdownMenuRadioItem({
     </Menu.RadioItem>
   );
 }
+
+export function DropdownMenuSeparator({ className, ...props }: ComponentProps<typeof Menu.Separator>) {
+  return <Menu.Separator className={cn('mx-0.5 my-1 h-px bg-border', className)} {...props} />;
+}
