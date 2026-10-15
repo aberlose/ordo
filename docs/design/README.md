@@ -42,3 +42,4 @@ The clarity of Jira, the restraint of LiteLLM, with a vivid blue/violet identity
 - **Empty states** — approved 2026-10-10: `mockups/empty-states/`.
 - **Command palette** — approved 2026-10-10: `mockups/command-palette/`.
 - **Boards** (create, menu, archives, reorder) — approved 2026-10-14: `mockups/boards/`.
+- **Tags and sub-tasks** (tag picker and management, sub-task rows and window, tags on a card) — approved 2026-10-16: `mockups/tags-subtasks/`.
