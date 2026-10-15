@@ -1,42 +1,69 @@
 import type {
+  BoardPatch,
   BoardRecord,
   BoardRepository,
   ColumnRecord,
   ColumnRepository,
   TaskRecord,
   TaskRepository,
+  TaskWithDescription,
 } from './ports';
 
 /** In-memory repositories for use-case tests. Not used at runtime. */
 export function inMemoryRepositories() {
-  const boardRows: BoardRecord[] = [];
+  const boardRows: (BoardRecord & { archivedAt: number | null })[] = [];
   const columnRows: ColumnRecord[] = [];
   const deletedColumns: ColumnRecord[] = [];
-  const taskRows: (TaskRecord & { deletedAt: number | null })[] = [];
+  type TaskRow = TaskWithDescription & { deletedAt: number | null; archivedAt: number | null };
+  const taskRows: TaskRow[] = [];
   const byRank = <T extends { rank: string }>(a: T, b: T) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0);
   const liveTasks = () => taskRows.filter((t) => t.deletedAt === null);
   const countFor = (boardId: string) =>
-    liveTasks().filter((t) => t.boardId === boardId && t.parentId === null).length;
+    liveTasks().filter((t) => t.boardId === boardId && t.parentId === null && t.archivedAt === null).length;
+  const withCount = (b: BoardRecord & { archivedAt: number | null }) => ({ ...b, taskCount: countFor(b.id) });
 
   const boards: BoardRepository = {
-    listActive: () => [...boardRows].sort(byRank).map((b) => ({ ...b, taskCount: countFor(b.id) })),
+    listActive: () =>
+      boardRows
+        .filter((b) => b.archivedAt === null)
+        .sort(byRank)
+        .map(withCount),
+    listArchived: () =>
+      boardRows
+        .filter((b) => b.archivedAt !== null)
+        .sort(byRank)
+        .sort((a, b) => (b.archivedAt ?? 0) - (a.archivedAt ?? 0))
+        .map(withCount),
     findById: (id) => {
       const b = boardRows.find((x) => x.id === id);
-      return b ? { ...b, taskCount: countFor(b.id) } : null;
+      return b ? withCount(b) : null;
     },
     lastRank: () =>
       boardRows
         .map((b) => b.rank)
         .sort()
         .at(-1) ?? null,
-    insert: (b) => void boardRows.push(b),
+    adjacentRank: (rank, side, excludeId) => {
+      const ranks = boardRows
+        .filter((b) => b.id !== excludeId)
+        .map((b) => b.rank)
+        .filter((r) => (side === 'after' ? r > rank : r < rank))
+        .sort();
+      return (side === 'after' ? ranks[0] : ranks.at(-1)) ?? null;
+    },
+    insert: (b) => void boardRows.push({ ...b, archivedAt: null }),
+    update: (id, patch: BoardPatch) => {
+      const i = boardRows.findIndex((b) => b.id === id);
+      const row = boardRows[i];
+      if (row) boardRows[i] = { ...row, ...patch };
+    },
   };
 
   const columns: ColumnRepository = {
     listByBoard: (id) => columnRows.filter((c) => c.boardId === id).sort(byRank),
     findById: (id) => columnRows.find((c) => c.id === id) ?? null,
     adjacentRankInBoard: (boardId, rank, side, excludeId) => {
-      const ranks = columnRows
+      const ranks = [...columnRows, ...deletedColumns]
         .filter((c) => c.boardId === boardId && c.id !== excludeId)
         .map((c) => c.rank)
         .filter((r) => (side === 'after' ? r > rank : r < rank))
@@ -62,13 +89,36 @@ export function inMemoryRepositories() {
     },
   };
 
-  const strip = ({ deletedAt: _deletedAt, ...t }: TaskRecord & { deletedAt: number | null }): TaskRecord => t;
+  const strip = ({
+    deletedAt: _deletedAt,
+    archivedAt: _archivedAt,
+    descriptionJson: _descriptionJson,
+    descriptionText: _descriptionText,
+    ...t
+  }: TaskRow): TaskRecord => t;
+  const withDescription = ({
+    deletedAt: _deletedAt,
+    archivedAt: _archivedAt,
+    ...t
+  }: TaskRow): TaskWithDescription => t;
+  const toRow = (t: TaskRecord): TaskRow => ({
+    descriptionJson: null,
+    descriptionText: null,
+    ...t,
+    deletedAt: null,
+    archivedAt: null,
+  });
   const tasks: TaskRepository = {
     listTopLevelByBoard: (boardId) =>
       liveTasks()
-        .filter((t) => t.boardId === boardId && t.parentId === null)
+        .filter((t) => t.boardId === boardId && t.parentId === null && t.archivedAt === null)
         .sort(byRank)
         .map(strip),
+    listLiveWithDescriptionByBoard: (boardId) =>
+      liveTasks()
+        .filter((t) => t.boardId === boardId && t.archivedAt === null)
+        .sort(byRank)
+        .map(withDescription),
     findById: (id) => {
       const t = liveTasks().find((x) => x.id === id);
       return t ? strip(t) : null;
@@ -91,7 +141,8 @@ export function inMemoryRepositories() {
       const keys = taskRows.filter((t) => t.boardId === boardId).map((t) => t.key);
       return keys.length ? Math.max(...keys) : null;
     },
-    insert: (t) => void taskRows.push({ ...t, deletedAt: null }),
+    insert: (t) => void taskRows.push(toRow(t)),
+    insertMany: (ts) => void taskRows.push(...ts.map(toRow)),
     update: (id, patch) => {
       const i = taskRows.findIndex((t) => t.id === id);
       const row = taskRows[i];
@@ -123,7 +174,23 @@ export function inMemoryRepositories() {
     },
   };
 
-  return { boards, columns, tasks };
+  /**
+   * Test-only hooks for states no use case produces yet (archived tasks: lot 8; descriptions: the
+   * detail window's editor).
+   */
+  const testing = {
+    archiveTask: (id: string, now: number) => {
+      const row = taskRows.find((t) => t.id === id);
+      if (row) row.archivedAt = now;
+    },
+    describeTask: (id: string, descriptionJson: string, descriptionText: string) => {
+      const row = taskRows.find((t) => t.id === id);
+      if (row) Object.assign(row, { descriptionJson, descriptionText });
+    },
+    allTasks: (boardId: string) => liveTasks().filter((t) => t.boardId === boardId),
+  };
+
+  return { boards, columns, tasks, testing };
 }
 
 export function fixedDeps(now = 1_760_000_000_000) {

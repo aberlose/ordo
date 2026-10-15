@@ -16,6 +16,20 @@ function setup(overrides: Partial<Handlers> = {}) {
     'boards.create': () => {
       throw new Error('boom');
     },
+    'boards.update': () => {
+      throw new Error('not used');
+    },
+    'boards.move': () => {
+      throw new Error('not used');
+    },
+    'boards.duplicate': () => {
+      throw new Error('not used');
+    },
+    'boards.archive': ({ id }) => ({ id, archivedAt: 0 }),
+    'boards.restore': () => {
+      throw new Error('not used');
+    },
+    'boards.listArchived': () => [],
     'tasks.create': () => {
       throw new RuleViolationError('A task needs a title');
     },
