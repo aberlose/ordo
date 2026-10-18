@@ -11,3 +11,10 @@ Design canvas "Ordo — Maquettes", page "Tags & sous-tâches — lot 5". Each f
 | Tags on a card | `CardTags.dc.html` | **A** | Tags on one line; the overflow is summed up as "+N", whose hover or focus shows the hidden tags in a bubble. Bottom line: priority, sub-task ring with `done/total`, due date |
 
 The tag and column colours are the fixed palette of `../../tokens.md`.
+
+## Decisions taken at review (2026-10-18)
+
+- **Approved without a mockup**: the name conflict when renaming a tag (red field and "Un tag « … » existe déjà sur ce board."); matching tags and "Créer « … »" in the same list when the query is a new name; the message "Aucun tag sur ce board. Tapez un nom pour en créer un." (any other query matches a tag or offers "Créer « … »", so there is no "no match" state).
+- **Sub-task list load error**: the empty state's dashed box with the message and "Réessayer", as for the Archives.
+- **Done sub-task box**: filled with `--col-<name>-text` (the AA variant of its column colour) with the check in `--surface`, so the mark keeps 4.5:1 in light and dark.
+- **Keyboard**: in the picker, → on the active option (or Tab to its ⋯) opens "Modifier le tag"; Escape there goes back to the list. On a card, "+N" is not focusable on its own (it sits inside the card button): the bubble shows on hover of "+N" or keyboard focus of the card, and screen readers get the full tag list.

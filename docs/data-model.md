@@ -13,7 +13,7 @@ Schema changes go through Drizzle migrations only, and only after the user has a
 - **Soft delete** (`deleted_at`) backs both the trash (purged after 30 days) and undo.
 - **Dates:** `start_date` / `due_date` are calendar days (`YYYY-MM-DD`), no time, no timezone. Timestamps (`*_at`) are Unix epoch milliseconds.
 - **Sub-tasks:** one level only — a task whose `parent_id` is set cannot itself be a parent (enforced in the domain).
-- **Tags are scoped to a board** (unique name per board).
+- **Tags are scoped to a board**: names are unique per board ignoring case and accents (checked in the use case with `isSameTagName`; the `UNIQUE (board_id, name)` index only catches exact duplicates). Deleting a tag is permanent: its `task_tag` links go with it.
 - **Attachments** are copied into `userData/attachments/`; the DB stores only the relative path.
 - **Priority:** 1 = Very low … 5 = Very high, default 3 (Medium).
 
