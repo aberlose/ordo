@@ -2,7 +2,7 @@ import type { BoardDetail, BoardSummary, Input } from '@ordo/contracts';
 import { rankBetween } from '@ordo/domain';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { call } from '@renderer/shared/api/client';
-import { boardKeys } from '@renderer/shared/api/keys';
+import { boardKeys, taskKeys } from '@renderer/shared/api/keys';
 import { useFeedback } from '@renderer/shared/feedback/store';
 import { useColumnDrag } from '../dnd/state';
 import i18n from '@renderer/i18n';
@@ -239,8 +239,15 @@ export function useDeleteColumn(boardId: string) {
       void client.invalidateQueries({ queryKey: key });
       useFeedback.getState().showToast(i18n.t('feedback.failed.deleteColumn'), () => mutation.mutate(id));
     },
-    // Task counts in the sidebar change.
-    onSettled: () => void client.invalidateQueries({ queryKey: boardKeys.all, exact: true }),
+    onSettled: () => {
+      // Task counts in the sidebar change.
+      void client.invalidateQueries({ queryKey: boardKeys.all, exact: true });
+      // The sub-tasks in the column and those of its tasks go to the trash too: the board (tag counts,
+      // sub-task rings), the sub-task lists and the sub-task windows reload.
+      void client.invalidateQueries({ queryKey: key });
+      void client.invalidateQueries({ queryKey: taskKeys.allSubtasks });
+      void client.invalidateQueries({ queryKey: taskKeys.details });
+    },
   });
   return mutation;
 }

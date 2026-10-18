@@ -1,4 +1,4 @@
-import type { BoardDetail, Column, Task } from '@ordo/contracts';
+import type { BoardDetail, Column, Tag, Task } from '@ordo/contracts';
 import { addDays } from '@ordo/domain';
 import { today } from '@renderer/shared/lib/dates';
 
@@ -86,3 +86,48 @@ export const board: BoardDetail = {
   taskCount: tasks.length,
   tasks,
 };
+
+/** "Intégrer le nouveau header" and its sub-tasks (approved mockup: tags-subtasks/SubtaskRows, 3/5 done). */
+export const subtaskParent: Task = { ...tasks[4]!, subtasks: { done: 3, total: 5 } };
+const subtask = (columnIndex: number, rank: string, title: string): Task =>
+  task(columnIndex, rank, { title, parentId: subtaskParent.id, priority: 3 });
+export const subtasks: Task[] = [
+  subtask(2, 'V', 'Structure HTML du header'),
+  subtask(2, 'd', 'Logo SVG optimisé'),
+  subtask(2, 'k', 'Intégration desktop'),
+  subtask(1, 's', 'Menu burger mobile'),
+  subtask(0, 'w', 'Tests d’accessibilité clavier'),
+];
+/** `board` with the parent's progress filled in (the card ring and the sub-task window read it). */
+export const boardWithSubtasks: BoardDetail = {
+  ...board,
+  tasks: tasks.map((t) => (t.id === subtaskParent.id ? subtaskParent : t)),
+};
+
+const tag = (n: number, name: string, color: Tag['color'], taskCount: number): Tag => ({
+  id: `01920000-0000-7000-8000-000000000${200 + n}`,
+  name,
+  color,
+  taskCount,
+});
+/** The board's tags, alphabetical (approved mockup: tags-subtasks/TagPicker A). */
+export const tags: Tag[] = [
+  tag(1, 'accessibilité', 'cyan', 5),
+  tag(2, 'back', 'teal', 6),
+  tag(3, 'contenu', 'amber', 6),
+  tag(4, 'design', 'violet', 9),
+  tag(5, 'front', 'blue', 14),
+  tag(6, 'SEO', 'green', 4),
+  tag(7, 'urgent', 'red', 3),
+];
+const tagIds = (...names: string[]) => tags.filter((t) => names.includes(t.name)).map((t) => t.id);
+/** "Intégrer le nouveau header" with five tags (two past the card's line) and "Rédiger…" with one. */
+export const taggedTasks: Task[] = tasks.map((t, index) =>
+  index === 4
+    ? { ...t, tagIds: tagIds('accessibilité', 'design', 'front', 'SEO', 'urgent') }
+    : index === 1
+      ? { ...t, tagIds: tagIds('contenu') }
+      : t,
+);
+/** `board` with its tags on a couple of tasks. */
+export const taggedBoard: BoardDetail = { ...board, tags, tasks: taggedTasks };

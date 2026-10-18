@@ -162,7 +162,13 @@
       "updateBoard": "Modification non enregistrée : le board a repris son nom et son style.",
       "moveBoard": "Déplacement non enregistré : le board a repris sa place.",
       "duplicateBoard": "Duplication non enregistrée : la copie n'a pas été créée.",
-      "archiveBoard": "Archivage non enregistré : le board est revenu."
+      "archiveBoard": "Archivage non enregistré : le board est revenu.",
+      "tagTask": "Tag non enregistré : la tâche a repris ses tags.",
+      "createTag": "Création non enregistrée : le tag n'a pas été créé.",
+      "updateTag": "Modification non enregistrée : le tag a repris son nom et sa couleur.",
+      "deleteTag": "Suppression non enregistrée : le tag est revenu.",
+      "createSubtask": "Ajout non enregistré : la sous-tâche a été retirée.",
+      "deleteSubtask": "Suppression non enregistrée : la sous-tâche est revenue."
     }
   },
   "dnd": {
@@ -369,5 +375,65 @@
     "hand": "Main, aide, bénévolat",
     "refresh-cw": "Actualiser, à refaire, cycle",
     "repeat": "Répéter, récurrent, routine"
+  },
+  "tags": {
+    "label": "Tags",
+    "add": "Ajouter un tag",
+    "remove": "Retirer {{name}}",
+    "taskTags": "Tags de la tâche",
+    "boardTags": "Tags du board",
+    "search": "Rechercher ou créer un tag",
+    "create": "Créer",
+    "createOption": "Créer « {{name}} »",
+    "createHint": "Couleur automatique, modifiable avec ⋯",
+    "empty": "Aucun tag sur ce board. Tapez un nom pour en créer un.",
+    "taskCount_one": "{{count}} tâche",
+    "taskCount_other": "{{count}} tâches",
+    "manage": "Gérer le tag {{name}}",
+    "manageHint": "Flèche droite : modifier le tag actif.",
+    "keys": {
+      "move": "<kbd>↑↓</kbd> choisir",
+      "toggle": "<kbd>↵</kbd> cocher",
+      "close": "<kbd>Échap</kbd> fermer"
+    },
+    "edit": {
+      "title": "Modifier le tag",
+      "back": "Retour aux tags",
+      "name": "Nom",
+      "color": "Couleur",
+      "hint": "Les changements s’appliquent à toutes les tâches du board.",
+      "conflict": "Un tag « {{name}} » existe déjà sur ce board.",
+      "delete": "Supprimer le tag",
+      "count_zero": "Aucune tâche",
+      "count_one": "{{count}} tâche",
+      "count_other": "{{count}} tâches",
+      "deleteConfirm_zero": "Supprimer « {{name}} » ? Il n’est sur aucune tâche.",
+      "deleteConfirm_one": "Supprimer « {{name}} » ? Il sera retiré de {{count}} tâche.",
+      "deleteConfirm_other": "Supprimer « {{name}} » ? Il sera retiré de {{count}} tâches.",
+      "deleteTitle": "Supprimer le tag",
+      "cancel": "Annuler",
+      "confirm": "Supprimer"
+    },
+    "card": {
+      "list": "Tags : {{names}}",
+      "subtasks": "Sous-tâches terminées : {{done}} sur {{total}}"
+    }
+  },
+  "subtasks": {
+    "title": "Sous-tâches",
+    "progress": "{{done}}/{{total}}",
+    "progressLabel": "{{done}} sur {{total}} terminées",
+    "checkLabel": "Sous-tâche terminée : {{title}}",
+    "statusOf": "Statut de « {{title}} » : {{status}}",
+    "add": "Ajouter une sous-tâche",
+    "newTitle": "Titre de la sous-tâche",
+    "addHint": "↵ ajouter et continuer · Échap fermer",
+    "empty": "Aucune sous-tâche",
+    "emptyHint": "Découpez la tâche en étapes : chacune a son statut et sa propre fenêtre.",
+    "loadError": "Impossible de charger les sous-tâches.",
+    "parent": "Parente",
+    "parentOf": "Sous-tâche de <b>{{title}}</b>",
+    "parentLink": "Sous-tâche de « {{title}} », {{done}} sur {{total}} terminées : revenir à la tâche parente",
+    "delete": "Supprimer la sous-tâche"
   }
 }

@@ -14,6 +14,7 @@ import { Button } from '@renderer/shared/ui/button';
 import { Kbd } from '@renderer/shared/ui/kbd';
 import { DRAG, isTaskDrag, useTaskDrag, type TaskDragData } from '../dnd/state';
 import { useCreateTask } from '../hooks/mutations';
+import { useTagLooks, type TagLook } from '../hooks/tags';
 import { useTaskUi } from '../store';
 import { QuickAdd } from './QuickAdd';
 import { TaskCard, TEMP_ID_PREFIX } from './TaskCard';
@@ -52,6 +53,8 @@ export interface ColumnTasksProps {
 interface DraggableCardProps {
   task: Task;
   columnId: string;
+  color: Column['color'];
+  tags: ReadonlyMap<string, TagLook>;
   today: string;
   highlighted: boolean;
   flash: boolean;
@@ -65,6 +68,8 @@ interface DraggableCardProps {
 const DraggableCard = memo(function DraggableCard({
   task,
   columnId,
+  color,
+  tags,
   today,
   highlighted,
   flash,
@@ -142,11 +147,14 @@ const DraggableCard = memo(function DraggableCard({
     <div
       ref={setRef}
       data-index={index}
-      className="absolute inset-x-0 top-0"
+      // Above the next cards while hovered or focused: the "+N" tag bubble overlaps them.
+      className="absolute inset-x-0 top-0 focus-within:z-10 hover:z-10"
       style={{ transform: `translateY(${start}px)` }}
     >
       <TaskCard
         task={task}
+        tags={tags}
+        color={color}
         today={today}
         highlighted={highlighted}
         flash={flash}
@@ -265,6 +273,7 @@ export const ColumnTasks = memo(function ColumnTasks({
   );
   const { openQuickAdd, closeQuickAdd, openTask, highlight } = useTaskUi.getState();
   const create = useCreateTask(boardId);
+  const tags = useTagLooks(boardId);
 
   const expanded = useTaskUi((state) => state.expandedColumnIds.has(column.id));
 
@@ -372,6 +381,8 @@ export const ColumnTasks = memo(function ColumnTasks({
                 key={row.task.id}
                 task={row.task}
                 columnId={column.id}
+                color={column.color}
+                tags={tags}
                 today={today}
                 highlighted={row.task.id === highlightedTaskId}
                 flash={row.task.id === flashTaskId}

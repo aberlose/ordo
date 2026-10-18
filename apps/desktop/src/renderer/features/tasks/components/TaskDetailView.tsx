@@ -1,11 +1,13 @@
-import type { Column, Task, UpdateTaskInput } from '@ordo/contracts';
-import { daysOverdue, PRIORITIES, type CalendarDay, type Priority } from '@ordo/domain';
+import type { Column, SubtaskProgress, Task, UpdateTaskInput } from '@ordo/contracts';
+import { daysOverdue, PRIORITIES, type CalendarDay, type ColumnColor, type Priority } from '@ordo/domain';
 import type { TFunction } from 'i18next';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
+  ArrowUp,
   CalendarDays,
   ChevronDown,
   ChevronRight,
+  List,
   Maximize2,
   Minimize2,
   Moon,
@@ -16,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { useState, type KeyboardEvent, type ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { cn } from '@renderer/shared/lib/cn';
 import { dateToDay, formatDay, formatRelative } from '@renderer/shared/lib/dates';
 import { columnColorVar } from '@renderer/shared/ui/colors';
@@ -32,8 +34,17 @@ import {
 import { PriorityBar } from '@renderer/shared/ui/priority-bars';
 import { Feedback } from '@renderer/shared/ui/toast';
 import { DatePicker } from './DatePicker';
+import { SubtaskRing } from './subtasks/SubtaskRing';
 
 export type TaskChange = Omit<UpdateTaskInput, 'id'>;
+
+/** The parent of an open sub-task (approved mockup: tags-subtasks/SubtaskDetail variant B). */
+export interface ParentSummary {
+  title: string;
+  progress: SubtaskProgress;
+  /** Colour of the parent's column: its progress ring. */
+  color: ColumnColor;
+}
 
 export interface TaskDetailViewProps {
   task: Task;
@@ -48,6 +59,16 @@ export interface TaskDetailViewProps {
   onClose: () => void;
   onToggleExpanded: () => void;
   onToggleTheme: () => void;
+  /**
+   * Set for a sub-task: breadcrumb Board › Parent › Sub-task, the "Sous-tâche de" button above the
+   * title and a "Parente" property, each leading back to the parent through `onOpenParent`.
+   */
+  parent?: ParentSummary;
+  onOpenParent?: () => void;
+  /** The Sub-tasks section under the title (top-level tasks only). */
+  subtasks?: ReactNode;
+  /** The Tags property: chips and the "+" of the tag picker (approved mockup: tags-subtasks/TagPicker A). */
+  tags?: ReactNode;
 }
 
 const iconButton =
@@ -204,6 +225,10 @@ export function TaskDetailView({
   onClose,
   onToggleExpanded,
   onToggleTheme,
+  parent,
+  onOpenParent,
+  subtasks,
+  tags,
 }: TaskDetailViewProps) {
   const { t, i18n } = useTranslation();
   const language = i18n.resolvedLanguage;
@@ -221,8 +246,9 @@ export function TaskDetailView({
           }}
           // Give the focus back to the task's card, visibly, however the window was closed (Escape,
           // ×, click outside): ⌥/Alt + arrows then work right away. The card may have changed column.
+          // A sub-task has no card: its parent's.
           onCloseAutoFocus={(event) => {
-            const card = document.querySelector<HTMLElement>(`[data-task-id="${task.id}"]`);
+            const card = document.querySelector<HTMLElement>(`[data-task-id="${task.parentId ?? task.id}"]`);
             if (!card) return;
             event.preventDefault();
             card.focus({ focusVisible: true } as FocusOptions);
@@ -238,16 +264,32 @@ export function TaskDetailView({
             <SquareKanban size={14} className="text-accent" aria-hidden />
             <span className="text-meta text-text-2">{boardName}</span>
             <ChevronRight size={14} className="text-text-3" aria-hidden />
-            {column && (
-              <span className="flex items-center gap-1.5 text-meta text-text-2">
-                <ColumnIcon
-                  icon={column.icon}
-                  size={13}
-                  strokeWidth={2.2}
-                  style={{ color: columnColorVar(column.color) }}
-                />
-                {column.name}
-              </span>
+            {parent ? (
+              <>
+                <button
+                  type="button"
+                  onClick={onOpenParent}
+                  className="min-w-0 truncate rounded-sm text-meta text-text-2 underline decoration-border-strong underline-offset-3 hover:text-text hover:decoration-text-3"
+                >
+                  {parent.title}
+                </button>
+                <ChevronRight size={14} className="shrink-0 text-text-3" aria-hidden />
+                <span className="min-w-0 truncate text-meta text-text" aria-current="page">
+                  {task.title}
+                </span>
+              </>
+            ) : (
+              column && (
+                <span className="flex items-center gap-1.5 text-meta text-text-2">
+                  <ColumnIcon
+                    icon={column.icon}
+                    size={13}
+                    strokeWidth={2.2}
+                    style={{ color: columnColorVar(column.color) }}
+                  />
+                  {column.name}
+                </span>
+              )
             )}
             <div className="flex-1" />
             <button
@@ -274,7 +316,7 @@ export function TaskDetailView({
               <DropdownMenuContent align="end" className="min-w-48">
                 <DropdownMenuItem onSelect={onDelete} className="text-danger">
                   <Trash2 size={14} aria-hidden />
-                  {t('task.delete')}
+                  {t(parent ? 'subtasks.delete' : 'task.delete')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -290,18 +332,58 @@ export function TaskDetailView({
                 expanded ? 'max-w-detail-full px-12 pt-10 pb-16' : 'px-9 pt-8 pb-12',
               )}
             >
-              <Dialog.Title asChild>
-                <div>
-                  <TitleField
-                    key={task.title}
-                    value={task.title}
-                    large={expanded}
-                    onSave={(title) => onChange({ title })}
-                  />
-                </div>
-              </Dialog.Title>
+              <div className="flex min-w-0 flex-col items-start gap-4.5">
+                {parent && (
+                  <button
+                    type="button"
+                    data-parent-link
+                    onClick={onOpenParent}
+                    aria-label={t('subtasks.parentLink', { title: parent.title, ...parent.progress })}
+                    className="flex h-7 max-w-full items-center gap-2 rounded-md bg-rail pr-2.5 pl-2 text-label text-text-2 hover:text-text"
+                  >
+                    <ArrowUp size={14} className="shrink-0" aria-hidden />
+                    <span className="min-w-0 truncate">
+                      <Trans
+                        i18nKey="subtasks.parentOf"
+                        values={{ title: parent.title }}
+                        components={{ b: <span className="font-medium text-text" /> }}
+                      />
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1 text-text-3 tabular-nums">
+                      <SubtaskRing progress={parent.progress} color={parent.color} />
+                      {t('subtasks.progress', parent.progress)}
+                    </span>
+                  </button>
+                )}
+                <Dialog.Title asChild>
+                  <div className="w-full">
+                    <TitleField
+                      key={task.title}
+                      value={task.title}
+                      large={expanded}
+                      onSave={(title) => onChange({ title })}
+                    />
+                  </div>
+                </Dialog.Title>
+              </div>
 
               <div className="row-span-2 flex flex-col gap-0.5 rounded-xl border border-border bg-canvas px-4 py-3.5">
+                {parent && (
+                  <Property label={t('subtasks.parent')}>
+                    <button
+                      type="button"
+                      onClick={onOpenParent}
+                      className={cn(propButton, 'max-w-full text-text')}
+                      aria-label={t('task.propertyValue', {
+                        label: t('subtasks.parent'),
+                        value: parent.title,
+                      })}
+                    >
+                      <List size={14} className="shrink-0 text-text-3" aria-hidden />
+                      <span className="min-w-0 truncate">{parent.title}</span>
+                    </button>
+                  </Property>
+                )}
                 <Property label={t('task.status')}>
                   <DropdownMenu>
                     <DropdownMenuTrigger
@@ -396,6 +478,12 @@ export function TaskDetailView({
                   )}
                 </Property>
 
+                {tags && (
+                  <Property label={t('tags.label')} top>
+                    {tags}
+                  </Property>
+                )}
+
                 <div className="mt-3 flex flex-col gap-1 border-t border-border pt-3 text-small text-text-3">
                   <span>
                     {t('task.createdOn', {
@@ -405,6 +493,8 @@ export function TaskDetailView({
                   <span>{modifiedLabel(task.updatedAt, now, language, t)}</span>
                 </div>
               </div>
+
+              {subtasks}
             </div>
           </div>
           {/* The rest of the app is inert while the window is open: errors show here. */}

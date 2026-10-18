@@ -40,11 +40,16 @@ const lastRank = (board: BoardDetail, columnId: string) =>
     .sort()
     .at(-1) ?? null;
 
+/** A top-level task from the quick add: the contract's input with a column, and the card's temporary id. */
+type CreateTaskVariables = {
+  [K in 'columnId' | 'title']-?: NonNullable<Input<'tasks.create'>[K]>;
+} & { tempId: string };
+
 /** Quick add, optimistic: the card shows at once with a temporary id, replaced by the saved task. */
 export function useCreateTask(boardId: string) {
   const client = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (input: { columnId: string; title: string; tempId: string }) =>
+    mutationFn: (input: CreateTaskVariables) =>
       call('tasks.create', { columnId: input.columnId, title: input.title }),
     onMutate: async (input) => {
       await client.cancelQueries({ queryKey: boardKeys.detail(boardId) });
@@ -136,7 +141,11 @@ export function useDeleteTask(boardId: string) {
       rollback(client, boardId, snapshot);
       failed('delete', () => mutation.mutate(id));
     },
-    onSettled: () => void client.invalidateQueries({ queryKey: boardKeys.all, exact: true }),
+    onSettled: () => {
+      // Task counts in the sidebar, and the tag counts of the board.
+      void client.invalidateQueries({ queryKey: boardKeys.all, exact: true });
+      void client.invalidateQueries({ queryKey: boardKeys.detail(boardId) });
+    },
   });
   return mutation;
 }
