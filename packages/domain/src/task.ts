@@ -1,3 +1,4 @@
+import type { ColumnCategory } from './column';
 import type { CalendarDay } from './dates';
 import type { Priority } from './priority';
 import type { Rank } from './rank';
@@ -54,4 +55,28 @@ export function completionAfterMove(
 ): number | null {
   if (!targetIsDone) return null;
   return completedAt ?? now;
+}
+
+export interface ColumnRef {
+  readonly id: string;
+  readonly category: ColumnCategory;
+}
+
+/**
+ * Column of a new sub-task: the board's first To-do column, else its first column.
+ * `columns` are the live columns in board order.
+ */
+export function columnForNewSubtask(columns: readonly ColumnRef[]): string | null {
+  return (columns.find((c) => c.category === 'todo') ?? columns[0])?.id ?? null;
+}
+
+/**
+ * Column after checking (`done`) or unchecking a sub-task's box: the first Done column, or the first
+ * To-do column (else the first column that is not Done). `null` when there is none: nothing moves.
+ */
+export function columnForSubtaskCheck(columns: readonly ColumnRef[], done: boolean): string | null {
+  const target = done
+    ? columns.find((c) => c.category === 'done')
+    : (columns.find((c) => c.category === 'todo') ?? columns.find((c) => c.category !== 'done'));
+  return target?.id ?? null;
 }

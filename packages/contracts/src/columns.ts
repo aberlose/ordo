@@ -53,7 +53,11 @@ export const UpdateColumnInput = z
 
 /** The column and its tasks go to the trash together. The last column of a board cannot be deleted. */
 export const DeleteColumnInput = z.object({ id: Id }).strict();
-export const DeleteColumnOutput = z.object({ id: Id, deletedTasks: z.number().int().nonnegative() });
+export const DeleteColumnOutput = z.object({
+  id: Id,
+  /** Every row sent to the trash: the column's tasks, their sub-tasks and the sub-tasks sitting in it. */
+  deletedTasks: z.number().int().nonnegative(),
+});
 
 export type MoveColumnInput = z.infer<typeof MoveColumnInput>;
 export type CreateColumnInput = z.infer<typeof CreateColumnInput>;

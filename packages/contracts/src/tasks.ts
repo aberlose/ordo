@@ -2,10 +2,20 @@ import { TITLE_MAX_LENGTH } from '@ordo/domain';
 import { z } from 'zod';
 import { CalendarDay, Id, Priority } from './schemas';
 
-/** A top-level task as shown on the board and in the detail window (sub-tasks come with their own lot). */
+/** Progress of a task's live sub-tasks: `done` counts those in a Done column. Zeros for a sub-task. */
+export const SubtaskProgress = z.object({
+  done: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+});
+
+/**
+ * A task or a sub-task, as shown on the board and in the detail window. Its status is its column;
+ * a sub-task (`parentId` set) is not shown on the board and its `rank` orders it among its siblings.
+ */
 export const Task = z.object({
   id: Id,
   columnId: Id,
+  parentId: Id.nullable(),
   key: z.number().int().positive(),
   title: z.string(),
   priority: Priority,
@@ -15,18 +25,32 @@ export const Task = z.object({
   completedAt: z.number().int().nullable(),
   createdAt: z.number().int(),
   updatedAt: z.number().int(),
+  /** Board tags on the task, alphabetical. */
+  tagIds: z.array(Id),
+  subtasks: SubtaskProgress,
 });
 
 const Title = z.string().trim().min(1).max(TITLE_MAX_LENGTH);
 
+/**
+ * A task at the end of `columnId`, or a sub-task at the end of `parentId`'s list, in the board's first
+ * To-do column (`columnForNewSubtask`). Exactly one of the two is given; a sub-task cannot be a parent.
+ */
 export const CreateTaskInput = z
   .object({
-    columnId: Id,
+    columnId: Id.optional(),
+    parentId: Id.optional(),
     title: Title,
   })
-  .strict();
+  .strict()
+  .refine((input) => (input.columnId === undefined) !== (input.parentId === undefined), {
+    message: 'Give either columnId or parentId',
+  });
 
-/** Partial update: only the given fields change. `null` clears a date. Moving to another column appends the task at its end. */
+/**
+ * Partial update: only the given fields change. `null` clears a date. Moving a task to another column
+ * appends it at its end; a sub-task keeps its rank (its place in the parent's list).
+ */
 export const UpdateTaskInput = z
   .object({
     id: Id,
@@ -42,9 +66,15 @@ export const UpdateTaskInput = z
     'Nothing to update',
   );
 
+/** Soft delete; a parent's live sub-tasks go to the trash with it. */
 export const DeleteTaskInput = z.object({ id: Id }).strict();
 
+export const GetTaskInput = z.object({ id: Id }).strict();
+/** A task's live sub-tasks, in their list order. */
+export const ListSubtasksInput = z.object({ parentId: Id }).strict();
+
 export type Task = z.infer<typeof Task>;
+export type SubtaskProgress = z.infer<typeof SubtaskProgress>;
 export type CreateTaskInput = z.infer<typeof CreateTaskInput>;
 export type UpdateTaskInput = z.infer<typeof UpdateTaskInput>;
 

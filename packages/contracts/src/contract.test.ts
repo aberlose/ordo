@@ -3,6 +3,7 @@ import { CHANNELS } from './channels';
 import { contract } from './contract';
 import { CreateBoardInput, DuplicateBoardInput, MoveBoardInput, UpdateBoardInput } from './boards';
 import { CreateColumnInput, UpdateColumnInput } from './columns';
+import { CreateTagInput, TaskTagInput, UpdateTagInput } from './tags';
 import { CreateTaskInput, UpdateTaskInput } from './tasks';
 
 describe('contract', () => {
@@ -56,6 +57,12 @@ describe('task inputs', () => {
     expect(CreateTaskInput.safeParse({ columnId: id, title: '   ' }).success).toBe(false);
   });
 
+  it('creates either in a column or under a parent', () => {
+    expect(CreateTaskInput.safeParse({ parentId: id, title: 'Logo SVG' }).success).toBe(true);
+    expect(CreateTaskInput.safeParse({ title: 'Logo SVG' }).success).toBe(false);
+    expect(CreateTaskInput.safeParse({ columnId: id, parentId: id, title: 'Logo SVG' }).success).toBe(false);
+  });
+
   it('accepts partial updates, null to clear a date, and rejects empty ones', () => {
     expect(UpdateTaskInput.safeParse({ id, priority: 5 }).success).toBe(true);
     expect(UpdateTaskInput.safeParse({ id, dueDate: null }).success).toBe(true);
@@ -89,5 +96,28 @@ describe('column inputs', () => {
     expect(UpdateColumnInput.safeParse({ id, displayLimit: 8 }).success).toBe(true);
     expect(UpdateColumnInput.safeParse({ id, displayLimit: null }).success).toBe(true);
     expect(UpdateColumnInput.safeParse({ id }).success).toBe(false);
+  });
+});
+
+describe('tag inputs', () => {
+  const id = '0192f0a0-0000-7000-8000-000000000001';
+
+  it('trims and bounds the name, colour optional', () => {
+    expect(CreateTagInput.parse({ boardId: id, name: '  urgent ' })).toEqual({ boardId: id, name: 'urgent' });
+    expect(CreateTagInput.safeParse({ boardId: id, name: ' ' }).success).toBe(false);
+    expect(CreateTagInput.safeParse({ boardId: id, name: 'x'.repeat(41) }).success).toBe(false);
+    // Inner spaces are collapsed before the length is checked.
+    expect(
+      CreateTagInput.parse({ boardId: id, name: `à${' '.repeat(10)}${'x'.repeat(37)}` }).name,
+    ).toHaveLength(39);
+    expect(CreateTagInput.safeParse({ boardId: id, name: 'a', color: 'beige' }).success).toBe(false);
+    expect(CreateTagInput.safeParse({ boardId: id, name: 'a', taskId: id, color: 'red' }).success).toBe(true);
+  });
+
+  it('accepts partial updates only', () => {
+    expect(UpdateTagInput.safeParse({ id, color: 'violet' }).success).toBe(true);
+    expect(UpdateTagInput.safeParse({ id }).success).toBe(false);
+    expect(TaskTagInput.safeParse({ taskId: id, tagId: id }).success).toBe(true);
+    expect(TaskTagInput.safeParse({ taskId: id }).success).toBe(false);
   });
 });

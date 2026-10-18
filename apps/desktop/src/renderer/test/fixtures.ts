@@ -41,6 +41,7 @@ let n = 100;
 const task = (columnIndex: number, rank: string, fields: Partial<Task> & { title: string }): Task => ({
   id: `01920000-0000-7000-8000-000000000${++n}`,
   columnId: columns[columnIndex]!.id,
+  parentId: null,
   key: n - 100,
   priority: 3,
   startDate: null,
@@ -49,6 +50,8 @@ const task = (columnIndex: number, rank: string, fields: Partial<Task> & { title
   completedAt: columnIndex === 2 ? at : null,
   createdAt: at - 5 * 86_400_000,
   updatedAt: at - 2 * 3_600_000,
+  tagIds: [],
+  subtasks: { done: 0, total: 0 },
   ...fields,
 });
 
@@ -73,6 +76,7 @@ export const emptyBoard: BoardDetail = {
   color: null,
   taskCount: 0,
   columns,
+  tags: [],
   tasks: [],
 };
 

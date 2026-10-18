@@ -1,6 +1,7 @@
 import { BOARD_NAME_MAX_LENGTH, COLUMN_CATEGORIES, COLUMN_COLORS, COLUMN_ICON_NAMES } from '@ordo/domain';
 import { z } from 'zod';
 import { Id } from './schemas';
+import { Tag } from './tags';
 import { Task } from './tasks';
 
 export const BoardSummary = z.object({
@@ -25,6 +26,8 @@ export const BoardDetail = BoardSummary.extend({
   columns: z.array(Column),
   /** Top-level tasks, ordered by rank within each column. */
   tasks: z.array(Task),
+  /** The board's tags, alphabetical (`compareTags`). */
+  tags: z.array(Tag),
 });
 
 const Name = z.string().trim().min(1).max(BOARD_NAME_MAX_LENGTH);

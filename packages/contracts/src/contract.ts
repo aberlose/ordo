@@ -22,7 +22,16 @@ import {
   UpdateColumnInput,
 } from './columns';
 import { AppInfo, Empty, Id } from './schemas';
-import { CreateTaskInput, DeleteTaskInput, MoveTaskInput, Task, UpdateTaskInput } from './tasks';
+import { CreateTagInput, DeleteTagInput, DeleteTagOutput, Tag, TaskTagInput, UpdateTagInput } from './tags';
+import {
+  CreateTaskInput,
+  DeleteTaskInput,
+  GetTaskInput,
+  ListSubtasksInput,
+  MoveTaskInput,
+  Task,
+  UpdateTaskInput,
+} from './tasks';
 
 /**
  * The IPC contract: one entry per channel, input and output validated with Zod.
@@ -42,9 +51,17 @@ export const contract = {
   'boards.listArchived': { input: Empty, output: z.array(ArchivedBoard) },
   'tasks.create': { input: CreateTaskInput, output: Task },
   'tasks.update': { input: UpdateTaskInput, output: Task },
-  /** Soft delete: the task goes to the trash (lot 8 lists and restores it). */
+  /** Soft delete: the task (with its sub-tasks) goes to the trash (lot 8 lists and restores it). */
   'tasks.delete': { input: DeleteTaskInput, output: z.object({ id: Id }) },
   'tasks.move': { input: MoveTaskInput, output: Task },
+  'tasks.get': { input: GetTaskInput, output: Task },
+  'tasks.listSubtasks': { input: ListSubtasksInput, output: z.array(Task) },
+  'tasks.addTag': { input: TaskTagInput, output: Task },
+  'tasks.removeTag': { input: TaskTagInput, output: Task },
+  'tags.create': { input: CreateTagInput, output: Tag },
+  'tags.update': { input: UpdateTagInput, output: Tag },
+  /** Permanent: the tag and its links go. */
+  'tags.delete': { input: DeleteTagInput, output: DeleteTagOutput },
   'columns.move': { input: MoveColumnInput, output: Column },
   'columns.create': { input: CreateColumnInput, output: Column },
   'columns.update': { input: UpdateColumnInput, output: Column },
