@@ -1,36 +1,61 @@
-import type { CreateTaskInput, MoveTaskInput, Task, UpdateTaskInput } from '@ordo/contracts';
+import type {
+  CreateTaskInput,
+  MoveTaskInput,
+  SubtaskProgress,
+  Task,
+  TaskTagInput,
+  UpdateTaskInput,
+} from '@ordo/contracts';
 import {
   areDatesOrdered,
-  rankBetween,
+  canBeParent,
+  columnForNewSubtask,
+  compareTags,
   completionAfterMove,
   DEFAULT_PRIORITY,
   nextTaskKey,
   normalizeTitle,
   rankAtEnd,
+  rankBetween,
 } from '@ordo/domain';
 import { NotFoundError, RuleViolationError } from './errors';
 import type {
+  BoardRepository,
   Clock,
+  ColumnRecord,
   ColumnRepository,
   IdGenerator,
+  SubtaskCount,
+  TagRecord,
+  TagRepository,
   TaskPatch,
   TaskRecord,
   TaskRepository,
+  TaskTagLink,
   Transactor,
 } from './ports';
 
 export interface TaskUseCasesDeps {
+  readonly boards: BoardRepository;
   readonly tasks: TaskRepository;
   readonly columns: ColumnRepository;
+  readonly tags: TagRepository;
   readonly tx: Transactor;
   readonly clock: Clock;
   readonly ids: IdGenerator;
 }
 
-export function toTask(record: TaskRecord): Task {
+const NO_SUBTASKS: SubtaskProgress = { done: 0, total: 0 };
+
+export function toTask(
+  record: TaskRecord,
+  tagIds: readonly string[] = [],
+  subtasks: SubtaskProgress = NO_SUBTASKS,
+): Task {
   return {
     id: record.id,
     columnId: record.columnId,
+    parentId: record.parentId,
     key: record.key,
     title: record.title,
     priority: record.priority,
@@ -40,6 +65,58 @@ export function toTask(record: TaskRecord): Task {
     completedAt: record.completedAt,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
+    tagIds: [...tagIds],
+    subtasks: { done: subtasks.done, total: subtasks.total },
+  };
+}
+
+/**
+ * Joins records with their tags (alphabetical) and sub-task progress, from a few set-based reads.
+ * `knownTags` must hold every tag the links point to; links to other tags are dropped.
+ */
+function assemble(
+  records: readonly TaskRecord[],
+  knownTags: readonly TagRecord[],
+  progress: readonly SubtaskCount[],
+  links: readonly TaskTagLink[],
+): Task[] {
+  const order = new Map([...knownTags].sort(compareTags).map((tag, i) => [tag.id, i]));
+  const progressOf = new Map(progress.map((p) => [p.parentId, p]));
+  const tagIdsOf = new Map<string, string[]>();
+  for (const link of links) {
+    if (!order.has(link.tagId)) continue;
+    const ids = tagIdsOf.get(link.taskId);
+    if (ids) ids.push(link.tagId);
+    else tagIdsOf.set(link.taskId, [link.tagId]);
+  }
+  const rankOf = (id: string) => order.get(id) ?? 0;
+  return records.map((record) =>
+    toTask(
+      record,
+      (tagIdsOf.get(record.id) ?? []).sort((a, b) => rankOf(a) - rankOf(b)),
+      record.parentId === null ? (progressOf.get(record.id) ?? NO_SUBTASKS) : NO_SUBTASKS,
+    ),
+  );
+}
+
+/** Builds the `Task` outputs: tag ids and sub-task progress come from grouped queries, never per task. */
+export function taskPresenter(tasks: TaskRepository, tags: TagRepository) {
+  return {
+    /** The top-level tasks of a board detail, given the board's tags already read. */
+    ofBoard: (boardId: string, records: readonly TaskRecord[], boardTags: readonly TagRecord[]): Task[] =>
+      assemble(records, boardTags, tasks.subtaskProgressByBoard(boardId), tags.linksByBoard(boardId)),
+
+    /** Any tasks: only the tags their links point to are read, without counts. */
+    many: (records: readonly TaskRecord[]): Task[] => {
+      if (records.length === 0) return [];
+      const links = tags.linksOfTasks(records.map((r) => r.id));
+      return assemble(
+        records,
+        tags.listByIds(links.map((link) => link.tagId)),
+        tasks.subtaskProgressOf(records.filter((r) => r.parentId === null).map((r) => r.id)),
+        links,
+      );
+    },
   };
 }
 
@@ -49,41 +126,103 @@ function requireTitle(raw: string): string {
   return title;
 }
 
-export function makeTaskUseCases({ tasks, columns, tx, clock, ids }: TaskUseCasesDeps) {
+export function makeTaskUseCases({ boards, tasks, columns, tags, tx, clock, ids }: TaskUseCasesDeps) {
+  const present = taskPresenter(tasks, tags);
+  const one = (record: TaskRecord): Task => present.many([record])[0] ?? toTask(record);
+
   const requireColumn = (id: string) => {
     const column = columns.findById(id);
     if (!column) throw new NotFoundError('column', id);
     return column;
+  };
+  /** Creation needs a sidebar board: not deleted (not found) and not archived. */
+  const requireActiveBoard = (id: string) => {
+    const board = boards.findById(id);
+    if (!board) throw new NotFoundError('board', id);
+    if (board.archivedAt !== null) throw new RuleViolationError(`Board ${id} is archived`);
+    return board;
   };
   const requireTask = (id: string) => {
     const task = tasks.findById(id);
     if (!task) throw new NotFoundError('task', id);
     return task;
   };
+  const requireTag = (id: string) => {
+    const tag = tags.findById(id);
+    if (!tag) throw new NotFoundError('tag', id);
+    return tag;
+  };
+
+  const newRecord = (
+    column: ColumnRecord,
+    parentId: string | null,
+    rank: string,
+    title: string,
+    now: number,
+  ): TaskRecord => ({
+    id: ids.next(),
+    boardId: column.boardId,
+    columnId: column.id,
+    parentId,
+    key: nextTaskKey(tasks.maxKey(column.boardId)),
+    title: requireTitle(title),
+    priority: DEFAULT_PRIORITY,
+    startDate: null,
+    dueDate: null,
+    rank,
+    completedAt: completionAfterMove(null, column.category === 'done', now),
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  /** Puts a tag on a task or takes it off; `updatedAt` moves only when a link changed. */
+  const changeTag = (input: TaskTagInput, change: (link: TaskTagLink) => boolean): Task =>
+    tx.run(() => {
+      const task = requireTask(input.taskId);
+      const tag = requireTag(input.tagId);
+      if (tag.boardId !== task.boardId) throw new RuleViolationError('The tag belongs to another board');
+      if (!change({ taskId: task.id, tagId: tag.id })) return one(task);
+      const patch = { updatedAt: clock.now() };
+      tasks.update(task.id, patch);
+      return one({ ...task, ...patch });
+    });
 
   return {
-    /** Quick add: the new task goes at the bottom of its column, with the default priority. */
+    /**
+     * Quick add: a task goes at the bottom of its column; a sub-task at the end of its parent's list,
+     * in the board's first To-do column. Both with the default priority and a new board key.
+     */
     createTask: (input: CreateTaskInput): Task =>
       tx.run(() => {
-        const column = requireColumn(input.columnId);
         const now = clock.now();
-        const record: TaskRecord = {
-          id: ids.next(),
-          boardId: column.boardId,
-          columnId: column.id,
-          parentId: null,
-          key: nextTaskKey(tasks.maxKey(column.boardId)),
-          title: requireTitle(input.title),
-          priority: DEFAULT_PRIORITY,
-          startDate: null,
-          dueDate: null,
-          rank: rankAtEnd(tasks.lastRankInColumn(column.id)),
-          completedAt: completionAfterMove(null, column.category === 'done', now),
-          createdAt: now,
-          updatedAt: now,
-        };
+        if (input.parentId !== undefined) {
+          const parent = requireTask(input.parentId);
+          if (!canBeParent(parent)) throw new RuleViolationError('A sub-task cannot have sub-tasks');
+          requireActiveBoard(parent.boardId);
+          const columnId = columnForNewSubtask(columns.listByBoard(parent.boardId));
+          if (columnId === null) throw new RuleViolationError('The board has no column');
+          const record = newRecord(
+            requireColumn(columnId),
+            parent.id,
+            rankAtEnd(tasks.lastSubtaskRank(parent.id)),
+            input.title,
+            now,
+          );
+          tasks.insert(record);
+          return one(record);
+        }
+        if (input.columnId === undefined) throw new RuleViolationError('Give either columnId or parentId');
+        const column = requireColumn(input.columnId);
+        requireActiveBoard(column.boardId);
+        const record = newRecord(
+          column,
+          null,
+          rankAtEnd(tasks.lastRankInColumn(column.id)),
+          input.title,
+          now,
+        );
         tasks.insert(record);
-        return toTask(record);
+        return one(record);
       }),
 
     updateTask: (input: UpdateTaskInput): Task =>
@@ -103,7 +242,8 @@ export function makeTaskUseCases({ tasks, columns, tx, clock, ids }: TaskUseCase
             throw new RuleViolationError('A task cannot move to another board');
           }
           patch.columnId = target.id;
-          patch.rank = rankAtEnd(tasks.lastRankInColumn(target.id));
+          // A sub-task's rank is its place in the parent's list: a new status does not change it.
+          if (current.parentId === null) patch.rank = rankAtEnd(tasks.lastRankInColumn(target.id));
           patch.completedAt = completionAfterMove(current.completedAt, target.category === 'done', now);
         }
 
@@ -114,7 +254,7 @@ export function makeTaskUseCases({ tasks, columns, tx, clock, ids }: TaskUseCase
         }
 
         tasks.update(current.id, patch);
-        return toTask({ ...current, ...patch });
+        return one({ ...current, ...patch });
       }),
 
     /**
@@ -161,16 +301,33 @@ export function makeTaskUseCases({ tasks, columns, tx, clock, ids }: TaskUseCase
           updatedAt: now,
         };
         tasks.update(current.id, patch);
-        return toTask({ ...current, ...patch });
+        return one({ ...current, ...patch });
       }),
 
-    /** Soft delete; the trash (lot 8) restores or purges it. */
+    /** Soft delete, with the parent's live sub-tasks; the trash (lot 8) restores or purges them. */
     deleteTask: (id: string): { id: string } =>
       tx.run(() => {
-        requireTask(id);
-        tasks.softDelete(id, clock.now());
+        const current = requireTask(id);
+        const now = clock.now();
+        if (current.parentId === null) tasks.softDeleteSubtasks(id, now);
+        tasks.softDelete(id, now);
         return { id };
       }),
+
+    /** A live task or sub-task (the detail window). */
+    getTask: (id: string): Task => one(requireTask(id)),
+
+    /** A task's live sub-tasks, in their list order. */
+    listSubtasks: (parentId: string): Task[] => {
+      requireTask(parentId);
+      return present.many(tasks.listSubtasks(parentId));
+    },
+
+    /** Idempotent: a tag already on the task changes nothing. */
+    addTag: (input: TaskTagInput): Task => changeTag(input, (link) => tags.addLink(link)),
+
+    /** Idempotent: a tag not on the task changes nothing. */
+    removeTag: (input: TaskTagInput): Task => changeTag(input, (link) => tags.removeLink(link)),
   };
 }
 

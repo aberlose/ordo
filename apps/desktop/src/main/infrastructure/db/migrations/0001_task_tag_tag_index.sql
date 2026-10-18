@@ -1,0 +1,1 @@
+CREATE INDEX `task_tag_tag` ON `task_tag` (`tag_id`);

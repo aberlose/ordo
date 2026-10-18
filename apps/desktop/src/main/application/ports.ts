@@ -142,10 +142,77 @@ export interface TaskRepository {
   insertMany(tasks: readonly TaskWithDescription[]): void;
   update(id: string, patch: TaskPatch): void;
   softDelete(id: string, now: number): void;
-  /** Soft-deletes the live tasks of a column (sub-tasks included); returns how many top-level tasks went. */
+  /**
+   * Soft-deletes the live tasks and sub-tasks of a column, plus the live sub-tasks (wherever they
+   * sit) of the top-level tasks it held; returns how many rows went.
+   */
   softDeleteByColumn(columnId: string, now: number): number;
+  /** Live (not deleted, not archived) sub-tasks of a task, ordered by rank. */
+  listSubtasks(parentId: string): TaskRecord[];
+  /** Highest rank among the task's sub-tasks, deleted ones included (a restored one must not collide). */
+  lastSubtaskRank(parentId: string): Rank | null;
+  /** Soft-deletes the live sub-tasks of a task; returns how many went. */
+  softDeleteSubtasks(parentId: string, now: number): number;
+  /** Progress of every task of the board that has live sub-tasks (one grouped query). */
+  subtaskProgressByBoard(boardId: string): SubtaskCount[];
+  /** Progress of the given tasks that have live sub-tasks. */
+  subtaskProgressOf(parentIds: readonly string[]): SubtaskCount[];
   /** Column moved to a "done" category: its live tasks without a completion date get `now`. */
   completeAllInColumn(columnId: string, now: number): void;
   /** Column left the "done" category: its live tasks lose their completion date. */
   reopenAllInColumn(columnId: string, now: number): void;
+}
+
+/** Live sub-tasks of `parentId`: `done` are those in a column whose category is "done". */
+export interface SubtaskCount {
+  readonly parentId: string;
+  readonly done: number;
+  readonly total: number;
+}
+
+export interface TagRecord {
+  readonly id: string;
+  readonly boardId: string;
+  readonly name: string;
+  readonly color: ColumnColor;
+}
+
+/** A tag with the number of live (not deleted, not archived) tasks and sub-tasks carrying it. */
+export interface TagWithCount extends TagRecord {
+  readonly taskCount: number;
+}
+
+export interface TaskTagLink {
+  readonly taskId: string;
+  readonly tagId: string;
+}
+
+export interface TagRepository {
+  /** The board's tags, without counts, in no particular order (sort them with `compareTags`). */
+  listByBoard(boardId: string): TagRecord[];
+  /** The board's tags with their live task counts (joins every link of the board: only where shown). */
+  listWithCountByBoard(boardId: string): TagWithCount[];
+  /** The given tags, without counts, whatever their board. */
+  listByIds(ids: readonly string[]): TagRecord[];
+  findById(id: string): TagRecord | null;
+  /** A tag with its live task count. */
+  findWithCountById(id: string): TagWithCount | null;
+  insert(tag: TagRecord): void;
+  /** Bulk insert (board duplication). */
+  insertMany(tags: readonly TagRecord[]): void;
+  update(id: string, patch: Partial<Pick<TagRecord, 'name' | 'color'>>): void;
+  /** Permanent: the tag row only (remove its links first). */
+  delete(id: string): void;
+  /** Links of the board's tags, whatever the state of the tasks. */
+  linksByBoard(boardId: string): TaskTagLink[];
+  /** Links of the given tasks. */
+  linksOfTasks(taskIds: readonly string[]): TaskTagLink[];
+  /** Adds the link; `false` when it already existed. */
+  addLink(link: TaskTagLink): boolean;
+  /** Removes the link; `false` when there was none. */
+  removeLink(link: TaskTagLink): boolean;
+  /** Permanent: every link of the tag. */
+  removeLinksOfTag(tagId: string): void;
+  /** Bulk insert (board duplication). */
+  insertLinks(links: readonly TaskTagLink[]): void;
 }

@@ -10,6 +10,7 @@ import { sqliteTransactor } from '../db/transactor';
 import { uuidv7Generator } from '../ids';
 import { boardRepository } from './boardRepository';
 import { columnRepository } from './columnRepository';
+import { tagRepository } from './tagRepository';
 import { taskRepository } from './taskRepository';
 
 const migrations = resolve(__dirname, '../db/migrations');
@@ -23,6 +24,7 @@ function useCases() {
     boards: boardRepository(opened.db),
     columns: columnRepository(opened.db),
     tasks: taskRepository(opened.db),
+    tags: tagRepository(opened.db),
     tx: sqliteTransactor(opened.sqlite),
     clock: { now: () => Date.now() },
     ids: uuidv7Generator(),
@@ -57,12 +59,13 @@ describe('tasks on SQLite', () => {
     const ports = {
       columns: columnRepository(opened.db),
       tasks: taskRepository(opened.db),
+      tags: tagRepository(opened.db),
       tx: sqliteTransactor(opened.sqlite),
       clock: { now: () => Date.now() },
       ids: uuidv7Generator(),
     };
     const boards = makeBoardUseCases({ ...ports, boards: boardRepository(opened.db) });
-    const tasks = makeTaskUseCases(ports);
+    const tasks = makeTaskUseCases({ ...ports, boards: boardRepository(opened.db) });
     const board = boards.createBoard({ name: 'Perso', columnNames: ['À faire', 'En cours', 'Terminé'] });
     const [todo, , done] = board.columns.map((c) => c.id) as [string, string, string];
 
@@ -92,12 +95,13 @@ describe('moves on SQLite', () => {
     const ports = {
       columns: columnRepository(opened.db),
       tasks: taskRepository(opened.db),
+      tags: tagRepository(opened.db),
       tx: sqliteTransactor(opened.sqlite),
       clock: { now: () => Date.now() },
       ids: uuidv7Generator(),
     };
     const boards = makeBoardUseCases({ ...ports, boards: boardRepository(opened.db) });
-    const tasks = makeTaskUseCases(ports);
+    const tasks = makeTaskUseCases({ ...ports, boards: boardRepository(opened.db) });
     const columns = makeColumnUseCases({ ...ports, boards: boardRepository(opened.db) });
     const board = boards.createBoard({ name: 'Perso', columnNames: ['À faire', 'En cours', 'Terminé'] });
     const [todo, doing, done] = board.columns.map((c) => c.id) as [string, string, string];
@@ -125,12 +129,13 @@ describe('column settings on SQLite', () => {
     const ports = {
       columns: columnRepository(opened.db),
       tasks: taskRepository(opened.db),
+      tags: tagRepository(opened.db),
       tx: sqliteTransactor(opened.sqlite),
       clock: { now: () => Date.now() },
       ids: uuidv7Generator(),
     };
     const boards = makeBoardUseCases({ ...ports, boards: boardRepository(opened.db) });
-    const tasks = makeTaskUseCases(ports);
+    const tasks = makeTaskUseCases({ ...ports, boards: boardRepository(opened.db) });
     const columns = makeColumnUseCases({ ...ports, boards: boardRepository(opened.db) });
     const board = boards.createBoard({ name: 'Perso', columnNames: ['À faire', 'En cours', 'Terminé'] });
     const review = columns.createColumn({
@@ -160,6 +165,7 @@ describe('board management on SQLite', () => {
     const ports = {
       columns: columnRepository(opened.db),
       tasks: taskRepository(opened.db),
+      tags: tagRepository(opened.db),
       tx: sqliteTransactor(opened.sqlite),
       clock: { now: () => (now += 1) },
       ids: uuidv7Generator(),
@@ -168,7 +174,7 @@ describe('board management on SQLite', () => {
     const sqlite = opened.sqlite;
     return {
       boards: makeBoardUseCases({ ...ports, boards: boardRepo }),
-      tasks: makeTaskUseCases(ports),
+      tasks: makeTaskUseCases({ ...ports, boards: boardRepo }),
       columns: makeColumnUseCases({ ...ports, boards: boardRepo }),
       taskRepo: ports.tasks,
       tx: ports.tx,

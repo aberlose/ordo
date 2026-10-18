@@ -9,6 +9,7 @@ import type {
   UpdateBoardInput,
 } from '@ordo/contracts';
 import {
+  compareTags,
   DEFAULT_COLUMNS,
   newBoardDefaults,
   normalizeBoardName,
@@ -19,7 +20,8 @@ import {
 } from '@ordo/domain';
 import { NotFoundError, RuleViolationError } from './errors';
 import { toColumn } from './columns';
-import { toTask } from './tasks';
+import { toTag } from './tags';
+import { taskPresenter } from './tasks';
 import type {
   BoardPatch,
   BoardRepository,
@@ -28,7 +30,8 @@ import type {
   ColumnRecord,
   ColumnRepository,
   IdGenerator,
-  TaskRecord,
+  TagRepository,
+  TagWithCount,
   TaskRepository,
   TaskWithDescription,
   Transactor,
@@ -38,6 +41,7 @@ export interface BoardUseCasesDeps {
   readonly boards: BoardRepository;
   readonly columns: ColumnRepository;
   readonly tasks: TaskRepository;
+  readonly tags: TagRepository;
   readonly tx: Transactor;
   readonly clock: Clock;
   readonly ids: IdGenerator;
@@ -54,12 +58,14 @@ function toArchived(board: BoardWithCount): ArchivedBoard {
 function toDetail(
   board: BoardWithCount,
   columns: readonly ColumnRecord[],
-  tasks: readonly TaskRecord[],
+  tasks: BoardDetail['tasks'],
+  tags: readonly TagWithCount[],
 ): BoardDetail {
   return {
     ...toSummary(board),
     columns: columns.map(toColumn),
-    tasks: tasks.map(toTask),
+    tasks,
+    tags: [...tags].sort(compareTags).map(toTag),
   };
 }
 
@@ -72,6 +78,7 @@ function requireName(raw: string): string {
 /**
  * Copies of a board's live tasks for the board `boardId`: new ids, columns and parents remapped.
  * Sub-tasks whose parent is not copied (deleted or archived) are dropped; parents come first.
+ * `taskIds` maps each copied task to its copy.
  */
 function copyTasks(
   source: readonly TaskWithDescription[],
@@ -79,7 +86,7 @@ function copyTasks(
   columnIds: ReadonlyMap<string, string>,
   newId: () => string,
   now: number,
-): TaskWithDescription[] {
+): { tasks: TaskWithDescription[]; taskIds: ReadonlyMap<string, string> } {
   const taskIds = new Map<string, string>();
   const copy = (task: TaskWithDescription, parentId: string | null): TaskWithDescription | null => {
     const columnId = columnIds.get(task.columnId);
@@ -95,10 +102,13 @@ function copyTasks(
       const parentId = taskIds.get(t.parentId ?? '');
       return parentId === undefined ? null : copy(t, parentId);
     });
-  return [...parents, ...children].filter((t): t is TaskWithDescription => t !== null);
+  const tasks = [...parents, ...children].filter((t): t is TaskWithDescription => t !== null);
+  return { tasks, taskIds };
 }
 
-export function makeBoardUseCases({ boards, columns, tasks, tx, clock, ids }: BoardUseCasesDeps) {
+export function makeBoardUseCases({ boards, columns, tasks, tags, tx, clock, ids }: BoardUseCasesDeps) {
+  const present = taskPresenter(tasks, tags);
+
   const requireBoard = (id: string) => {
     const board = boards.findById(id);
     if (!board) throw new NotFoundError('board', id);
@@ -112,8 +122,16 @@ export function makeBoardUseCases({ boards, columns, tasks, tx, clock, ids }: Bo
     return board;
   };
 
-  const getBoard = (id: string): BoardDetail =>
-    toDetail(requireBoard(id), columns.listByBoard(id), tasks.listTopLevelByBoard(id));
+  const getBoard = (id: string): BoardDetail => {
+    const board = requireBoard(id);
+    const boardTags = tags.listWithCountByBoard(id);
+    return toDetail(
+      board,
+      columns.listByBoard(id),
+      present.ofBoard(id, tasks.listTopLevelByBoard(id), boardTags),
+      boardTags,
+    );
+  };
 
   const summaryOf = (id: string): BoardSummary => toSummary(requireBoard(id));
 
@@ -207,9 +225,9 @@ export function makeBoardUseCases({ boards, columns, tasks, tx, clock, ids }: Bo
       }),
 
     /**
-     * Copies a sidebar board (archived ones cannot be) right after the original: icon, colour and live columns with their settings
-     * always; with `includeTasks`, the live tasks and their live sub-tasks (keys kept: they are
-     * unique per board). Everything in one transaction.
+     * Copies a sidebar board (archived ones cannot be) right after the original: icon, colour, live
+     * columns with their settings and tags always; with `includeTasks`, the live tasks and their
+     * live sub-tasks (keys kept: they are unique per board) with their tags. One transaction.
      */
     duplicateBoard: (input: DuplicateBoardInput): BoardSummary =>
       tx.run(() => {
@@ -233,10 +251,26 @@ export function makeBoardUseCases({ boards, columns, tasks, tx, clock, ids }: Bo
             return { ...column, id, boardId, createdAt: now, updatedAt: now };
           }),
         );
+        const tagIds = new Map<string, string>();
+        tags.insertMany(
+          tags.listByBoard(original.id).map((tag) => {
+            const id = ids.next();
+            tagIds.set(tag.id, id);
+            return { id, boardId, name: tag.name, color: tag.color };
+          }),
+        );
         if (input.includeTasks) {
-          // Tags and attachments are not in use yet (lots 5–6): copy them here once they are.
+          // Attachments are not in use yet (lot 6): copy them here once they are.
           const source = tasks.listLiveWithDescriptionByBoard(original.id);
-          tasks.insertMany(copyTasks(source, boardId, columnIds, () => ids.next(), now));
+          const copied = copyTasks(source, boardId, columnIds, () => ids.next(), now);
+          tasks.insertMany(copied.tasks);
+          tags.insertLinks(
+            tags.linksByBoard(original.id).flatMap((link) => {
+              const taskId = copied.taskIds.get(link.taskId);
+              const tagId = tagIds.get(link.tagId);
+              return taskId === undefined || tagId === undefined ? [] : [{ taskId, tagId }];
+            }),
+          );
         }
         return summaryOf(boardId);
       }),

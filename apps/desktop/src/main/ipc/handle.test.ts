@@ -1,6 +1,6 @@
 import type { IpcMainInvokeEvent } from 'electron';
 import { describe, expect, it } from 'vitest';
-import { NotFoundError, RuleViolationError } from '../application/errors';
+import { ConflictError, NotFoundError, RuleViolationError } from '../application/errors';
 import { registerHandlers, type Handlers } from './handle';
 
 type Listener = (event: IpcMainInvokeEvent, raw: unknown) => unknown;
@@ -40,6 +40,23 @@ function setup(overrides: Partial<Handlers> = {}) {
     'tasks.move': () => {
       throw new Error('not used');
     },
+    'tasks.get': ({ id }) => {
+      throw new NotFoundError('task', id);
+    },
+    'tasks.listSubtasks': () => [],
+    'tasks.addTag': () => {
+      throw new RuleViolationError('The tag belongs to another board');
+    },
+    'tasks.removeTag': () => {
+      throw new Error('not used');
+    },
+    'tags.create': () => {
+      throw new ConflictError('A tag named "x" already exists on the board');
+    },
+    'tags.update': () => {
+      throw new Error('not used');
+    },
+    'tags.delete': ({ id }) => ({ id, removedFrom: 3 }),
     'columns.move': () => {
       throw new Error('not used');
     },
@@ -97,5 +114,35 @@ describe('IPC adapter', () => {
     expect(
       await invoke('tasks.create', { columnId: '0192f0a0-0000-7000-8000-000000000001', title: 'x' }),
     ).toMatchObject({ ok: false, error: { code: 'conflict' } });
+  });
+
+  it('serves the tag and sub-task channels', async () => {
+    const { invoke } = setup();
+    const id = '0192f0a0-0000-7000-8000-000000000001';
+    const other = '0192f0a0-0000-7000-8000-000000000002';
+    expect(await invoke('tasks.listSubtasks', { parentId: id })).toEqual({ ok: true, data: [] });
+    expect(await invoke('tasks.get', { id })).toMatchObject({ ok: false, error: { code: 'not_found' } });
+    expect(await invoke('tasks.addTag', { taskId: id, tagId: other })).toMatchObject({
+      ok: false,
+      error: { code: 'conflict' },
+    });
+    expect(await invoke('tags.delete', { id })).toEqual({ ok: true, data: { id, removedFrom: 3 } });
+  });
+
+  it('maps a name conflict and validates tag input', async () => {
+    const { invoke } = setup();
+    const boardId = '0192f0a0-0000-7000-8000-000000000001';
+    expect(await invoke('tags.create', { boardId, name: 'x' })).toMatchObject({
+      ok: false,
+      error: { code: 'conflict' },
+    });
+    expect(await invoke('tags.create', { boardId, name: '   ' })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('tags.create', { boardId, name: 'x', color: 'beige' })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
   });
 });
