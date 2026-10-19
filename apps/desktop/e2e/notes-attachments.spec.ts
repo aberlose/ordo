@@ -78,3 +78,131 @@ test('write rich notes, attach a file, delete it, and keep everything after a re
   await expect(reopened.getByText('cahier-des-charges.pdf')).toHaveCount(0);
   await app.close();
 });
+
+test('notes typed just before closing the app are saved', async () => {
+  const dataDir = mkdtempSync(join(tmpdir(), 'ordo-e2e-'));
+  let app: ElectronApplication = await launch(dataDir);
+  let page = await app.firstWindow();
+  await page.getByRole('button', { name: /Créer un board vide/ }).click();
+  const todo = page.getByRole('region', { name: 'À faire' });
+  await todo.getByRole('button', { name: 'Ajouter une tâche', exact: true }).click();
+  const quickAdd = page.getByRole('textbox', { name: 'Titre de la nouvelle tâche' });
+  await quickAdd.fill('Fermer vite');
+  await quickAdd.press('Enter');
+  await quickAdd.press('Escape');
+  await card(page).click();
+  const notes = page.getByRole('dialog').first().getByRole('textbox', { name: 'Notes' });
+  // Silence the page's own `beforeunload` fallback (a capture listener on window runs first at the
+  // target): only the main process's flush on `close` can save the text in time.
+  await page.evaluate(() => {
+    // Typed without the DOM library: the page's window, described structurally.
+    const win = globalThis as unknown as {
+      addEventListener(
+        type: string,
+        listener: (event: { stopImmediatePropagation(): void }) => void,
+        capture: boolean,
+      ): void;
+    };
+    win.addEventListener('beforeunload', (event) => event.stopImmediatePropagation(), true);
+  });
+  await notes.click();
+  await page.keyboard.type('Écrit juste avant de quitter', { delay: 0 });
+
+  // Quit at once, well inside the autosave's debounce: the main process asks the page to flush.
+  const typed = Date.now();
+  await app.close();
+  expect(Date.now() - typed).toBeLessThan(3_000);
+
+  app = await launch(dataDir);
+  page = await app.firstWindow();
+  await card(page).click();
+  await expect(page.getByRole('dialog').first().getByRole('textbox', { name: 'Notes' })).toHaveText(
+    'Écrit juste avant de quitter',
+  );
+  await app.close();
+});
+
+/** A 1×1 PNG. */
+const PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+test('a pasted image crosses IPC, is served to the page, and is copied with its board', async () => {
+  const dataDir = mkdtempSync(join(tmpdir(), 'ordo-e2e-'));
+  const app = await launch(dataDir);
+  const page = await app.firstWindow();
+  await page.getByRole('button', { name: /Créer un board vide/ }).click();
+  await expect(page.getByRole('region', { name: 'À faire' })).toBeVisible();
+
+  const result = await page.evaluate(async (base64) => {
+    const { api } = globalThis as unknown as { api: OrdoApi };
+    const unwrap = <T>(
+      r: { ok: true; data: T } | { ok: false; error: { code: string; message: string } },
+    ) => {
+      if (!r.ok) throw new Error(`${r.error.code}: ${r.error.message}`);
+      return r.data;
+    };
+    const loads = (src: string) =>
+      new Promise<number>((resolve, reject) => {
+        // The e2e files are typed without the DOM library: the page's Image, described structurally.
+        type PageImage = {
+          onload: (() => void) | null;
+          onerror: (() => void) | null;
+          src: string;
+          naturalWidth: number;
+        };
+        const image = new (globalThis as unknown as { Image: new () => PageImage }).Image();
+        image.onload = () => resolve(image.naturalWidth);
+        image.onerror = () => reject(new Error(`${src} did not load`));
+        image.src = src;
+      });
+
+    const [board] = unwrap(await api.invoke('boards.list', {}));
+    const detail = unwrap(await api.invoke('boards.get', { id: board!.id }));
+    const task = unwrap(
+      await api.invoke('tasks.create', { columnId: detail.columns[0]!.id, title: 'Capture' }),
+    );
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    const image = unwrap(
+      await api.invoke('attachments.addData', {
+        taskId: task.id,
+        fileName: 'capture.svg',
+        mimeType: 'image/png',
+        bytes,
+      }),
+    );
+    const svg = await api.invoke('attachments.addData', {
+      taskId: task.id,
+      fileName: 'x.svg',
+      mimeType: 'image/svg+xml',
+      bytes: new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>'),
+    });
+    const width = await loads(image.url);
+
+    const copy = unwrap(
+      await api.invoke('boards.duplicate', { id: board!.id, name: 'Copie', includeTasks: true }),
+    );
+    const copied = unwrap(await api.invoke('boards.get', { id: copy.id }));
+    const copiedFiles = unwrap(await api.invoke('attachments.list', { taskId: copied.tasks[0]!.id }));
+    const copiedWidth = await loads(copiedFiles[0]!.url);
+    return {
+      image: { fileName: image.fileName, mimeType: image.mimeType, sizeBytes: image.sizeBytes },
+      svg: svg.ok ? 'accepted' : svg.error.code,
+      width,
+      copied: copiedFiles.map((f) => ({ fileName: f.fileName, isNew: f.id !== image.id })),
+      copiedWidth,
+    };
+  }, PNG_BASE64);
+
+  expect(result).toEqual({
+    image: {
+      fileName: 'capture.png',
+      mimeType: 'image/png',
+      sizeBytes: Buffer.from(PNG_BASE64, 'base64').length,
+    },
+    svg: 'invalid_input',
+    width: 1,
+    copied: [{ fileName: 'capture.png', isNew: true }],
+    copiedWidth: 1,
+  });
+  await app.close();
+});
