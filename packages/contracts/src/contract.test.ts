@@ -3,8 +3,9 @@ import { CHANNELS } from './channels';
 import { contract } from './contract';
 import { CreateBoardInput, DuplicateBoardInput, MoveBoardInput, UpdateBoardInput } from './boards';
 import { CreateColumnInput, UpdateColumnInput } from './columns';
+import { AddAttachmentDataInput, AddAttachmentsInput, attachmentUrl } from './attachments';
 import { CreateTagInput, TaskTagInput, UpdateTagInput } from './tags';
-import { CreateTaskInput, UpdateTaskInput } from './tasks';
+import { CreateTaskInput, UpdateDescriptionInput, UpdateTaskInput } from './tasks';
 
 describe('contract', () => {
   it('lists exactly the channels of the contract', () => {
@@ -119,5 +120,31 @@ describe('tag inputs', () => {
     expect(UpdateTagInput.safeParse({ id }).success).toBe(false);
     expect(TaskTagInput.safeParse({ taskId: id, tagId: id }).success).toBe(true);
     expect(TaskTagInput.safeParse({ taskId: id }).success).toBe(false);
+  });
+});
+
+describe('notes and attachment inputs', () => {
+  const id = '0192f0a0-0000-7000-8000-000000000001';
+
+  it('accepts a document or null, bounded', () => {
+    const doc = {
+      type: 'doc',
+      content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Relire' }] }],
+    };
+    expect(UpdateDescriptionInput.safeParse({ id, json: doc }).success).toBe(true);
+    expect(UpdateDescriptionInput.safeParse({ id, json: null }).success).toBe(true);
+    expect(UpdateDescriptionInput.safeParse({ id, json: { type: 'paragraph' } }).success).toBe(false);
+    const huge = { type: 'doc', content: [{ type: 'text', text: 'x'.repeat(2_000_001) }] };
+    expect(UpdateDescriptionInput.safeParse({ id, json: huge }).success).toBe(false);
+  });
+
+  it('validates files to add', () => {
+    expect(AddAttachmentsInput.safeParse({ taskId: id, paths: ['/Users/alice/a.pdf'] }).success).toBe(true);
+    expect(AddAttachmentsInput.safeParse({ taskId: id, paths: [] }).success).toBe(false);
+    const image = { taskId: id, fileName: 'image.png', mimeType: 'image/png' };
+    expect(AddAttachmentDataInput.safeParse({ ...image, bytes: new Uint8Array([1, 2]) }).success).toBe(true);
+    expect(AddAttachmentDataInput.safeParse({ ...image, bytes: new Uint8Array() }).success).toBe(false);
+    expect(AddAttachmentDataInput.safeParse({ ...image, bytes: [1, 2] }).success).toBe(false);
+    expect(attachmentUrl(id)).toBe(`ordo-file://attachment/${id}`);
   });
 });
