@@ -168,7 +168,13 @@
       "updateTag": "Change not saved: the tag got its name and colour back.",
       "deleteTag": "Deletion not saved: the tag is back.",
       "createSubtask": "Not added: the sub-task was removed.",
-      "deleteSubtask": "Deletion not saved: the sub-task is back."
+      "deleteSubtask": "Deletion not saved: the sub-task is back.",
+      "openAttachment": "Could not open: the file is missing or no application opens it.",
+      "revealAttachment": "Could not show: the file is missing.",
+      "deleteAttachment": "Not deleted: the attachment is back.",
+      "pickAttachments": "Not saved: the files were not attached.",
+      "saveNotes": "Notes not saved: your latest changes were not stored.",
+      "addImage": "Image not added: the file could not be copied to the attachments."
     }
   },
   "dnd": {
@@ -435,5 +441,109 @@
     "parentOf": "Sub-task of <b>{{title}}</b>",
     "parentLink": "Sub-task of “{{title}}”, {{done}} of {{total}} done: back to the parent task",
     "delete": "Delete sub-task"
+  },
+  "attachments": {
+    "title": "Attachments",
+    "add": "Add or drop",
+    "actions": "Actions for {{name}}",
+    "open": "Open",
+    "reveal": {
+      "mac": "Show in Finder",
+      "windows": "Show in File Explorer",
+      "other": "Show in folder"
+    },
+    "delete": "Delete…",
+    "deleteTitle": "Delete the attachment",
+    "deleteConfirm": "Delete “{{name}}”?",
+    "deleteHint": "The file will be erased permanently.",
+    "deleteImageHint": "The image shown in the notes will be replaced by an empty frame.",
+    "cancel": "Cancel",
+    "confirm": "Delete",
+    "meta": "{{size}} · {{date}}",
+    "size": {
+      "b": "{{value}} B",
+      "kb": "{{value}} KB",
+      "mb": "{{value}} MB",
+      "gb": "{{value}} GB"
+    },
+    "copying": "Copying…",
+    "failed": "Copy failed",
+    "retry": "Retry copying {{name}}",
+    "dismiss": "Dismiss {{name}}",
+    "dismissShort": "Dismiss",
+    "loadError": "The attachments could not be loaded.",
+    "drop": {
+      "title": "Drop to attach",
+      "count_one": "{{count}} file · copied into Ordo’s folder",
+      "count_other": "{{count}} files · copied into Ordo’s folder",
+      "hint": "Copied into Ordo’s folder",
+      "added_one": "Copying {{count}} file…",
+      "added_other": "Copying {{count}} files…"
+    },
+    "card_one": "{{count}} attachment",
+    "card_other": "{{count}} attachments"
+  },
+  "notes": {
+    "label": "Notes",
+    "placeholder": "Add notes… Type “/” to insert a block.",
+    "saved": "Saved",
+    "toolbar": {
+      "label": "Formatting",
+      "withShortcut": "{{label}} ({{shortcut}})",
+      "bold": "Bold",
+      "italic": "Italic",
+      "strike": "Strikethrough",
+      "code": "Code",
+      "heading": "Heading",
+      "bulletList": "Bulleted list",
+      "taskList": "Checklist",
+      "blockquote": "Quote",
+      "link": "Link",
+      "image": "Image",
+      "table": "Table"
+    },
+    "blocks": {
+      "label": "Insert a block",
+      "title": "Blocks",
+      "empty": "No matching block",
+      "heading1": "Heading 1",
+      "heading2": "Heading 2",
+      "heading3": "Heading 3",
+      "taskList": "Checklist",
+      "bulletList": "Bulleted list",
+      "codeBlock": "Code block",
+      "blockquote": "Quote",
+      "table": "Table",
+      "image": "Image"
+    },
+    "link": {
+      "dialog": "Link",
+      "address": "Link address",
+      "hint": "↵ apply · Esc cancel",
+      "invalid": "Invalid address: http, https or mailto.",
+      "apply": "Apply",
+      "bubble": "Link {{label}}",
+      "open": "Open link",
+      "edit": "Edit link",
+      "remove": "Remove link"
+    },
+    "image": {
+      "deleted": "Image deleted from the attachments",
+      "deletedLabel": "Deleted image",
+      "resizeHint": "Drag the handles (or ← →) to resize · {{width}}%"
+    },
+    "table": {
+      "addColumn": "Add a column",
+      "addRow": "Add a row",
+      "menu": "Table",
+      "rowAbove": "Add a row above",
+      "rowBelow": "Add a row below",
+      "columnLeft": "Add a column to the left",
+      "columnRight": "Add a column to the right",
+      "headerRow": "Header row",
+      "deleteRow": "Delete row",
+      "deleteColumn": "Delete column",
+      "deleteTable": "Delete table"
+    }
   }
 }

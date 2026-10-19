@@ -65,10 +65,16 @@ export interface TaskDetailViewProps {
    */
   parent?: ParentSummary;
   onOpenParent?: () => void;
-  /** The Sub-tasks section under the title (top-level tasks only). */
+  /** The notes editor under the title (approved mockup: notes-attachments/NotesEditor A). */
+  notes?: ReactNode;
+  /** The Sub-tasks section under the notes (top-level tasks only). */
   subtasks?: ReactNode;
   /** The Tags property: chips and the "+" of the tag picker (approved mockup: tags-subtasks/TagPicker A). */
   tags?: ReactNode;
+  /** The Attachments section, after the sub-tasks (approved mockup: notes-attachments/Attachments A). */
+  attachments?: ReactNode;
+  /** Takes files dropped anywhere on the window and shows the drop overlay (same mockup). */
+  dropTarget?: ReactNode;
 }
 
 const iconButton =
@@ -227,8 +233,11 @@ export function TaskDetailView({
   onToggleTheme,
   parent,
   onOpenParent,
+  notes,
   subtasks,
   tags,
+  attachments,
+  dropTarget,
 }: TaskDetailViewProps) {
   const { t, i18n } = useTranslation();
   const language = i18n.resolvedLanguage;
@@ -365,6 +374,7 @@ export function TaskDetailView({
                     />
                   </div>
                 </Dialog.Title>
+                {notes}
               </div>
 
               <div className="row-span-2 flex flex-col gap-0.5 rounded-xl border border-border bg-canvas px-4 py-3.5">
@@ -495,9 +505,11 @@ export function TaskDetailView({
               </div>
 
               {subtasks}
+              {attachments}
             </div>
           </div>
           {/* The rest of the app is inert while the window is open: errors show here. */}
+          {dropTarget}
           <Feedback scope="modal" />
         </Dialog.Content>
       </Dialog.Portal>

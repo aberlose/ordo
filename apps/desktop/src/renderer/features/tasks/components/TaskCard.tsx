@@ -1,5 +1,6 @@
 import type { SubtaskProgress, Task } from '@ordo/contracts';
 import { compareTags, daysOverdue, type ColumnColor } from '@ordo/domain';
+import { Paperclip } from 'lucide-react';
 import { memo, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@renderer/shared/lib/cn';
@@ -94,6 +95,14 @@ export const TaskCard = memo(function TaskCard({
       {looks.length > 0 && <CardTags tags={looks} bubbleOpen={tagsBubbleOpen} />}
       <span className="flex items-center gap-3 text-meta text-text-3">
         <PriorityBars priority={task.priority} label={t('task.priorityLabel', { priority })} />
+        {/* Approved board mockup: the paperclip and the count, before the sub-task ring. */}
+        {task.attachmentCount > 0 && (
+          <span className="flex items-center gap-0.75 tabular-nums">
+            <Paperclip size={13} aria-hidden />
+            <span aria-hidden>{task.attachmentCount}</span>
+            <span className="sr-only">{t('attachments.card', { count: task.attachmentCount })}</span>
+          </span>
+        )}
         {task.subtasks.total > 0 && <SubtaskProgressLabel progress={task.subtasks} color={color} />}
         <span className="flex-1" />
         {highlighted && <span className="font-medium text-accent">{t('task.added')}</span>}

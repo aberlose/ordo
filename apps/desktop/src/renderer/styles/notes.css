@@ -1,0 +1,222 @@
+/*
+ * Notes editor content (Tiptap / ProseMirror), loaded with the editor's lazy chunk.
+ * Approved mockups: notes-attachments/NotesEditor A, NoteLinks A, NoteBlocks B; task-detail (document styles).
+ * Colours are design tokens only (tokens.css); light and dark follow <html data-mode>.
+ */
+
+.notes-content {
+  /* Type scale of the notes (mockups: body 14.5 / 1.65, headings, code 12.5). */
+  --notes-text: 14.5px;
+  --notes-h1: 20px;
+  --notes-h2: 16px;
+  --notes-h3: 14.5px;
+  --notes-code: 12.5px;
+  --notes-table: 13.5px;
+  --notes-gap: 10px;
+
+  min-height: 6rem;
+  padding: 2px 0 4px;
+  font-size: var(--notes-text);
+  line-height: 1.65;
+  color: var(--text);
+  overflow-wrap: break-word;
+  outline: none;
+  caret-color: var(--accent);
+}
+.notes-content:focus-visible {
+  outline: none;
+}
+
+.notes-content > * + * {
+  margin-top: var(--notes-gap);
+}
+.notes-content p {
+  margin: 0;
+}
+
+/* Placeholder of an empty note. */
+.notes-content p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+.notes-content h1,
+.notes-content h2,
+.notes-content h3 {
+  margin: 18px 0 6px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+.notes-content > :first-child {
+  margin-top: 0;
+}
+.notes-content h1 {
+  font-size: var(--notes-h1);
+}
+.notes-content h2 {
+  font-size: var(--notes-h2);
+}
+.notes-content h3 {
+  font-size: var(--notes-h3);
+}
+
+/* Lists */
+.notes-content ul,
+.notes-content ol {
+  margin: 0;
+  padding-left: 22px;
+}
+.notes-content ul {
+  list-style: disc;
+}
+.notes-content ol {
+  list-style: decimal;
+}
+.notes-content li {
+  margin: 3px 0;
+}
+.notes-content li > p {
+  margin: 0;
+}
+.notes-content li::marker {
+  color: var(--text-3);
+}
+
+/* Checklist (TaskList / TaskItem) */
+.notes-content ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 2px;
+}
+.notes-content ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+.notes-content ul[data-type='taskList'] li > label {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: calc(var(--notes-text) * 1.65);
+  user-select: none;
+}
+.notes-content ul[data-type='taskList'] li > label input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.notes-content ul[data-type='taskList'] li > div {
+  flex: 1;
+  min-width: 0;
+}
+.notes-content ul[data-type='taskList'] li[data-checked='true'] > div {
+  color: var(--text-3);
+  text-decoration: line-through;
+}
+
+/* Quote */
+.notes-content blockquote {
+  margin: 0;
+  padding: 2px 0 2px 14px;
+  border-left: 3px solid var(--border-strong);
+  color: var(--text-2);
+}
+
+/* Code */
+.notes-content code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--rail);
+  font-family: var(--font-mono);
+  font-size: var(--notes-code);
+}
+.notes-content pre {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--rail);
+  font-family: var(--font-mono);
+  font-size: var(--notes-code);
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+.notes-content pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+/* Links (NoteLinks A) */
+.notes-content a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: text;
+}
+
+.notes-content hr {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* Tables (NoteBlocks B): the wrapper leaves room for the "+" bands, right and bottom. */
+.notes-content .tableWrapper {
+  padding: 0 22px 22px 0;
+  overflow-x: auto;
+}
+.notes-content table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--notes-table);
+  line-height: 1.5;
+}
+.notes-content th,
+.notes-content td {
+  position: relative;
+  min-width: 4rem;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.notes-content th {
+  background: var(--rail);
+  font-weight: 600;
+}
+.notes-content .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent-soft);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Images (NoteBlocks B): the node view draws the selection outline and the handles. */
+.notes-content .notes-image {
+  margin: var(--notes-gap) 0;
+}
+.notes-content .notes-image.ProseMirror-selectednode {
+  outline: none;
+}
+
+/* Drop cursor and gap cursor follow the accent. */
+.notes-content .ProseMirror-gapcursor::after {
+  border-top-color: var(--text);
+}
+.notes-dropcursor {
+  background: var(--accent);
+}
+
+.notes-content ::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}

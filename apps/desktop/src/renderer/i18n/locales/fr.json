@@ -168,7 +168,13 @@
       "updateTag": "Modification non enregistrée : le tag a repris son nom et sa couleur.",
       "deleteTag": "Suppression non enregistrée : le tag est revenu.",
       "createSubtask": "Ajout non enregistré : la sous-tâche a été retirée.",
-      "deleteSubtask": "Suppression non enregistrée : la sous-tâche est revenue."
+      "deleteSubtask": "Suppression non enregistrée : la sous-tâche est revenue.",
+      "openAttachment": "Ouverture impossible : le fichier est introuvable ou aucune application ne l’ouvre.",
+      "revealAttachment": "Affichage impossible : le fichier est introuvable.",
+      "deleteAttachment": "Suppression non enregistrée : la pièce jointe est revenue.",
+      "pickAttachments": "Ajout non enregistré : les fichiers n'ont pas été joints.",
+      "saveNotes": "Notes non enregistrées : vos dernières modifications n'ont pas été sauvegardées.",
+      "addImage": "Image non ajoutée : le fichier n'a pas pu être copié dans les pièces jointes."
     }
   },
   "dnd": {
@@ -435,5 +441,109 @@
     "parentOf": "Sous-tâche de <b>{{title}}</b>",
     "parentLink": "Sous-tâche de « {{title}} », {{done}} sur {{total}} terminées : revenir à la tâche parente",
     "delete": "Supprimer la sous-tâche"
+  },
+  "attachments": {
+    "title": "Pièces jointes",
+    "add": "Ajouter ou déposer",
+    "actions": "Actions de {{name}}",
+    "open": "Ouvrir",
+    "reveal": {
+      "mac": "Afficher dans le Finder",
+      "windows": "Afficher dans l’Explorateur",
+      "other": "Afficher dans le dossier"
+    },
+    "delete": "Supprimer…",
+    "deleteTitle": "Supprimer la pièce jointe",
+    "deleteConfirm": "Supprimer « {{name}} » ?",
+    "deleteHint": "Le fichier sera effacé définitivement.",
+    "deleteImageHint": "L’image affichée dans les notes sera remplacée par un cadre vide.",
+    "cancel": "Annuler",
+    "confirm": "Supprimer",
+    "meta": "{{size}} · {{date}}",
+    "size": {
+      "b": "{{value}} o",
+      "kb": "{{value}} Ko",
+      "mb": "{{value}} Mo",
+      "gb": "{{value}} Go"
+    },
+    "copying": "Copie…",
+    "failed": "Copie impossible",
+    "retry": "Réessayer la copie de {{name}}",
+    "dismiss": "Retirer {{name}}",
+    "dismissShort": "Retirer",
+    "loadError": "Impossible de charger les pièces jointes.",
+    "drop": {
+      "title": "Déposez pour joindre",
+      "count_one": "{{count}} fichier · copié dans le dossier d’Ordo",
+      "count_other": "{{count}} fichiers · copiés dans le dossier d’Ordo",
+      "hint": "Copiés dans le dossier d’Ordo",
+      "added_one": "Copie de {{count}} fichier…",
+      "added_other": "Copie de {{count}} fichiers…"
+    },
+    "card_one": "{{count}} pièce jointe",
+    "card_other": "{{count}} pièces jointes"
+  },
+  "notes": {
+    "label": "Notes",
+    "placeholder": "Ajoutez des notes… Tapez « / » pour insérer un bloc.",
+    "saved": "Enregistré",
+    "toolbar": {
+      "label": "Mise en forme",
+      "withShortcut": "{{label}} ({{shortcut}})",
+      "bold": "Gras",
+      "italic": "Italique",
+      "strike": "Barré",
+      "code": "Code",
+      "heading": "Titre",
+      "bulletList": "Liste à puces",
+      "taskList": "Liste à cocher",
+      "blockquote": "Citation",
+      "link": "Lien",
+      "image": "Image",
+      "table": "Tableau"
+    },
+    "blocks": {
+      "label": "Insérer un bloc",
+      "title": "Blocs",
+      "empty": "Aucun bloc ne correspond",
+      "heading1": "Titre 1",
+      "heading2": "Titre 2",
+      "heading3": "Titre 3",
+      "taskList": "Liste à cocher",
+      "bulletList": "Liste à puces",
+      "codeBlock": "Bloc de code",
+      "blockquote": "Citation",
+      "table": "Tableau",
+      "image": "Image"
+    },
+    "link": {
+      "dialog": "Lien",
+      "address": "Adresse du lien",
+      "hint": "↵ appliquer · Échap annuler",
+      "invalid": "Adresse non valide : http, https ou mailto.",
+      "apply": "Appliquer",
+      "bubble": "Lien {{label}}",
+      "open": "Ouvrir le lien",
+      "edit": "Modifier le lien",
+      "remove": "Retirer le lien"
+    },
+    "image": {
+      "deleted": "Image supprimée des pièces jointes",
+      "deletedLabel": "Image supprimée",
+      "resizeHint": "Glisser les poignées (ou ← →) pour redimensionner · {{width}} %"
+    },
+    "table": {
+      "addColumn": "Ajouter une colonne",
+      "addRow": "Ajouter une ligne",
+      "menu": "Tableau",
+      "rowAbove": "Ajouter une ligne au-dessus",
+      "rowBelow": "Ajouter une ligne dessous",
+      "columnLeft": "Ajouter une colonne à gauche",
+      "columnRight": "Ajouter une colonne à droite",
+      "headerRow": "Ligne d'en-tête",
+      "deleteRow": "Supprimer la ligne",
+      "deleteColumn": "Supprimer la colonne",
+      "deleteTable": "Supprimer le tableau"
+    }
   }
 }
