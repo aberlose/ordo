@@ -49,3 +49,71 @@ export function attachmentStoredPath(id: string, fileName: string): string {
     .slice(0, 10);
   return ext === '' ? id : `${id}.${ext}`;
 }
+
+/**
+ * Types that run code when "opened" with the system's default handler (programs, installers,
+ * scripts, shortcuts). Ordo never opens them: it shows them in the Finder / Explorer instead.
+ */
+const EXECUTABLE_EXTENSIONS = new Set([
+  // Windows
+  'exe',
+  'com',
+  'scr',
+  'pif',
+  'msi',
+  'msp',
+  'msix',
+  'appx',
+  'bat',
+  'cmd',
+  'ps1',
+  'psm1',
+  'vbs',
+  'vbe',
+  'js',
+  'jse',
+  'wsf',
+  'wsh',
+  'hta',
+  'lnk',
+  'url',
+  'reg',
+  'cpl',
+  'msc',
+  'inf',
+  'scf',
+  'appref-ms',
+  'application',
+  'gadget',
+  'jar',
+  // macOS
+  'app',
+  'command',
+  'tool',
+  'terminal',
+  'pkg',
+  'mpkg',
+  'workflow',
+  'action',
+  'scpt',
+  'applescript',
+  'dmg',
+  'webloc',
+  'inetloc',
+  'fileloc',
+  // Unix
+  'sh',
+  'bash',
+  'zsh',
+  'csh',
+  'desktop',
+  'run',
+  'bin',
+  'appimage',
+  'deb',
+  'rpm',
+]);
+
+export function isExecutableAttachment(fileName: string): boolean {
+  return EXECUTABLE_EXTENSIONS.has(fileExtension(fileName));
+}

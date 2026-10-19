@@ -54,5 +54,12 @@ export const AddAttachmentDataInput = z
 /** Open with the default application, show in the Finder / Explorer, or delete (permanent). */
 export const AttachmentIdInput = z.object({ id: Id }).strict();
 
+/**
+ * `opened: false` when the file is a program or a script (`isExecutableAttachment`): it is shown in the
+ * Finder / Explorer instead of being run, and the renderer says why.
+ */
+export const OpenAttachmentOutput = z.object({ opened: z.boolean() });
+
 export type Attachment = z.infer<typeof Attachment>;
 export type AddAttachmentsOutput = z.infer<typeof AddAttachmentsOutput>;
+export type OpenAttachmentOutput = z.infer<typeof OpenAttachmentOutput>;

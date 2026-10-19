@@ -4,6 +4,7 @@ import {
   attachmentBadge,
   attachmentStoredPath,
   fileExtension,
+  isExecutableAttachment,
   isImageAttachment,
   normalizeAttachmentName,
 } from './attachment';
@@ -44,5 +45,22 @@ describe('attachments', () => {
     expect(attachmentStoredPath('0192', 'Maquette.PNG')).toBe('0192.png');
     expect(attachmentStoredPath('0192', 'README')).toBe('0192');
     expect(attachmentStoredPath('0192', 'x.p/../h')).toBe('0192');
+  });
+});
+
+describe('executable attachments', () => {
+  it('flags programs, installers, scripts and shortcuts', () => {
+    for (const name of [
+      'setup.EXE',
+      'run.bat',
+      'x.command',
+      'paquet.pkg',
+      'raccourci.lnk',
+      'a.js',
+      'b.appref-ms',
+    ])
+      expect(isExecutableAttachment(name)).toBe(true);
+    for (const name of ['cahier.pdf', 'photo.png', 'notes.txt', 'Makefile', 'archive.zip'])
+      expect(isExecutableAttachment(name)).toBe(false);
   });
 });

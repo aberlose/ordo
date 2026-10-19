@@ -28,6 +28,7 @@ import {
   Attachment,
   AttachmentIdInput,
   ListAttachmentsInput,
+  OpenAttachmentOutput,
   PickAttachmentsInput,
 } from './attachments';
 import { AppInfo, Empty, Id } from './schemas';
@@ -76,7 +77,7 @@ export const contract = {
   'attachments.add': { input: AddAttachmentsInput, output: AddAttachmentsOutput },
   'attachments.pick': { input: PickAttachmentsInput, output: AddAttachmentsOutput },
   'attachments.addData': { input: AddAttachmentDataInput, output: Attachment },
-  'attachments.open': { input: AttachmentIdInput, output: Empty },
+  'attachments.open': { input: AttachmentIdInput, output: OpenAttachmentOutput },
   'attachments.reveal': { input: AttachmentIdInput, output: Empty },
   /** Permanent: the row and the file go. */
   'attachments.delete': { input: AttachmentIdInput, output: z.object({ id: Id }) },
