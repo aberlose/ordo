@@ -10,3 +10,12 @@ Design canvas "Ordo — Maquettes", page "Notes & pièces jointes — lot 6". Ea
 | Attachments | `Attachments.dc.html` | **A** | The approved tiles (thumbnail for images). On hover or focus a ⋯ opens Ouvrir (default app; also double-click or Enter), Afficher dans le Finder / l'Explorateur, Supprimer…. Deleting is permanent, after a confirmation bubble ("Le fichier sera effacé définitivement…", Annuler focused). Dropping files anywhere on the window shows a drop overlay. Copying runs in the background on a tile with progress; a failure stays as a red tile with Réessayer and × |
 
 The "deleted image" state of `NoteBlocks.dc.html` variant A (dashed box "Image supprimée des pièces jointes") also applies to the chosen variant B. Decided with the user: pasted images are attachments listed in "Pièces jointes"; no size limit; the copy tile shows an indeterminate "Copie…" bar (no percentage).
+
+## Decisions taken at review (2026-10-19)
+
+- **Programs and scripts are never opened** (`.exe`, `.bat`, `.msi`, `.command`, `.pkg`, `.js`…: `isExecutableAttachment`). "Ouvrir" shows them in the Finder / Explorer instead, with a toast explaining why. Copies keep the system's "downloaded from the internet" mark where the platform allows it.
+- **Approved without a mockup**: the invalid link address (red field, "Adresse non valide : http, https ou mailto.") and the empty "/" menu ("Aucun bloc ne correspond").
+- **Attachments load error**: the empty state's dashed box with the message and "Réessayer", as for the Archives and the sub-tasks.
+- **"/" menu**: one "Titre" entry (level 2), as the toolbar; the `#`, `##`, `###` shortcuts still give three levels.
+- **Keyboard**: Alt + ← → resizes a selected image (plain arrows move the caret); Alt + Enter opens the link at the caret, and Tab reaches the link bubble.
+- **Section count**: the "Pièces jointes" count is the number of saved files; copying and failed tiles are not counted.
