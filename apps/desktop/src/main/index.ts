@@ -1,13 +1,17 @@
 import { join } from 'node:path';
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { makeAttachmentUseCases } from './application/attachments';
 import { makeBoardUseCases } from './application/boards';
 import { makeColumnUseCases } from './application/columns';
 import { makeTagUseCases } from './application/tags';
 import { makeTaskUseCases } from './application/tasks';
+import { electronShell, handleAttachmentProtocol, registerAttachmentScheme } from './app/electronAdapters';
 import { createMainWindow, trustedOrigin } from './app/window';
 import { openDatabase } from './infrastructure/db/client';
 import { sqliteTransactor } from './infrastructure/db/transactor';
+import { attachmentStorage } from './infrastructure/fs/attachmentStorage';
 import { systemClock, uuidv7Generator } from './infrastructure/ids';
+import { attachmentRepository } from './infrastructure/repositories/attachmentRepository';
 import { boardRepository } from './infrastructure/repositories/boardRepository';
 import { columnRepository } from './infrastructure/repositories/columnRepository';
 import { tagRepository } from './infrastructure/repositories/tagRepository';
@@ -27,6 +31,9 @@ function migrationsFolder(): string {
 const testDataDir = process.env['ORDO_USER_DATA'];
 if (testDataDir && !app.isPackaged) app.setPath('userData', testDataDir);
 
+// `ordo-file://attachment/<id>` serves attachment files; schemes must be privileged before ready.
+registerAttachmentScheme();
+
 // One instance only: a second launch focuses the first one and exits before touching the database.
 if (!app.requestSingleInstanceLock()) {
   app.exit(0);
@@ -43,18 +50,24 @@ function start(): void {
     columns: columnRepository(database.db),
     tasks: taskRepository(database.db),
     tags: tagRepository(database.db),
+    attachments: attachmentRepository(database.db),
+    storage: attachmentStorage(join(app.getPath('userData'), 'attachments')),
+    shell: electronShell,
     tx: sqliteTransactor(database.sqlite),
     clock: systemClock,
     ids: uuidv7Generator(),
+    log: { warn: (message: string, error?: unknown) => console.warn(message, error ?? '') },
   };
   const boards = makeBoardUseCases(ports);
   const tasks = makeTaskUseCases(ports);
   const columns = makeColumnUseCases(ports);
   const tags = makeTagUseCases(ports);
+  const attachments = makeAttachmentUseCases(ports);
+  handleAttachmentProtocol((id) => attachments.servedFile(id));
 
   registerHandlers(
     ipcMain,
-    createHandlers(boards, tasks, columns, tags, () => ({
+    createHandlers(boards, tasks, columns, tags, attachments, () => ({
       version: app.getVersion(),
       platform: process.platform === 'darwin' || process.platform === 'win32' ? process.platform : 'linux',
       dataPath: dataFile,

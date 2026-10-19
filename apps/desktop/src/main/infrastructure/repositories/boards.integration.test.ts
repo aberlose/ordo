@@ -1,4 +1,5 @@
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { ranksAfter } from '@ordo/domain';
 import { afterEach, describe, expect, it } from 'vitest';
 import { makeBoardUseCases } from '../../application/boards';
@@ -8,6 +9,8 @@ import { makeTaskUseCases } from '../../application/tasks';
 import { openDatabase, type OpenedDatabase } from '../db/client';
 import { sqliteTransactor } from '../db/transactor';
 import { uuidv7Generator } from '../ids';
+import { attachmentStorage } from '../fs/attachmentStorage';
+import { attachmentRepository } from './attachmentRepository';
 import { boardRepository } from './boardRepository';
 import { columnRepository } from './columnRepository';
 import { tagRepository } from './tagRepository';
@@ -18,6 +21,10 @@ let opened: OpenedDatabase | undefined;
 
 afterEach(() => opened?.close());
 
+/** These tests do not touch files: the folder is never created. */
+const unusedStorage = attachmentStorage(join(tmpdir(), 'ordo-tests-no-attachments'));
+const quietLog = { warn: () => undefined };
+
 function useCases() {
   opened = openDatabase(':memory:', migrations);
   return makeBoardUseCases({
@@ -25,6 +32,9 @@ function useCases() {
     columns: columnRepository(opened.db),
     tasks: taskRepository(opened.db),
     tags: tagRepository(opened.db),
+    attachments: attachmentRepository(opened.db),
+    storage: unusedStorage,
+    log: quietLog,
     tx: sqliteTransactor(opened.sqlite),
     clock: { now: () => Date.now() },
     ids: uuidv7Generator(),
@@ -60,6 +70,9 @@ describe('tasks on SQLite', () => {
       columns: columnRepository(opened.db),
       tasks: taskRepository(opened.db),
       tags: tagRepository(opened.db),
+      attachments: attachmentRepository(opened.db),
+      storage: unusedStorage,
+      log: quietLog,
       tx: sqliteTransactor(opened.sqlite),
       clock: { now: () => Date.now() },
       ids: uuidv7Generator(),
@@ -96,6 +109,9 @@ describe('moves on SQLite', () => {
       columns: columnRepository(opened.db),
       tasks: taskRepository(opened.db),
       tags: tagRepository(opened.db),
+      attachments: attachmentRepository(opened.db),
+      storage: unusedStorage,
+      log: quietLog,
       tx: sqliteTransactor(opened.sqlite),
       clock: { now: () => Date.now() },
       ids: uuidv7Generator(),
@@ -130,6 +146,9 @@ describe('column settings on SQLite', () => {
       columns: columnRepository(opened.db),
       tasks: taskRepository(opened.db),
       tags: tagRepository(opened.db),
+      attachments: attachmentRepository(opened.db),
+      storage: unusedStorage,
+      log: quietLog,
       tx: sqliteTransactor(opened.sqlite),
       clock: { now: () => Date.now() },
       ids: uuidv7Generator(),
@@ -166,6 +185,9 @@ describe('board management on SQLite', () => {
       columns: columnRepository(opened.db),
       tasks: taskRepository(opened.db),
       tags: tagRepository(opened.db),
+      attachments: attachmentRepository(opened.db),
+      storage: unusedStorage,
+      log: quietLog,
       tx: sqliteTransactor(opened.sqlite),
       clock: { now: () => (now += 1) },
       ids: uuidv7Generator(),
@@ -206,7 +228,7 @@ describe('board management on SQLite', () => {
     expect(() => boards.updateBoard({ id: 'nope', name: 'X' })).toThrow(NotFoundError);
   });
 
-  it('duplicates a board with its columns, live tasks and remapped sub-tasks', () => {
+  it('duplicates a board with its columns, live tasks and remapped sub-tasks', async () => {
     const { boards, tasks, columns, taskRepo, sql, run } = setup();
     const source = boards.createBoard({
       name: 'Source',
@@ -223,15 +245,22 @@ describe('board management on SQLite', () => {
     tasks.deleteTask(gone.id);
     const archived = tasks.createTask({ columnId: todo, title: 'Archived' });
     run('update task set archived_at = 5 where id = ?', archived.id);
-    run(`update task set description_json = '{"type":"doc"}', description_text = 'Notes' where id = ?`, a.id);
+    run(
+      `update task set description_json = ?, description_text = 'Notes' where id = ?`,
+      JSON.stringify({
+        type: 'doc',
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Notes' }] }],
+      }),
+      a.id,
+    );
     const parent = taskRepo.findById(a.id)!;
     taskRepo.insert({ ...parent, id: 'sub-1', parentId: a.id, key: 50, title: 'Sub' });
     taskRepo.insert({ ...parent, id: 'sub-2', parentId: archived.id, key: 51, title: 'Orphan' });
     taskRepo.insert({ ...parent, id: 'sub-3', parentId: gone.id, key: 52, title: 'Orphan of deleted' });
     const originalRows = sql('select * from task order by id');
 
-    const bare = boards.duplicateBoard({ id: source.id, name: 'Bare', includeTasks: false });
-    const full = boards.duplicateBoard({ id: source.id, name: 'Full', includeTasks: true });
+    const bare = await boards.duplicateBoard({ id: source.id, name: 'Bare', includeTasks: false });
+    const full = await boards.duplicateBoard({ id: source.id, name: 'Full', includeTasks: true });
     expect(boards.listBoards().map((x) => x.name)).toEqual(['Source', 'Full', 'Bare', 'Next']);
     expect(bare).toMatchObject({ icon: 'eye', color: 'pink', taskCount: 0 });
     expect(full.taskCount).toBe(2);
@@ -264,7 +293,7 @@ describe('board management on SQLite', () => {
     );
   });
 
-  it('duplicates a board of thousands of tasks (inserted in chunks)', () => {
+  it('duplicates a board of thousands of tasks (inserted in chunks)', async () => {
     const { boards, taskRepo, sql, tx } = setup();
     const source = boards.createBoard({ name: 'Big', columnNames: COLUMN_NAMES });
     const columnId = source.columns[0]!.id;
@@ -291,7 +320,7 @@ describe('board management on SQLite', () => {
       ),
     );
 
-    const copy = boards.duplicateBoard({ id: source.id, name: 'Big copy', includeTasks: true });
+    const copy = await boards.duplicateBoard({ id: source.id, name: 'Big copy', includeTasks: true });
     expect(copy.taskCount).toBe(2_700);
     const counted = sql<{ n: number; subs: number }>(
       'select count(*) as n, count(parent_id) as subs from task where board_id = ?',
@@ -335,22 +364,24 @@ describe('board management on SQLite', () => {
     expect(new Set(columnRanks.map((r) => r.rank)).size).toBe(4);
   });
 
-  it('refuses to duplicate an archived board', () => {
+  it('refuses to duplicate an archived board', async () => {
     const { boards } = setup();
     const source = boards.createBoard({ name: 'Source', columnNames: COLUMN_NAMES });
     boards.archiveBoard(source.id);
-    expect(() => boards.duplicateBoard({ id: source.id, name: 'Copy', includeTasks: false })).toThrow(
+    await expect(boards.duplicateBoard({ id: source.id, name: 'Copy', includeTasks: false })).rejects.toThrow(
       RuleViolationError,
     );
     expect(boards.listBoards()).toEqual([]);
   });
 
-  it('rolls back a duplication that fails half-way', () => {
+  it('rolls back a duplication that fails half-way', async () => {
     const { boards, tasks, run } = setup();
     const source = boards.createBoard({ name: 'Source', columnNames: COLUMN_NAMES });
     tasks.createTask({ columnId: source.columns[0]!.id, title: 'A' });
     run(`create trigger fail_tasks before insert on task begin select raise(abort, 'boom'); end`);
-    expect(() => boards.duplicateBoard({ id: source.id, name: 'Copy', includeTasks: true })).toThrow();
+    await expect(
+      boards.duplicateBoard({ id: source.id, name: 'Copy', includeTasks: true }),
+    ).rejects.toThrow();
     expect(boards.listBoards().map((x) => x.name)).toEqual(['Source']);
   });
 

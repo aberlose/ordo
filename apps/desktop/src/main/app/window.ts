@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { BrowserWindow, shell } from 'electron';
+import { isExternalUrl } from './externalLinks';
 
 const devServerUrl = process.env['ELECTRON_RENDERER_URL'];
 
@@ -29,12 +30,17 @@ export function createMainWindow(): BrowserWindow {
 
   window.once('ready-to-show', () => window.show());
 
-  // No navigation away from the app, no new windows. External links open in the system browser.
+  // No navigation away from the app, no new windows. Links of the notes (`window.open`) open in the
+  // system browser or mail app when they are http(s) or mailto; anything else is dropped.
   window.webContents.on('will-navigate', (event, url) => {
     if (!devServerUrl || !url.startsWith(devServerUrl)) event.preventDefault();
   });
   window.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://')) void shell.openExternal(url);
+    if (isExternalUrl(url)) {
+      shell
+        .openExternal(url)
+        .catch((error: unknown) => console.warn('[window] could not open a link', error));
+    }
     return { action: 'deny' };
   });
 

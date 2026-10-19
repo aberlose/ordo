@@ -1,4 +1,5 @@
 import type { AppInfo } from '@ordo/contracts';
+import type { AttachmentUseCases } from '../application/attachments';
 import type { BoardUseCases } from '../application/boards';
 import type { ColumnUseCases } from '../application/columns';
 import type { TagUseCases } from '../application/tags';
@@ -10,6 +11,7 @@ export function createHandlers(
   tasks: TaskUseCases,
   columns: ColumnUseCases,
   tags: TagUseCases,
+  attachments: AttachmentUseCases,
   appInfo: () => AppInfo,
 ): Handlers {
   return {
@@ -31,6 +33,15 @@ export function createHandlers(
     'tasks.listSubtasks': ({ parentId }) => tasks.listSubtasks(parentId),
     'tasks.addTag': (input) => tasks.addTag(input),
     'tasks.removeTag': (input) => tasks.removeTag(input),
+    'tasks.getDescription': ({ id }) => tasks.getDescription(id),
+    'tasks.updateDescription': (input) => tasks.updateDescription(input),
+    'attachments.list': ({ taskId }) => attachments.listAttachments(taskId),
+    'attachments.add': (input) => attachments.addAttachments(input),
+    'attachments.pick': ({ taskId }) => attachments.pickAttachments(taskId),
+    'attachments.addData': (input) => attachments.addAttachmentData(input),
+    'attachments.open': ({ id }) => attachments.openAttachment(id),
+    'attachments.reveal': ({ id }) => attachments.revealAttachment(id),
+    'attachments.delete': ({ id }) => attachments.deleteAttachment(id),
     'tags.create': (input) => tags.createTag(input),
     'tags.update': (input) => tags.updateTag(input),
     'tags.delete': ({ id }) => tags.deleteTag(id),

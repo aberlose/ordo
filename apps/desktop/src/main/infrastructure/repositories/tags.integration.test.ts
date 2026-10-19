@@ -1,4 +1,5 @@
-import { resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { ranksAfter } from '@ordo/domain';
 import { afterEach, describe, expect, it } from 'vitest';
 import { makeBoardUseCases } from '../../application/boards';
@@ -9,6 +10,8 @@ import { makeTaskUseCases } from '../../application/tasks';
 import { openDatabase, type OpenedDatabase } from '../db/client';
 import { sqliteTransactor } from '../db/transactor';
 import { uuidv7Generator } from '../ids';
+import { attachmentStorage } from '../fs/attachmentStorage';
+import { attachmentRepository } from './attachmentRepository';
 import { boardRepository } from './boardRepository';
 import { columnRepository } from './columnRepository';
 import { tagRepository } from './tagRepository';
@@ -18,6 +21,10 @@ const migrations = resolve(__dirname, '../db/migrations');
 let opened: OpenedDatabase | undefined;
 
 afterEach(() => opened?.close());
+
+/** These tests do not touch files: the folder is never created. */
+const unusedStorage = attachmentStorage(join(tmpdir(), 'ordo-tests-no-attachments'));
+const quietLog = { warn: () => undefined };
 
 const COLUMN_NAMES: [string, string, string] = ['À faire', 'En cours', 'Terminé'];
 
@@ -29,6 +36,9 @@ function setup() {
     columns: columnRepository(opened.db),
     tasks: taskRepository(opened.db),
     tags: tagRepository(opened.db),
+    attachments: attachmentRepository(opened.db),
+    storage: unusedStorage,
+    log: quietLog,
     tx: sqliteTransactor(opened.sqlite),
     clock: { now: () => (now += 1) },
     ids: uuidv7Generator(),
@@ -148,7 +158,7 @@ describe('tags on SQLite', () => {
     expect(sql('select * from tag')).toEqual([]);
   });
 
-  it('duplicates the tags and the links of the copied tasks', () => {
+  it('duplicates the tags and the links of the copied tasks', async () => {
     const { boardCases: boards, taskCases: tasks, tagCases: tags } = setup();
     const board = boards.createBoard({ name: 'Source', columnNames: COLUMN_NAMES });
     const a = tasks.createTask({ columnId: board.columns[0]!.id, title: 'A' });
@@ -157,11 +167,11 @@ describe('tags on SQLite', () => {
     tasks.addTag({ taskId: sub.id, tagId: design.id });
 
     const bare = boards.getBoard(
-      boards.duplicateBoard({ id: board.id, name: 'Bare', includeTasks: false }).id,
+      (await boards.duplicateBoard({ id: board.id, name: 'Bare', includeTasks: false })).id,
     );
     expect(bare.tags.map((t) => [t.name, t.color, t.taskCount])).toEqual([['design', 'pink', 0]]);
     const full = boards.getBoard(
-      boards.duplicateBoard({ id: board.id, name: 'Full', includeTasks: true }).id,
+      (await boards.duplicateBoard({ id: board.id, name: 'Full', includeTasks: true })).id,
     );
     const [copyTag] = full.tags;
     expect(copyTag).toMatchObject({ name: 'design', taskCount: 2 });
@@ -173,8 +183,16 @@ describe('tags on SQLite', () => {
 });
 
 describe('board detail at scale', () => {
-  it('reads 10,000 tasks with their tags and progress in a constant number of queries', () => {
-    const { boardCases: boards, tagCases: tags, tasks: taskRepo, tags: tagRepo, tx, sqlite } = setup();
+  it('reads 10,000 tasks with their tags, progress and attachment counts in a constant number of queries', () => {
+    const {
+      boardCases: boards,
+      tagCases: tags,
+      tasks: taskRepo,
+      tags: tagRepo,
+      attachments: attachmentRepo,
+      tx,
+      sqlite,
+    } = setup();
     const board = boards.createBoard({ name: 'Big', columnNames: COLUMN_NAMES });
     const [todo, , done] = board.columns.map((c) => c.id) as [string, string, string];
     const tagIds = ['a', 'b', 'c'].map((name) => tags.createTag({ boardId: board.id, name }).id);
@@ -210,6 +228,18 @@ describe('board detail at scale', () => {
       tagRepo.insertLinks(
         records.flatMap((t, i) => tagIds.slice(0, i % 3).map((tagId) => ({ taskId: t.id, tagId }))),
       );
+      // Every seventh task has a file; the first one has two.
+      attachmentRepo.insertMany(
+        [...records.filter((_, i) => i % 7 === 0).map((t) => t.id), 't-0'].map((taskId, n) => ({
+          id: `a-${n}`,
+          taskId,
+          fileName: 'a.pdf',
+          storedPath: `a-${n}.pdf`,
+          mimeType: 'application/pdf',
+          sizeBytes: 1,
+          createdAt: n,
+        })),
+      );
     });
 
     let statements = 0;
@@ -222,13 +252,14 @@ describe('board detail at scale', () => {
     sqlite.prepare = prepare as typeof sqlite.prepare;
 
     expect(statements).toBeGreaterThan(0);
-    expect(statements).toBeLessThanOrEqual(6);
+    expect(statements).toBeLessThanOrEqual(7);
     expect(read.tasks).toHaveLength(10_000);
     expect(read.taskCount).toBe(10_000);
     const byId = new Map(read.tasks.map((t) => [t.id, t]));
     expect(byId.get('t-0')).toMatchObject({ subtasks: { done: 1, total: 2 }, tagIds: [] });
     expect(byId.get('t-1')).toMatchObject({ subtasks: { done: 0, total: 0 }, tagIds: [tagIds[0]] });
     expect(byId.get('t-2')?.tagIds).toEqual(tagIds.slice(0, 2));
+    expect([0, 1, 7].map((i) => byId.get(`t-${i}`)?.attachmentCount)).toEqual([2, 0, 1]);
     expect(read.tags.map((t) => t.taskCount)).toEqual([6_666, 3_333, 0]);
   });
 });

@@ -1,9 +1,13 @@
 import type {
+  AttachmentRecord,
+  AttachmentRepository,
+  AttachmentStorage,
   BoardPatch,
   BoardRecord,
   BoardRepository,
   ColumnRecord,
   ColumnRepository,
+  DesktopShell,
   SubtaskCount,
   TagRecord,
   TagRepository,
@@ -137,6 +141,10 @@ export function inMemoryRepositories() {
     findById: (id) => {
       const t = liveTasks().find((x) => x.id === id);
       return t ? strip(t) : null;
+    },
+    findDescription: (id) => {
+      const t = liveTasks().find((x) => x.id === id);
+      return t ? { descriptionJson: t.descriptionJson, updatedAt: t.updatedAt } : null;
     },
     lastRankInColumn: (columnId) =>
       taskRows
@@ -272,6 +280,83 @@ export function inMemoryRepositories() {
     insertLinks: (links) => void linkRows.push(...links.map((l) => ({ ...l }))),
   };
 
+  let attachmentRows: AttachmentRecord[] = [];
+  const byCreation = (a: AttachmentRecord, b: AttachmentRecord) =>
+    a.createdAt - b.createdAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  const countsOf = (rows: readonly AttachmentRecord[]) => {
+    const counts = new Map<string, number>();
+    for (const row of rows) counts.set(row.taskId, (counts.get(row.taskId) ?? 0) + 1);
+    return [...counts].map(([taskId, count]) => ({ taskId, count }));
+  };
+  const attachments: AttachmentRepository = {
+    listByTask: (taskId) => attachmentRows.filter((a) => a.taskId === taskId).sort(byCreation),
+    listByTasks: (taskIds) => {
+      const ids = new Set(taskIds);
+      return attachmentRows.filter((a) => ids.has(a.taskId)).sort(byCreation);
+    },
+    findById: (id) => attachmentRows.find((a) => a.id === id) ?? null,
+    insert: (record) => void attachmentRows.push({ ...record }),
+    insertMany: (records) => void attachmentRows.push(...records.map((r) => ({ ...r }))),
+    delete: (id) => void (attachmentRows = attachmentRows.filter((a) => a.id !== id)),
+    countByBoard: (boardId) => {
+      const ids = new Set(taskRows.filter((t) => t.boardId === boardId).map((t) => t.id));
+      return countsOf(attachmentRows.filter((a) => ids.has(a.taskId)));
+    },
+    countOf: (taskIds) => {
+      const ids = new Set(taskIds);
+      return countsOf(attachmentRows.filter((a) => ids.has(a.taskId)));
+    },
+  };
+
+  /** Files outside the app (by absolute path; `null` = a folder) and files of the attachments folder. */
+  const outsideFiles = new Map<string, Uint8Array | null>();
+  const storedFiles = new Map<string, Uint8Array>();
+  const failures = { import: new Set<string>(), copy: new Set<string>() };
+  const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', pdf: 'application/pdf' };
+  const extOf = (name: string) => /\.([a-z0-9]+)$/i.exec(name)?.[1]?.toLowerCase() ?? '';
+  const storage: AttachmentStorage = {
+    inspect: async (path) => {
+      const file = outsideFiles.get(path);
+      if (file === undefined) return { kind: 'missing' };
+      return file === null ? { kind: 'not-a-file' } : { kind: 'file', size: file.byteLength };
+    },
+    importFile: async (path, storedPath) => {
+      const file = outsideFiles.get(path);
+      if (!file || failures.import.has(path)) throw new Error('EACCES: permission denied');
+      storedFiles.set(storedPath, file);
+      return file.byteLength;
+    },
+    writeData: async (storedPath, bytes) => {
+      storedFiles.set(storedPath, bytes);
+      return bytes.byteLength;
+    },
+    copyStored: async (from, to) => {
+      const file = storedFiles.get(from);
+      if (!file || failures.copy.has(from)) throw new Error('ENOENT: no such file');
+      storedFiles.set(to, file);
+      return file.byteLength;
+    },
+    remove: async (storedPath) => storedFiles.delete(storedPath),
+    absolutePath: (storedPath) => {
+      if (storedPath.includes('..') || storedPath.startsWith('/')) throw new Error('Outside the folder');
+      return `/data/attachments/${storedPath}`;
+    },
+    exists: async (storedPath) => storedFiles.has(storedPath),
+    mimeTypeOf: (name) => MIME[extOf(name)] ?? null,
+    extensionOf: (mime) => Object.entries(MIME).find(([, m]) => m === mime)?.[0] ?? null,
+  };
+
+  const shellCalls = { opened: [] as string[], revealed: [] as string[] };
+  const shellState = { picked: [] as string[], openError: '' };
+  const shell: DesktopShell = {
+    pickFiles: async () => [...shellState.picked],
+    openPath: async (path) => {
+      shellCalls.opened.push(path);
+      return shellState.openError;
+    },
+    showItemInFolder: (path) => void shellCalls.revealed.push(path),
+  };
+
   /**
    * Test-only hooks for states no use case produces yet (archived tasks: lot 8; descriptions: the
    * detail window's editor).
@@ -287,9 +372,16 @@ export function inMemoryRepositories() {
     },
     allTasks: (boardId: string) => liveTasks().filter((t) => t.boardId === boardId),
     allLinks: () => [...linkRows],
+    taskRow: (id: string) => taskRows.find((t) => t.id === id),
+    allAttachments: () => [...attachmentRows],
+    outsideFiles,
+    storedFiles,
+    failures,
+    shellCalls,
+    shellState,
   };
 
-  return { boards, columns, tasks, tags, testing };
+  return { boards, columns, tasks, tags, attachments, storage, shell, testing };
 }
 
 export function fixedDeps(now = 1_760_000_000_000) {
@@ -300,5 +392,6 @@ export function fixedDeps(now = 1_760_000_000_000) {
     clock: { now: () => clock },
     setNow: (value: number) => void (clock = value),
     ids: { next: () => `00000000-0000-7000-8000-${String(++n).padStart(12, '0')}` },
+    log: { warn: () => undefined },
   };
 }

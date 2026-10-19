@@ -41,7 +41,7 @@ describe('board use cases', () => {
     expect(names()).toEqual(['A', 'B']);
   });
 
-  it('fails on an unknown board', () => {
+  it('fails on an unknown board', async () => {
     expect(() => boards.getBoard('nope')).toThrow(NotFoundError);
   });
 });
@@ -84,7 +84,7 @@ describe('update a board', () => {
     expect(boards.listBoards()[0]).toEqual(updated);
   });
 
-  it('fails on an unknown board', () => {
+  it('fails on an unknown board', async () => {
     expect(() => boards.updateBoard({ id: 'nope', name: 'X' })).toThrow(NotFoundError);
   });
 });
@@ -173,7 +173,14 @@ describe('duplicate a board', () => {
     columns.deleteColumn(deletedColumn.id);
     const a = tasks.createTask({ columnId: todo, title: 'A' });
     tasks.updateTask({ id: a.id, priority: 5, startDate: '2026-10-01', dueDate: '2026-10-20' });
-    repos.testing.describeTask(a.id, '{"type":"doc"}', 'Notes');
+    repos.testing.describeTask(
+      a.id,
+      JSON.stringify({
+        type: 'doc',
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Notes' }] }],
+      }),
+      'Notes',
+    );
     const b = tasks.createTask({ columnId: done, title: 'B' });
     const gone = tasks.createTask({ columnId: review.id, title: 'Deleted' });
     tasks.deleteTask(gone.id);
@@ -192,11 +199,11 @@ describe('duplicate a board', () => {
     return { board: boards.getBoard(board.id), a, b };
   }
 
-  it('copies the board right after the original, with its columns and settings', () => {
+  it('copies the board right after the original, with its columns and settings', async () => {
     newBoard('First');
     const { board } = seeded();
     newBoard('Last');
-    const copy = boards.duplicateBoard({ id: board.id, name: ' Copie ', includeTasks: false });
+    const copy = await boards.duplicateBoard({ id: board.id, name: ' Copie ', includeTasks: false });
     expect(copy).toMatchObject({ name: 'Copie', icon: 'rocket', color: 'violet', taskCount: 0 });
     expect(names()).toEqual(['First', 'Source', 'Copie', 'Last']);
     const read = boards.getBoard(copy.id);
@@ -207,9 +214,9 @@ describe('duplicate a board', () => {
     expect(read.tasks).toEqual([]);
   });
 
-  it('copies the live tasks and sub-tasks into the matching columns', () => {
+  it('copies the live tasks and sub-tasks into the matching columns', async () => {
     const { board, a } = seeded();
-    const copy = boards.duplicateBoard({ id: board.id, name: 'Copie', includeTasks: true });
+    const copy = await boards.duplicateBoard({ id: board.id, name: 'Copie', includeTasks: true });
     expect(copy.taskCount).toBe(2);
     const copied = repos.testing.allTasks(copy.id);
     expect(copied.map((t) => t.title).sort()).toEqual(['A', 'B', 'Sub A']);
@@ -220,7 +227,7 @@ describe('duplicate a board', () => {
       startDate: '2026-10-01',
       dueDate: '2026-10-20',
       rank: a.rank,
-      descriptionJson: '{"type":"doc"}',
+      descriptionJson: repos.testing.taskRow(a.id)?.descriptionJson,
       descriptionText: 'Notes',
     });
     expect(copyA.id).not.toBe(a.id);
@@ -233,35 +240,37 @@ describe('duplicate a board', () => {
     expect(copied.find((t) => t.title === 'Sub A')!.parentId).toBe(copyA.id);
   });
 
-  it('leaves the original untouched', () => {
+  it('leaves the original untouched', async () => {
     const { board } = seeded();
     const before = repos.testing.allTasks(board.id);
-    boards.duplicateBoard({ id: board.id, name: 'Copie', includeTasks: true });
+    await boards.duplicateBoard({ id: board.id, name: 'Copie', includeTasks: true });
     expect(boards.getBoard(board.id)).toEqual(board);
     expect(repos.testing.allTasks(board.id)).toEqual(before);
   });
 
-  it('drops a live sub-task whose parent is deleted', () => {
+  it('drops a live sub-task whose parent is deleted', async () => {
     const { board } = seeded();
     // The orphan is live on the source board, so it is a candidate for the copy.
     expect(repos.testing.allTasks(board.id).some((t) => t.id === 'sub-of-deleted')).toBe(true);
-    const copy = boards.duplicateBoard({ id: board.id, name: 'Copie', includeTasks: true });
+    const copy = await boards.duplicateBoard({ id: board.id, name: 'Copie', includeTasks: true });
     const copied = repos.testing.allTasks(copy.id);
     expect(copied.some((t) => t.title === 'Orphan of deleted' || t.key === 12)).toBe(false);
     expect(copied.every((t) => t.parentId === null || copied.some((p) => p.id === t.parentId))).toBe(true);
   });
 
-  it('refuses to duplicate an archived board', () => {
+  it('refuses to duplicate an archived board', async () => {
     const { board } = seeded();
     boards.archiveBoard(board.id);
-    expect(() => boards.duplicateBoard({ id: board.id, name: 'Copie', includeTasks: true })).toThrow(
+    await expect(boards.duplicateBoard({ id: board.id, name: 'Copie', includeTasks: true })).rejects.toThrow(
       RuleViolationError,
     );
     expect(names()).toEqual([]);
   });
 
-  it('fails on an unknown board', () => {
-    expect(() => boards.duplicateBoard({ id: 'nope', name: 'X', includeTasks: true })).toThrow(NotFoundError);
+  it('fails on an unknown board', async () => {
+    await expect(boards.duplicateBoard({ id: 'nope', name: 'X', includeTasks: true })).rejects.toThrow(
+      NotFoundError,
+    );
   });
 });
 
@@ -332,11 +341,11 @@ describe('duplicate a board with tags', () => {
   }
   const strip = ({ id: _id, ...t }: { id: string }) => t;
 
-  it('copies the tags (new ids) without links when tasks are not included', () => {
+  it('copies the tags (new ids) without links when tasks are not included', async () => {
     const { board } = tagged();
     const links = repos.testing.allLinks().length;
     const copy = boards.getBoard(
-      boards.duplicateBoard({ id: board.id, name: 'Bare', includeTasks: false }).id,
+      (await boards.duplicateBoard({ id: board.id, name: 'Bare', includeTasks: false })).id,
     );
     expect(copy.tags.map(strip)).toEqual([
       { name: 'design', color: 'violet', taskCount: 0 },
@@ -346,11 +355,11 @@ describe('duplicate a board with tags', () => {
     expect(repos.testing.allLinks()).toHaveLength(links);
   });
 
-  it('copies the links of the copied tasks and sub-tasks, remapped', () => {
+  it('copies the links of the copied tasks and sub-tasks, remapped', async () => {
     const { board } = tagged();
     const before = boards.getBoard(board.id);
     const copy = boards.getBoard(
-      boards.duplicateBoard({ id: board.id, name: 'Full', includeTasks: true }).id,
+      (await boards.duplicateBoard({ id: board.id, name: 'Full', includeTasks: true })).id,
     );
     expect(copy.tags.map((t) => [t.name, t.taskCount])).toEqual([
       ['design', 1],
