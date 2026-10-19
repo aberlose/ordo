@@ -1,10 +1,14 @@
 import { Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { dragHasImage } from '../notes/helpers';
 import { useAttachmentUploads } from './uploads';
 
-/** The notes editor handles its own drops (images inserted in the note): no overlay over it. */
-const EDITOR_SELECTOR = '.ProseMirror, [data-notes-editor]';
+/**
+ * The notes' text takes dropped images (inserted in the note): no overlay over it for a drag that
+ * carries one. Other files dropped on the text still become attachments, with the overlay.
+ */
+const EDITOR_SELECTOR = '.ProseMirror';
 
 const hasFiles = (event: DragEvent) => event.dataTransfer?.types.includes('Files') ?? false;
 
@@ -28,7 +32,7 @@ export function DropOverlay({ count }: { count: number }) {
     >
       <Upload size={26} className="text-accent" />
       <span className="text-title font-semibold">{t('attachments.drop.title')}</span>
-      <span className="text-meta text-text-3">
+      <span className="text-meta text-text-2">
         {count > 0 ? t('attachments.drop.count', { count }) : t('attachments.drop.hint')}
       </span>
     </div>
@@ -63,7 +67,9 @@ export function AttachmentDropTarget({ boardId, taskId }: { boardId: string; tas
     const onEnter = (event: DragEvent) => {
       if (!hasFiles(event)) return;
       depth += 1;
-      const overEditor = Boolean((event.target as Element | null)?.closest?.(EDITOR_SELECTOR));
+      const overEditor =
+        dragHasImage(event.dataTransfer) &&
+        Boolean((event.target as Element | null)?.closest?.(EDITOR_SELECTOR));
       const count = fileCount(event);
       setState((prev) =>
         prev && prev.count === count && prev.overEditor === overEditor ? prev : { count, overEditor },

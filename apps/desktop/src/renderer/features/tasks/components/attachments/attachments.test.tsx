@@ -56,6 +56,8 @@ function fakeApi(handlers: Record<string, Handler> = {}) {
     switch (channel) {
       case 'attachments.list':
         return ok(list);
+      case 'attachments.open':
+        return ok({ opened: true });
       case 'attachments.delete':
         list = list.filter((a) => a.id !== input['id']);
         return ok(null);
@@ -95,7 +97,7 @@ function dropFiles(target: Element, dropped: File[]) {
   const dataTransfer = {
     files: dropped,
     types: ['Files'],
-    items: dropped.map(() => ({ kind: 'file' })),
+    items: dropped.map((f) => ({ kind: 'file', type: f.type })),
     dropEffect: 'none',
   };
   fireEvent.dragEnter(target, { dataTransfer });
@@ -151,6 +153,52 @@ describe('AttachmentSection', () => {
     await settle();
     const { useFeedback } = await import('@renderer/shared/feedback/store');
     expect(useFeedback.getState().toast?.message).toMatch(/^Ouverture impossible/);
+  });
+
+  it('does not run a program: the main process shows it in its folder and the toast says why', async () => {
+    fakeApi({ 'attachments.open': () => ok({ opened: false }) });
+    renderSection();
+    fireEvent.keyDown(tile('cahier-des-charges.pdf'), { key: 'Enter' });
+    await settle();
+    const { useFeedback } = await import('@renderer/shared/feedback/store');
+    // jsdom is neither macOS nor Windows: "dans son dossier".
+    expect(useFeedback.getState().toast?.message).toBe(
+      'Ce type de fichier ne s’ouvre pas depuis Ordo : il est affiché dans son dossier.',
+    );
+  });
+
+  it('shows "Copie…" on the add tile while the file dialog and its copy run', async () => {
+    let finish: (reply: Reply) => void = () => {};
+    fakeApi({ 'attachments.pick': () => new Promise<Reply>((resolve) => (finish = resolve)) });
+    renderSection();
+    const add = screen.getByRole('button', { name: 'Ajouter ou déposer' });
+    fireEvent.click(add);
+    await settle();
+    expect(add.getAttribute('aria-busy')).toBe('true');
+    expect(text(add)).toContain('Copie…');
+    // A second click does not open another dialog.
+    fireEvent.click(add);
+    await act(async () => finish(added({ attachments: [], failures: [] })));
+    await settle();
+    expect(calls('attachments.pick')).toHaveLength(1);
+    expect(add.hasAttribute('aria-busy')).toBe(false);
+    expect(text(add)).not.toContain('Copie…');
+  });
+
+  it('shows a load error in a dashed box with Réessayer', async () => {
+    let failing = true;
+    fakeApi({
+      'attachments.list': () =>
+        failing ? { ok: false, error: { code: 'INTERNAL', message: 'db' } } : ok(files.slice(0, 1)),
+    });
+    renderSection({ empty: true });
+    const alert = await screen.findByRole('alert');
+    expect(text(alert)).toContain('Impossible de charger les pièces jointes.');
+    failing = false;
+    fireEvent.click(within(alert).getByRole('button', { name: 'Réessayer' }));
+    await settle();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(tile('maquette-header-v3.png')).toBeTruthy();
   });
 
   it('opens and reveals a file from its ⋯ menu', async () => {
@@ -246,6 +294,28 @@ describe('dropping files on the window', () => {
     expect(document.querySelector('[data-attachment-drop]')).toBeNull();
   });
 
+  it('leaves image drags over the notes text to the editor, not other files', () => {
+    const client = new QueryClient();
+    client.setQueryData(attachmentKeys.list(TASK), files);
+    render(
+      <QueryClientProvider client={client}>
+        <div data-testid="window">
+          <div className="ProseMirror" data-testid="text" />
+          <AttachmentDropTarget boardId={BOARD} taskId={TASK} />
+        </div>
+      </QueryClientProvider>,
+    );
+    const over = (type: string) =>
+      fireEvent.dragEnter(screen.getByTestId('text'), {
+        dataTransfer: { types: ['Files'], items: [{ kind: 'file', type }] },
+      });
+    over('application/pdf');
+    expect(document.querySelector('[data-attachment-drop]')).not.toBeNull();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    over('image/png');
+    expect(document.querySelector('[data-attachment-drop]')).toBeNull();
+  });
+
   it('sends the bytes of a file that has no path', async () => {
     fakeApi({
       'attachments.addData': () =>
@@ -280,6 +350,11 @@ describe('dropping files on the window', () => {
     dropFiles(screen.getByTestId('window'), [new File(['z'], 'export.zip')])();
     await settle();
     expect(screen.getByText('Copie impossible')).toBeTruthy();
+    // Announced politely: the focus is elsewhere.
+    const { useFeedback } = await import('@renderer/shared/feedback/store');
+    await vi.waitFor(() =>
+      expect(useFeedback.getState().announcement).toMatch(/^Copie impossible : export\.zip/),
+    );
 
     fail = false;
     fireEvent.click(screen.getByRole('button', { name: 'Réessayer la copie de export.zip' }));

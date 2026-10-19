@@ -26,8 +26,45 @@ export function useDescription(taskId: string) {
   });
 }
 
-/** The last document asked for, per task: a retry sends it, never an older one. */
+/**
+ * The last document asked for, per task, until it is saved: a retry sends it, never an older one.
+ * Removed once that document is acknowledged.
+ */
 const latest = new Map<string, NotesDoc>();
+
+/** Saves sent to the main process and not answered yet (the window waits for them when it closes). */
+const inFlight = new Set<Promise<unknown>>();
+/** The `flush` of every mounted notes editor. */
+const flushers = new Set<() => void>();
+
+function track<T>(promise: Promise<T>): Promise<T> {
+  inFlight.add(promise);
+  const done = () => inFlight.delete(promise);
+  promise.then(done, done);
+  return promise;
+}
+
+/**
+ * Saves every pending note now and resolves once every save sent so far is answered (saved or
+ * failed: never rejects). Called by the main process before the window closes, through
+ * `window.__ordoFlushNotes` (see `installNotesFlush`).
+ */
+export async function flushPendingNotes(): Promise<void> {
+  for (const flush of [...flushers]) flush();
+  while (inFlight.size > 0) await Promise.allSettled([...inFlight]);
+}
+
+declare global {
+  interface Window {
+    /** Set by the renderer at start-up; the main process runs it (executeJavaScript) on window close. */
+    __ordoFlushNotes?: () => Promise<void>;
+  }
+}
+
+/** Exposes `flushPendingNotes` to the main process as `window.__ordoFlushNotes` (once, at start-up). */
+export function installNotesFlush() {
+  window.__ordoFlushNotes = flushPendingNotes;
+}
 
 /** A document with no text and no image is stored as `null` (no notes). */
 export function toStoredDoc(doc: DocNode): NotesDoc {
@@ -42,7 +79,7 @@ export function toStoredDoc(doc: DocNode): NotesDoc {
 export function useSaveDescription(taskId: string) {
   const client = useQueryClient();
   const mutation = useMutation({
-    mutationFn: (json: NotesDoc) => call('tasks.updateDescription', { id: taskId, json }),
+    mutationFn: (json: NotesDoc) => track(call('tasks.updateDescription', { id: taskId, json })),
     onMutate: (json) => {
       latest.set(taskId, json);
       client.setQueryData<Description>(descriptionKeys.detail(taskId), (previous) => ({
@@ -53,7 +90,9 @@ export function useSaveDescription(taskId: string) {
     },
     // Only the newest save may write its answer (an older one finishing late would roll the text back).
     onSuccess: (saved, json) => {
-      if (latest.get(taskId) === json) client.setQueryData(descriptionKeys.detail(taskId), saved);
+      if (latest.get(taskId) !== json) return;
+      client.setQueryData(descriptionKeys.detail(taskId), saved);
+      latest.delete(taskId);
     },
     onError: () => {
       useFeedback.getState().showToast(i18n.t('feedback.failed.saveNotes'), () => {
@@ -99,21 +138,29 @@ export function createAutosave<T>(save: (value: T) => void, delay = AUTOSAVE_DEL
 
 /**
  * The autosave of one task's notes. `schedule(doc)` on every change; flushed on unmount and when the
- * window is closed. `onSaved` runs after each successful save (the "Enregistré" hint).
+ * window is closed (`flushPendingNotes`, called by the main process; `beforeunload` as a fallback).
+ * `onSaved` runs after each successful save (the "Enregistré" hint).
  */
 export function useNotesAutosave(taskId: string, onSaved?: () => void) {
   const save = useSaveDescription(taskId);
   const send = useRef<(json: NotesDoc) => void>(() => {});
   useLayoutEffect(() => {
-    send.current = (json) => save.mutate(json, { onSuccess: () => onSaved?.() });
+    // Tracked at once (the mutation starts its request a tick later): a flush waits for this save.
+    send.current = (json) =>
+      void track(save.mutateAsync(json)).then(
+        () => onSaved?.(),
+        () => {}, // The mutation's onError shows the toast.
+      );
   });
   const autosave = useRef<ReturnType<typeof createAutosave<NotesDoc>> | null>(null);
   useLayoutEffect(() => {
     const instance = createAutosave<NotesDoc>((json) => send.current(json));
     autosave.current = instance;
     const onUnload = () => instance.flush();
+    flushers.add(onUnload);
     window.addEventListener('beforeunload', onUnload);
     return () => {
+      flushers.delete(onUnload);
       window.removeEventListener('beforeunload', onUnload);
       instance.flush();
     };

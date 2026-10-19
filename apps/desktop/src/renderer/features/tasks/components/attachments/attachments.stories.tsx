@@ -1,6 +1,8 @@
 import type { Attachment, Task } from '@ordo/contracts';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useFeedback } from '@renderer/shared/feedback/store';
 import { today } from '@renderer/shared/lib/dates';
 import { board, columns, now, tasks } from '@renderer/test/fixtures';
 import { TaskCard } from '../TaskCard';
@@ -138,18 +140,13 @@ export const DeleteConfirmationDark: Story = { ...DeleteConfirmation, globals: {
 
 /** Attachments A, "Fichiers glissés sur la fenêtre". */
 export const DropOverlayShown: Story = {
-  name: 'Drop overlay',
   render: () => (
     <Window overlay={<DropOverlay count={2} />}>
       <ListDemo />
     </Window>
   ),
 };
-export const DropOverlayDark: Story = {
-  ...DropOverlayShown,
-  name: 'Drop overlay dark',
-  globals: { mode: 'dark' },
-};
+export const DropOverlayShownDark: Story = { ...DropOverlayShown, globals: { mode: 'dark' } };
 
 /** Attachments A, "Copie en cours · échec": a "Copie…" tile and a red tile with Réessayer and ×. */
 export const CopyingAndFailed: Story = {
@@ -160,6 +157,59 @@ export const CopyingAndFailed: Story = {
   ),
 };
 export const CopyingAndFailedDark: Story = { ...CopyingAndFailed, globals: { mode: 'dark' } };
+
+/** "Ajouter ou déposer" chosen: while the dialog and its copy run, the tile shows the indeterminate "Copie…". */
+export const PickerCopying: Story = {
+  render: () => (
+    <Window>
+      <ListDemo attachments={files.slice(0, 2)} adding />
+    </Window>
+  ),
+};
+export const PickerCopyingDark: Story = { ...PickerCopying, globals: { mode: 'dark' } };
+
+/** The list could not be loaded: the dashed box with Réessayer (as the archives and the sub-tasks). */
+export const LoadError: Story = {
+  render: () => (
+    <Window>
+      <AttachmentList
+        attachments={undefined}
+        uploads={[]}
+        reveal="mac"
+        loadError
+        onRetryLoad={() => undefined}
+        onAdd={() => undefined}
+        onOpen={() => undefined}
+        onReveal={() => undefined}
+        onDelete={() => undefined}
+        onRetryUpload={() => undefined}
+        onDismissUpload={() => undefined}
+      />
+    </Window>
+  ),
+};
+export const LoadErrorDark: Story = { ...LoadError, globals: { mode: 'dark' } };
+
+/** Shows the toast of a program opened from its tile (hides after 6 s; reload the story to see it again). */
+function ProgramToast() {
+  const { t } = useTranslation();
+  useEffect(() => {
+    useFeedback.getState().showToast(t('attachments.notOpened.mac'));
+    return () => useFeedback.getState().dismissToast();
+  }, [t]);
+  return null;
+}
+
+/** A program or a script is never run: it is shown in the Finder, and the toast says why. */
+export const ProgramShownInFolder: Story = {
+  render: () => (
+    <Window>
+      <ListDemo attachments={[...files.slice(0, 2), file(4, 'installer.dmg', 48 * 1024 * 1024, 0)]} />
+      <ProgramToast />
+    </Window>
+  ),
+};
+export const ProgramShownInFolderDark: Story = { ...ProgramShownInFolder, globals: { mode: 'dark' } };
 
 /** No file yet: only the dashed "Ajouter ou déposer" tile. */
 export const Empty: Story = {

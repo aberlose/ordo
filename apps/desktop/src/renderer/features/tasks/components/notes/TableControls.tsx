@@ -57,8 +57,17 @@ const band =
 /** The two "+" bands of a hovered table. Pointer only: the cell menu does the same from the keyboard. */
 export function TableBands({ box, onAdd }: TableBandsProps) {
   const { t } = useTranslation();
-  const column: CSSProperties = { left: box.left + box.width + 6, top: box.top, height: box.height };
-  const row: CSSProperties = { left: box.left, top: box.top + box.height + 6, width: box.width };
+  // Beside and under the table, `--float-gap` away (the space between text and what floats by it).
+  const column: CSSProperties = {
+    left: `calc(${box.left + box.width}px + var(--float-gap))`,
+    top: box.top,
+    height: box.height,
+  };
+  const row: CSSProperties = {
+    left: box.left,
+    top: `calc(${box.top + box.height}px + var(--float-gap))`,
+    width: box.width,
+  };
   return (
     <>
       <button

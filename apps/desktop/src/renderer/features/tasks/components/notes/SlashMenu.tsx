@@ -1,8 +1,6 @@
 import {
   Code2,
-  Heading1,
   Heading2,
-  Heading3,
   Image as ImageIcon,
   List,
   ListChecks,
@@ -17,9 +15,7 @@ import type { BlockId } from './helpers';
 import type { SlashStore } from './slash';
 
 const ICONS: Record<BlockId, LucideIcon> = {
-  heading1: Heading1,
-  heading2: Heading2,
-  heading3: Heading3,
+  heading: Heading2,
   taskList: ListChecks,
   bulletList: List,
   codeBlock: Code2,
@@ -47,7 +43,7 @@ export function SlashMenu({ store }: { store: SlashStore }) {
       style={state.position}
       // Keep the editor focused: a click must not blur it before the block is inserted.
       onMouseDown={(event) => event.preventDefault()}
-      className="absolute z-20 flex w-70 flex-col rounded-card border border-border bg-surface p-1.5 text-text shadow-pop"
+      className="absolute z-20 flex w-menu-blocks flex-col rounded-card border border-border bg-surface p-1.5 text-text shadow-pop"
     >
       <div aria-hidden className="px-2 pt-1 pb-1.5 text-caption font-medium text-text-3">
         {t('notes.blocks.title')}

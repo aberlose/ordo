@@ -5,13 +5,13 @@
  */
 
 .notes-content {
-  /* Type scale of the notes (mockups: body 14.5 / 1.65, headings, code 12.5). */
-  --notes-text: 14.5px;
-  --notes-h1: 20px;
-  --notes-h2: 16px;
-  --notes-h3: 14.5px;
-  --notes-code: 12.5px;
-  --notes-table: 13.5px;
+  /* Type scale of the notes, from the shared scale (index.css): body 14.5 / 1.65, headings, code 12.5. */
+  --notes-text: var(--text-note);
+  --notes-h1: var(--text-note-h1);
+  --notes-h2: var(--text-note-h2);
+  --notes-h3: var(--text-note);
+  --notes-code: var(--text-label);
+  --notes-table: var(--text-body);
   --notes-gap: 10px;
 
   min-height: 6rem;
@@ -104,11 +104,38 @@
   user-select: none;
 }
 .notes-content ul[data-type='taskList'] li > label input {
+  /* Drawn with the tokens (as a sub-task's done box), so light and dark both follow the theme. */
+  appearance: none;
+  display: grid;
+  place-content: center;
   width: 16px;
   height: 16px;
   margin: 0;
-  accent-color: var(--accent);
+  border: var(--border-width-strong) solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
   cursor: pointer;
+}
+.notes-content ul[data-type='taskList'] li > label input:hover {
+  border-color: var(--text-3);
+}
+.notes-content ul[data-type='taskList'] li > label input:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+/* The check mark, in the surface colour on the accent. */
+.notes-content ul[data-type='taskList'] li > label input:checked::before {
+  content: '';
+  width: 9px;
+  height: 5px;
+  margin-top: -2px;
+  border-bottom: 2px solid var(--surface);
+  border-left: 2px solid var(--surface);
+  transform: rotate(-45deg);
+}
+.notes-content ul[data-type='taskList'] li > label input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .notes-content ul[data-type='taskList'] li > div {
   flex: 1;

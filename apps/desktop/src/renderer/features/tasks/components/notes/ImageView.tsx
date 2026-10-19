@@ -4,6 +4,7 @@ import { ImageOff } from 'lucide-react';
 import { useRef, useState, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@renderer/shared/lib/cn';
+import { altKey } from '@renderer/shared/lib/platform';
 import { useAttachments } from '../../hooks/attachments';
 import { useNotesContext } from './context';
 import { dragImageWidth } from './helpers';
@@ -12,8 +13,8 @@ type Side = 'left' | 'right';
 
 /**
  * An image of the notes (approved mockup: notes-attachments/NoteBlocks B): its attachment's file at
- * `width` % of the note. Selected, it shows two handles (drag) — ← / → resize it by 5 % from the
- * keyboard (see `NoteImage`). An attachment deleted from the task leaves the dashed "Image supprimée"
+ * `width` % of the note. Selected, it shows two handles (drag) — ⌥/Alt + ← / → resize it by 5 % from
+ * the keyboard (see `NoteImage`); the hint announces the width (polite live region). An attachment deleted from the task leaves the dashed "Image supprimée"
  * box (NoteBlocks A), which Delete removes from the note.
  */
 export function ImageView({ node, selected, updateAttributes }: ReactNodeViewProps) {
@@ -101,8 +102,8 @@ export function ImageView({ node, selected, updateAttributes }: ReactNodeViewPro
         )}
       </div>
       {selected && (
-        <span className="mt-1.5 block text-small text-text-3" contentEditable={false}>
-          {t('notes.image.resizeHint', { width: shown })}
+        <span className="mt-1.5 block text-small text-text-3" contentEditable={false} aria-live="polite">
+          {t('notes.image.resizeHint', { width: shown, alt: altKey() })}
         </span>
       )}
     </NodeViewWrapper>

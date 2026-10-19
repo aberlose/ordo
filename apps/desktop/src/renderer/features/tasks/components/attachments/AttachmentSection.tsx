@@ -26,9 +26,19 @@ export function AttachmentSection({ boardId, taskId }: { boardId: string; taskId
   const { mutate: remove } = useDeleteAttachment(boardId, taskId);
   const reveal = useMemo(() => revealPlatform(), []);
 
-  const onOpen = useCallback((attachment: Attachment) => {
-    openAttachment(attachment.id).catch(() => failed('openAttachment'));
-  }, []);
+  // A program or a script is never run: the main process shows it in the Finder / Explorer instead,
+  // and the toast says why.
+  const onOpen = useCallback(
+    (attachment: Attachment) => {
+      openAttachment(attachment.id).then(
+        ({ opened }) => {
+          if (!opened) useFeedback.getState().showToast(i18n.t(`attachments.notOpened.${reveal}`));
+        },
+        () => failed('openAttachment'),
+      );
+    },
+    [reveal],
+  );
   const onReveal = useCallback((attachment: Attachment) => {
     revealAttachment(attachment.id).catch(() => failed('revealAttachment'));
   }, []);

@@ -45,11 +45,16 @@ export function linkLabel(href: string): string {
   return href.replace(/^(https?:\/\/|mailto:)/i, '').replace(/\/$/, '');
 }
 
+/** A drag carrying at least one image file (types are readable during dragover): the notes take it. */
+export function dragHasImage(data: DataTransfer | null | undefined): boolean {
+  if (!data) return false;
+  return Array.from(data.items ?? []).some((item) => item.kind === 'file' && item.type.startsWith('image/'));
+}
+
 /** Blocks of the "/" menu, in their order (approved mockup: task-detail/FullScreen). */
 export const BLOCKS = [
-  { id: 'heading1', markdown: '#', keywords: ['h1', 'title', 'heading', 'titre'] },
-  { id: 'heading2', markdown: '##', keywords: ['h2', 'title', 'heading', 'titre'] },
-  { id: 'heading3', markdown: '###', keywords: ['h3', 'title', 'heading', 'titre'] },
+  // One "Titre" (level 2, as the toolbar); the # ## ### shortcuts still give the three levels.
+  { id: 'heading', markdown: '##', keywords: ['h2', 'title', 'heading', 'titre'] },
   { id: 'taskList', markdown: '[ ]', keywords: ['todo', 'checklist', 'checkbox', 'tache', 'cocher'] },
   { id: 'bulletList', markdown: '-', keywords: ['list', 'bullet', 'liste', 'puces'] },
   { id: 'codeBlock', markdown: '```', keywords: ['code', 'pre'] },
@@ -86,7 +91,7 @@ export function filterBlocks(query: string, label: (id: BlockId) => string): Blo
   );
 }
 
-/** Keyboard resize of a selected image: ← / → by 5 % of the note width, within the bounds. */
+/** Keyboard resize of a selected image: ⌥/Alt + ← / → by 5 % of the note width, within the bounds. */
 export const IMAGE_WIDTH_STEP = 5;
 export function stepImageWidth(width: unknown, direction: -1 | 1): number {
   const current = typeof width === 'number' ? width : Number(width);

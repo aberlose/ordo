@@ -74,10 +74,9 @@ export function useDeleteAttachment(boardId: string, taskId: string) {
       );
       patchCount(client, boardId, taskId, -1);
     },
-    onSettled: () => {
-      void client.invalidateQueries({ queryKey: attachmentKeys.list(taskId) });
-      void client.invalidateQueries({ queryKey: boardKeys.detail(boardId) });
-    },
+    // The list is fetched again; the card's count goes back up (no refetch of the whole board).
+    onError: () => patchCount(client, boardId, taskId, 1),
+    onSettled: () => void client.invalidateQueries({ queryKey: attachmentKeys.list(taskId) }),
   });
 }
 

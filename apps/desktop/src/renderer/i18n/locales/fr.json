@@ -172,9 +172,9 @@
       "openAttachment": "Ouverture impossible : le fichier est introuvable ou aucune application ne l’ouvre.",
       "revealAttachment": "Affichage impossible : le fichier est introuvable.",
       "deleteAttachment": "Suppression non enregistrée : la pièce jointe est revenue.",
-      "pickAttachments": "Ajout non enregistré : les fichiers n'ont pas été joints.",
-      "saveNotes": "Notes non enregistrées : vos dernières modifications n'ont pas été sauvegardées.",
-      "addImage": "Image non ajoutée : le fichier n'a pas pu être copié dans les pièces jointes."
+      "pickAttachments": "Ajout non enregistré : les fichiers n’ont pas été joints.",
+      "saveNotes": "Notes non enregistrées : vos dernières modifications n’ont pas été sauvegardées.",
+      "addImage": "Image non ajoutée : le fichier n’a pas pu être copié dans les pièces jointes."
     }
   },
   "dnd": {
@@ -447,6 +447,7 @@
     "add": "Ajouter ou déposer",
     "actions": "Actions de {{name}}",
     "open": "Ouvrir",
+    "openKey": "↵",
     "reveal": {
       "mac": "Afficher dans le Finder",
       "windows": "Afficher dans l’Explorateur",
@@ -468,10 +469,18 @@
     },
     "copying": "Copie…",
     "failed": "Copie impossible",
+    "failedAnnounce": "Copie impossible : {{name}}. Réessayer ou retirer depuis sa tuile.",
+    "failedAnnounceMany_one": "Copie impossible pour {{count}} fichier. Réessayer ou retirer depuis sa tuile.",
+    "failedAnnounceMany_other": "Copie impossible pour {{count}} fichiers. Réessayer ou retirer depuis leurs tuiles.",
     "retry": "Réessayer la copie de {{name}}",
     "dismiss": "Retirer {{name}}",
     "dismissShort": "Retirer",
     "loadError": "Impossible de charger les pièces jointes.",
+    "notOpened": {
+      "mac": "Ce type de fichier ne s’ouvre pas depuis Ordo : il est affiché dans le Finder.",
+      "windows": "Ce type de fichier ne s’ouvre pas depuis Ordo : il est affiché dans l’Explorateur.",
+      "other": "Ce type de fichier ne s’ouvre pas depuis Ordo : il est affiché dans son dossier."
+    },
     "drop": {
       "title": "Déposez pour joindre",
       "count_one": "{{count}} fichier · copié dans le dossier d’Ordo",
@@ -506,9 +515,7 @@
       "label": "Insérer un bloc",
       "title": "Blocs",
       "empty": "Aucun bloc ne correspond",
-      "heading1": "Titre 1",
-      "heading2": "Titre 2",
-      "heading3": "Titre 3",
+      "heading": "Titre",
       "taskList": "Liste à cocher",
       "bulletList": "Liste à puces",
       "codeBlock": "Bloc de code",
@@ -519,18 +526,20 @@
     "link": {
       "dialog": "Lien",
       "address": "Adresse du lien",
+      "placeholder": "https://",
       "hint": "↵ appliquer · Échap annuler",
       "invalid": "Adresse non valide : http, https ou mailto.",
       "apply": "Appliquer",
       "bubble": "Lien {{label}}",
       "open": "Ouvrir le lien",
+      "altEnter": "Alt + Entrée",
       "edit": "Modifier le lien",
       "remove": "Retirer le lien"
     },
     "image": {
       "deleted": "Image supprimée des pièces jointes",
       "deletedLabel": "Image supprimée",
-      "resizeHint": "Glisser les poignées (ou ← →) pour redimensionner · {{width}} %"
+      "resizeHint": "Glisser les poignées (ou {{alt}} + ← →) pour redimensionner · {{width}} %"
     },
     "table": {
       "addColumn": "Ajouter une colonne",
@@ -540,7 +549,7 @@
       "rowBelow": "Ajouter une ligne dessous",
       "columnLeft": "Ajouter une colonne à gauche",
       "columnRight": "Ajouter une colonne à droite",
-      "headerRow": "Ligne d'en-tête",
+      "headerRow": "Ligne d’en-tête",
       "deleteRow": "Supprimer la ligne",
       "deleteColumn": "Supprimer la colonne",
       "deleteTable": "Supprimer le tableau"

@@ -238,7 +238,7 @@ const imageDoc = (id: string) =>
     ],
   }) as NonNullable<NotesDoc>;
 
-/** NoteBlocks B, "Image redimensionnable": selected, two handles, the width hint (← → also resize). */
+/** NoteBlocks B, "Image redimensionnable": selected, two handles, the width hint (⌥/Alt + ← → also resize). */
 export const ImageSelected: Story = {
   render: () => (
     <Frame
@@ -264,6 +264,51 @@ export const TableBands: Story = {
 };
 export const TableBandsDark: Story = { ...TableBands, globals: { mode: 'dark' } };
 
+/**
+ * NoteLinks A, keyboard path: the caret in a link, then Tab — the bubble keeps the focus on Ouvrir
+ * (its tooltip gives ⌥/Alt + Enter, which opens the link from the text).
+ */
+export const LinkBubbleFocused: Story = {
+  render: () => (
+    <Frame
+      doc={{ type: 'doc', content: [intro] }}
+      onReady={({ editor }) => {
+        editor.commands.focus();
+        editor.commands.setTextSelection(findText(editor, 'maquette-header').from + 3);
+        requestAnimationFrame(() =>
+          editor.view.dom.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true })),
+        );
+      }}
+    />
+  ),
+};
+export const LinkBubbleFocusedDark: Story = { ...LinkBubbleFocused, globals: { mode: 'dark' } };
+
+/** Sets a field's value as typing would (React listens to `input`), then presses Enter in it. */
+function typeAndEnter(field: HTMLInputElement, value: string) {
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(field, value);
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+  field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+}
+
+/** NoteLinks A, "Adresse non valide" (approved with the lot 6 review): another scheme is refused. */
+export const LinkInvalid: Story = {
+  render: () => (
+    <Frame
+      doc={{ type: 'doc', content: [intro] }}
+      onReady={({ editor, openLinkPopover }) => {
+        editor.chain().focus().setTextSelection(findText(editor, 'validée le 30 sept.')).run();
+        openLinkPopover();
+        requestAnimationFrame(() => {
+          const field = document.querySelector<HTMLInputElement>('section[role="dialog"] input');
+          if (field) typeAndEnter(field, 'ftp://exemple.fr/maquettes');
+        });
+      }}
+    />
+  ),
+};
+export const LinkInvalidDark: Story = { ...LinkInvalid, globals: { mode: 'dark' } };
+
 /** task-detail/FullScreen: the "/" menu under the caret, "Blocs" and their Markdown shortcuts. */
 export const SlashMenuOpen: Story = {
   render: () => (
@@ -276,3 +321,16 @@ export const SlashMenuOpen: Story = {
   ),
 };
 export const SlashMenuOpenDark: Story = { ...SlashMenuOpen, globals: { mode: 'dark' } };
+
+/** The "/" menu when nothing matches what was typed (approved with the lot 6 review). */
+export const SlashMenuNoMatch: Story = {
+  render: () => (
+    <Frame
+      doc={{ type: 'doc', content: [intro, { type: 'paragraph' }] }}
+      onReady={({ editor }) => {
+        editor.chain().focus('end').insertContent('/zzz').run();
+      }}
+    />
+  ),
+};
+export const SlashMenuNoMatchDark: Story = { ...SlashMenuNoMatch, globals: { mode: 'dark' } };

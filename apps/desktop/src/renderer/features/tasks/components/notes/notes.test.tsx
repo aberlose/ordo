@@ -1,13 +1,14 @@
 import type { Attachment } from '@ordo/contracts';
 import { IMAGE_WIDTH_MAX, IMAGE_WIDTH_MIN } from '@ordo/domain';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { NodeSelection } from '@tiptap/pm/state';
+import { Slice } from '@tiptap/pm/model';
+import { NodeSelection, TextSelection } from '@tiptap/pm/state';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '@renderer/i18n';
 import { attachmentKeys, descriptionKeys } from '@renderer/shared/api/keys';
-import { createAutosave, useNotesAutosave } from '../../hooks/notes';
+import { createAutosave, flushPendingNotes, installNotesFlush, useNotesAutosave } from '../../hooks/notes';
 import {
   dragImageWidth,
   filterBlocks,
@@ -17,7 +18,7 @@ import {
   stepImageWidth,
 } from './helpers';
 import { LinkPopover } from './LinkPopover';
-import { NotesEditorView, type NotesHandle } from './NotesEditor';
+import { NotesEditorView, withoutForeignImages, type NotesHandle } from './NotesEditor';
 
 const TASK = '01920000-0000-7000-8000-000000000105';
 const BOARD = '01920000-0000-7000-8000-000000000001';
@@ -97,6 +98,43 @@ describe('autosave', () => {
     expect(saves[0]?.[1]).toEqual({ id: TASK, json: doc('Bonjour') });
   });
 
+  it('flushes every pending note when the window closes, and waits for the saves', async () => {
+    let answer: (() => void) | undefined;
+    invoke.mockImplementation(
+      (channel, input) =>
+        new Promise<Reply>((resolve) => {
+          answer = () =>
+            resolve(
+              channel === 'tasks.updateDescription'
+                ? { ok: true, data: { id: input['id'], json: input['json'], updatedAt: 1 } }
+                : { ok: true, data: [] },
+            );
+        }),
+    );
+    let schedule: ((d: never) => void) | undefined;
+    function Probe() {
+      schedule = useNotesAutosave(TASK).schedule as (d: never) => void;
+      return null;
+    }
+    render(<Probe />, { wrapper: wrapper() });
+    installNotesFlush();
+    act(() => schedule?.(doc('Avant fermeture') as never));
+    let done = false;
+    const flushed = window.__ordoFlushNotes!().then(() => (done = true));
+    await vi.waitFor(() =>
+      expect(invoke).toHaveBeenCalledWith('tasks.updateDescription', {
+        id: TASK,
+        json: doc('Avant fermeture'),
+      }),
+    );
+    expect(done).toBe(false);
+    answer?.();
+    await flushed;
+    expect(done).toBe(true);
+    // Nothing pending any more: resolves at once.
+    await flushPendingNotes();
+  });
+
   it('stores an empty note as null', async () => {
     vi.useFakeTimers();
     let schedule: ((d: never) => void) | undefined;
@@ -136,7 +174,7 @@ describe('links', () => {
 
   it('applies a normalised address on Enter, and refuses another scheme', () => {
     const onApply = vi.fn();
-    render(<LinkPopover initial="" style={{}} onApply={onApply} onCancel={() => {}} />);
+    render(<LinkPopover initial="" style={{}} onApply={onApply} onCancel={() => {}} onDismiss={() => {}} />);
     const field = screen.getByRole('textbox', { name: i18n.t('notes.link.address') });
     fireEvent.change(field, { target: { value: 'javascript:alert(1)' } });
     fireEvent.keyDown(field, { key: 'Enter' });
@@ -151,7 +189,15 @@ describe('links', () => {
   it('cancels on Escape and removes the link when the field is emptied', () => {
     const onApply = vi.fn();
     const onCancel = vi.fn();
-    render(<LinkPopover initial="https://exemple.fr" style={{}} onApply={onApply} onCancel={onCancel} />);
+    render(
+      <LinkPopover
+        initial="https://exemple.fr"
+        style={{}}
+        onApply={onApply}
+        onCancel={onCancel}
+        onDismiss={() => {}}
+      />,
+    );
     const field = screen.getByRole('textbox', { name: i18n.t('notes.link.address') });
     fireEvent.keyDown(field, { key: 'Escape' });
     expect(onCancel).toHaveBeenCalled();
@@ -161,12 +207,54 @@ describe('links', () => {
   });
 });
 
+describe('link popover dismissal', () => {
+  it('closes on a pointer down outside and when the focus moves elsewhere, without applying', () => {
+    const onApply = vi.fn();
+    const onDismiss = vi.fn();
+    render(
+      <>
+        <LinkPopover initial="" style={{}} onApply={onApply} onCancel={() => {}} onDismiss={onDismiss} />
+        <button type="button">Ailleurs</button>
+      </>,
+    );
+    const field = screen.getByRole('textbox', { name: i18n.t('notes.link.address') });
+    fireEvent.pointerDown(field);
+    expect(onDismiss).not.toHaveBeenCalled();
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Ailleurs' }));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
+    fireEvent.blur(field, { relatedTarget: screen.getByRole('button', { name: 'Ailleurs' }) });
+    expect(onDismiss).toHaveBeenCalledTimes(2);
+    expect(onApply).not.toHaveBeenCalled();
+  });
+});
+
+describe('pasted images', () => {
+  it('drops the images of another task from pasted content', async () => {
+    const { getSchema } = await import('@tiptap/react');
+    const { notesExtensions } = await import('./extensions');
+    const schema = getSchema(notesExtensions(null));
+    const image = (id: string) => schema.nodes['image']!.create({ attachmentId: id, width: 70 });
+    const content = schema.nodes['doc']!.create(null, [
+      schema.nodes['paragraph']!.create(null, schema.text('Avant')),
+      image(IMAGE_ID),
+      image('01920000-0000-7000-8000-00000000ffff'),
+    ]).content;
+    const kept = withoutForeignImages(new Slice(content, 0, 0), (id) => id === IMAGE_ID);
+    const ids: string[] = [];
+    kept.content.descendants((node) => {
+      if (node.type.name === 'image') ids.push(node.attrs['attachmentId'] as string);
+    });
+    expect(ids).toEqual([IMAGE_ID]);
+    expect(kept.content.firstChild?.textContent).toBe('Avant');
+  });
+});
+
 describe('"/" menu', () => {
   const label = (id: string) => i18n.t(`notes.blocks.${id}`);
 
   it('lists every block for "/" and filters as you type (accents ignored)', () => {
-    expect(filterBlocks('', label).map((b) => b.id)).toHaveLength(9);
-    expect(filterBlocks('tit', label).map((b) => b.id)).toEqual(['heading1', 'heading2', 'heading3']);
+    expect(filterBlocks('', label).map((b) => b.id)).toHaveLength(7);
+    expect(filterBlocks('tit', label).map((b) => b.id)).toEqual(['heading']);
     expect(filterBlocks('cit', label).map((b) => b.id)).toEqual(['blockquote']);
     expect(filterBlocks('TABL', label).map((b) => b.id)).toEqual(['table']);
     expect(filterBlocks('coch', label).map((b) => b.id)).toEqual(['taskList']);
@@ -178,7 +266,7 @@ describe('"/" menu', () => {
     expect(filterBlocks('quote', label).map((b) => b.id)).toEqual(['blockquote']);
     await i18n.changeLanguage('en');
     try {
-      expect(filterBlocks('titre', label).map((b) => b.id)).toEqual(['heading1', 'heading2', 'heading3']);
+      expect(filterBlocks('titre', label).map((b) => b.id)).toEqual(['heading']);
       expect(filterBlocks('check', label).map((b) => b.id)).toEqual(['taskList']);
     } finally {
       await i18n.changeLanguage('fr');
@@ -187,7 +275,7 @@ describe('"/" menu', () => {
 });
 
 describe('"/" menu in the editor', () => {
-  it('opens under "/", filters as you type, ↓ and Enter insert the block', async () => {
+  it('opens under "/", filters as you type, announces the active block, Enter inserts it', async () => {
     const client = new QueryClient();
     client.setQueryData(attachmentKeys.list(TASK), []);
     let handle: NotesHandle | undefined;
@@ -198,13 +286,25 @@ describe('"/" menu in the editor', () => {
       },
     );
     const editor = handle!.editor;
-    act(() => void editor.chain().focus().insertContent('/ti').run());
-    const menu = await screen.findByRole('listbox', { name: i18n.t('notes.blocks.label') });
-    const options = () => Array.from(menu.querySelectorAll('[role="option"]'));
-    expect(options().map((o) => o.textContent)).toEqual(['Titre 1#', 'Titre 2##', 'Titre 3###']);
-    expect(editor.view.dom.getAttribute('aria-activedescendant')).toBe('notes-slash-menu-heading1');
+    act(() => void editor.chain().focus().insertContent('/c').run());
+    await screen.findByRole('listbox', { name: i18n.t('notes.blocks.label') });
+    const options = () => Array.from(document.querySelectorAll('#notes-slash-menu [role="option"]'));
+    // "Liste à cocher", "Bloc de code", "Citation".
+    await vi.waitFor(() => expect(options()).toHaveLength(3));
+    // Only the listbox relations: no aria-expanded / aria-haspopup on a textbox.
+    expect(editor.view.dom.getAttribute('aria-controls')).toBe('notes-slash-menu');
+    expect(editor.view.dom.hasAttribute('aria-expanded')).toBe(false);
+    expect(editor.view.dom.hasAttribute('aria-haspopup')).toBe(false);
     act(() => void fireEvent.keyDown(editor.view.dom, { key: 'ArrowDown' }));
     expect(options()[1]?.getAttribute('aria-selected')).toBe('true');
+    expect(editor.view.dom.getAttribute('aria-activedescendant')).toBe('notes-slash-menu-codeBlock');
+    act(() => void editor.chain().insertContent('it').run());
+    // The suggestion computes its items asynchronously.
+    await vi.waitFor(() => expect(options().map((o) => o.textContent)).toEqual(['Citation>']));
+    act(() => void editor.chain().deleteRange({ from: 2, to: 5 }).insertContent('ti').run());
+    await vi.waitFor(() => expect(options().map((o) => o.textContent)).toEqual(['Titre##']));
+    expect(editor.view.dom.getAttribute('aria-activedescendant')).toBe('notes-slash-menu-heading');
+    expect(screen.getByText('Titre', { selector: '[aria-live="polite"]' })).toBeTruthy();
     act(() => void fireEvent.keyDown(editor.view.dom, { key: 'Enter' }));
     expect(editor.getJSON().content?.[0]).toEqual({ type: 'heading', attrs: { level: 2 } });
     await vi.waitFor(() => expect(screen.queryByRole('listbox')).toBeNull());
@@ -260,12 +360,22 @@ describe('images', () => {
       editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, imagePos)));
     });
     const widthNow = () => editor.state.doc.nodeAt(imagePos)?.attrs['width'] as number;
-    const press = (key: string) => act(() => void fireEvent.keyDown(editor.view.dom, { key }));
+    const press = (key: string, altKey = true) =>
+      act(() => void fireEvent.keyDown(editor.view.dom, { key, altKey }));
     return { editor, widthNow, press };
   }
 
-  it('resizes the selected image by 5 % with ← →, within 20–100 %', async () => {
+  it('resizes the selected image by 5 % with ⌥/Alt + ← →, within 20–100 %', async () => {
     const { widthNow, press, editor } = renderNotes(90);
+    press('ArrowRight', false);
+    expect(widthNow()).toBe(90);
+    act(() => {
+      let imagePos = -1;
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === 'image') imagePos = pos;
+      });
+      editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, imagePos)));
+    });
     press('ArrowRight');
     expect(widthNow()).toBe(95);
     press('ArrowRight');
@@ -276,7 +386,7 @@ describe('images', () => {
     // The image stays selected (handles and hint shown).
     expect(editor.state.selection instanceof NodeSelection).toBe(true);
     expect(
-      await screen.findByText(i18n.t('notes.image.resizeHint', { width: IMAGE_WIDTH_MIN })),
+      await screen.findByText(i18n.t('notes.image.resizeHint', { width: IMAGE_WIDTH_MIN, alt: 'Alt' })),
     ).toBeTruthy();
   });
 
@@ -296,5 +406,70 @@ describe('images', () => {
     );
     expect(screen.getByRole('img', { name: i18n.t('notes.image.deletedLabel') })).toBeTruthy();
     expect(screen.getByText(i18n.t('notes.image.deleted'))).toBeTruthy();
+  });
+});
+
+describe('links in the editor', () => {
+  const LINK = 'https://exemple.fr/maquettes';
+  // jsdom has no layout: ProseMirror measures ranges to place the bubble.
+  const rect = { left: 0, top: 0, right: 0, bottom: 0, width: 0, height: 0, x: 0, y: 0 };
+  beforeEach(() => {
+    Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
+    Range.prototype.getBoundingClientRect = () => ({ ...rect, toJSON: () => rect }) as DOMRect;
+  });
+
+  function renderLinked() {
+    const client = new QueryClient();
+    client.setQueryData(attachmentKeys.list(TASK), []);
+    let handle: NotesHandle | undefined;
+    render(
+      <NotesEditorView
+        boardId={BOARD}
+        taskId={TASK}
+        initialDoc={{
+          type: 'doc',
+          content: [
+            {
+              type: 'paragraph',
+              content: [
+                { type: 'text', text: 'Voir ' },
+                { type: 'text', text: 'la maquette', marks: [{ type: 'link', attrs: { href: LINK } }] },
+                { type: 'text', text: ' ici.' },
+              ],
+            },
+          ],
+        }}
+        onReady={(h) => (handle = h)}
+      />,
+      { wrapper: wrapper(client) },
+    );
+    const editor = handle!.editor;
+    act(() => {
+      editor.commands.focus();
+      editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 9)));
+    });
+    return editor;
+  }
+
+  it('opens the link at the caret with ⌥/Alt + Enter', () => {
+    const open = vi.fn();
+    vi.stubGlobal('open', open);
+    const editor = renderLinked();
+    act(() => void fireEvent.keyDown(editor.view.dom, { key: 'Enter', altKey: true }));
+    expect(open).toHaveBeenCalledWith(LINK, '_blank', 'noopener');
+    expect(editor.getText()).toBe('Voir la maquette ici.');
+  });
+
+  it('makes the bubble the next Tab stop and keeps it while the focus is inside', async () => {
+    const editor = renderLinked();
+    const openButton = await screen.findByRole('button', { name: i18n.t('notes.link.open') });
+    act(() => void fireEvent.keyDown(editor.view.dom, { key: 'Tab' }));
+    expect(document.activeElement).toBe(openButton);
+    act(() => void fireEvent.blur(editor.view.dom, { relatedTarget: openButton }));
+    await act(async () => void (await new Promise((r) => setTimeout(r, 10))));
+    expect(screen.getByRole('button', { name: i18n.t('notes.link.open') })).toBe(openButton);
+    // Escape goes back to the text.
+    act(() => void fireEvent.keyDown(openButton, { key: 'Escape' }));
+    await vi.waitFor(() => expect(document.activeElement).toBe(editor.view.dom));
   });
 });

@@ -1,7 +1,8 @@
 import { ExternalLink, Link2, Pencil, Unlink } from 'lucide-react';
-import { useId, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@renderer/shared/lib/cn';
+import { isMac } from '@renderer/shared/lib/platform';
 import { Button } from '@renderer/shared/ui/button';
 import { linkLabel, normalizeLink } from './helpers';
 
@@ -11,18 +12,47 @@ export interface LinkPopoverProps {
   style: CSSProperties;
   /** A valid, normalised address; `null` when the field was emptied (removes the link). */
   onApply: (href: string | null) => void;
+  /** Escape: closed, the focus goes back to the text. */
   onCancel: () => void;
+  /** A pointer down outside it, or the focus moved elsewhere: closed, nothing applied. */
+  onDismiss: () => void;
+  /** Stories: shown as after an invalid address was applied. */
+  defaultInvalid?: boolean;
+  /** Stories: the address typed so far. */
+  defaultValue?: string;
 }
 
 /**
  * The small window under the selection (approved mockup: notes-attachments/NoteLinks A): the address,
  * Enter applies, Escape cancels. "exemple.fr" becomes https://exemple.fr; only http, https and mailto.
  */
-export function LinkPopover({ initial, style, onApply, onCancel }: LinkPopoverProps) {
+export function LinkPopover({
+  initial,
+  style,
+  onApply,
+  onCancel,
+  onDismiss,
+  defaultInvalid = false,
+  defaultValue,
+}: LinkPopoverProps) {
   const { t } = useTranslation();
-  const [value, setValue] = useState(initial);
-  const [invalid, setInvalid] = useState(false);
+  const [value, setValue] = useState(defaultValue ?? initial);
+  const [invalid, setInvalid] = useState(defaultInvalid);
   const hintId = useId();
+  const root = useRef<HTMLElement>(null);
+  const dismiss = useRef(onDismiss);
+  useEffect(() => {
+    dismiss.current = onDismiss;
+  }, [onDismiss]);
+
+  // A pointer down anywhere else closes it (a click in the text, the toolbar, another field…).
+  useEffect(() => {
+    const onPointerDown = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node | null)) dismiss.current();
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, []);
 
   const apply = () => {
     if (value.trim() === '') return onApply(null);
@@ -43,10 +73,16 @@ export function LinkPopover({ initial, style, onApply, onCancel }: LinkPopoverPr
 
   return (
     <section
+      ref={root}
       role="dialog"
       aria-label={t('notes.link.dialog')}
       data-escape-local
       style={style}
+      onBlur={(event) => {
+        // The focus left for another element (not the app losing the focus to another window).
+        const next = event.relatedTarget as Node | null;
+        if (next && !event.currentTarget.contains(next)) onDismiss();
+      }}
       className="absolute z-20 flex w-popover flex-col gap-2 rounded-popover border border-border bg-surface p-2.5 text-text shadow-pop"
     >
       <label
@@ -62,7 +98,7 @@ export function LinkPopover({ initial, style, onApply, onCancel }: LinkPopoverPr
           aria-invalid={invalid}
           aria-describedby={hintId}
           value={value}
-          placeholder="https://"
+          placeholder={t('notes.link.placeholder')}
           spellCheck={false}
           onChange={(event) => {
             setValue(event.target.value);
@@ -93,6 +129,8 @@ export interface LinkBubbleProps {
   onPointerEnter?: () => void;
   onPointerLeave?: () => void;
   onFocusChange?: (inside: boolean) => void;
+  /** Escape with the focus in the bubble: back to the text. */
+  onEscape?: () => void;
 }
 
 const bubbleButton = 'flex size-7 items-center justify-center rounded-lg text-text-2 hover:bg-rail';
@@ -107,9 +145,15 @@ export function LinkBubble({
   onPointerEnter,
   onPointerLeave,
   onFocusChange,
+  onEscape,
 }: LinkBubbleProps) {
   const { t } = useTranslation();
   const label = linkLabel(href);
+  // ⌥/Alt + Enter in the text opens the link too: said in the Ouvrir tooltip.
+  const openTitle = t('notes.toolbar.withShortcut', {
+    label: t('notes.link.open'),
+    shortcut: isMac() ? '⌥↵' : t('notes.link.altEnter'),
+  });
   return (
     <div
       role="dialog"
@@ -122,16 +166,23 @@ export function LinkBubble({
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onFocusChange?.(false);
       }}
       onMouseDown={(event) => event.preventDefault()}
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape' || !onEscape) return;
+        event.preventDefault();
+        event.stopPropagation();
+        onEscape();
+      }}
       className="absolute z-20 flex items-center gap-1 rounded-popover border border-border bg-surface py-1 pr-1 pl-2.5 text-text shadow-pop"
     >
-      <span title={href} className="max-w-42.5 truncate text-label text-text-2">
+      <span title={href} className="max-w-bubble-label truncate text-label text-text-2">
         {label}
       </span>
       <button
         type="button"
         className={bubbleButton}
         aria-label={t('notes.link.open')}
-        title={t('notes.link.open')}
+        aria-keyshortcuts="Alt+Enter"
+        title={openTitle}
         onClick={onOpen}
       >
         <ExternalLink size={14} aria-hidden />

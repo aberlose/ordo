@@ -125,7 +125,6 @@ export const AttachmentTile = memo(function AttachmentTile({
             type="button"
             data-attachment-id={attachment.id}
             aria-keyshortcuts="Enter"
-            aria-describedby={`${ids}-meta`}
             onKeyDown={onKeyDown}
             onClick={onClick}
             onDoubleClick={open}
@@ -142,9 +141,7 @@ export const AttachmentTile = memo(function AttachmentTile({
             <TileBadge fileName={name} mimeType={attachment.mimeType} url={attachment.url} />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate text-meta font-medium text-text">{name}</span>
-              <span id={`${ids}-meta`} className="truncate text-caption text-text-3">
-                {meta}
-              </span>
+              <span className="truncate text-caption text-text-3">{meta}</span>
             </span>
           </button>
         </PopoverAnchor>
@@ -161,7 +158,7 @@ export const AttachmentTile = memo(function AttachmentTile({
           <DropdownMenuContent
             align="end"
             aria-label={t('attachments.actions', { name })}
-            className="w-62.5"
+            className="w-menu-file"
             onCloseAutoFocus={(event) => {
               if (!toConfirm.current) return;
               toConfirm.current = false;
@@ -172,7 +169,7 @@ export const AttachmentTile = memo(function AttachmentTile({
               <ExternalLink size={15} className="text-text-2" aria-hidden />
               {t('attachments.open')}
               <span className="ml-auto font-mono text-kbd text-text-3" aria-hidden>
-                ↵
+                {t('attachments.openKey')}
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => onReveal(attachment)}>
@@ -199,7 +196,7 @@ export const AttachmentTile = memo(function AttachmentTile({
         align="start"
         aria-label={t('attachments.deleteTitle')}
         aria-describedby={`${ids}-confirm`}
-        className="flex w-75 flex-col gap-2.5 rounded-popover p-3.5"
+        className="flex w-popover-xs flex-col gap-2.5 rounded-popover p-3.5"
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           if (deleted.current) return;

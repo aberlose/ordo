@@ -14,6 +14,9 @@ const FONT_SIZES = [
   'heading-lg',
   'display',
   'input',
+  'note',
+  'note-h1',
+  'note-h2',
 ];
 
 /** Border widths of index.css (`--border-width-*`), so `border-strong border-accent` keeps both. */

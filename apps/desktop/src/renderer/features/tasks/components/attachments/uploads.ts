@@ -65,6 +65,21 @@ function toast(action: 'pickAttachments') {
   useFeedback.getState().showToast(i18n.t(`feedback.failed.${action}`));
 }
 
+/** Copies that failed: red tiles, announced through the polite live region (the tile is not focused). */
+function markFailed(ids: readonly string[]) {
+  if (ids.length === 0) return;
+  const { uploads, setStatus } = useUploads.getState();
+  setStatus(ids, 'failed');
+  const names = uploads.filter((u) => ids.includes(u.id)).map((u) => u.fileName);
+  useFeedback
+    .getState()
+    .announce(
+      names.length === 1
+        ? i18n.t('attachments.failedAnnounce', { name: names[0] })
+        : i18n.t('attachments.failedAnnounceMany', { count: names.length }),
+    );
+}
+
 /**
  * Adds files to a task with a "Copie…" tile per file while the main process copies them; a file that
  * fails stays as a red tile with Réessayer (`retry`) and × (`dismiss`).
@@ -76,7 +91,7 @@ export function useAttachmentUploads(boardId: string, taskId: string) {
 
   const run = useCallback(
     async (uploads: readonly { id: string; source: UploadSource; fileName: string }[]) => {
-      const { setStatus, remove } = useUploads.getState();
+      const { remove } = useUploads.getState();
       const byPath = uploads.filter((u) => u.source.kind === 'path');
       const byData = uploads.filter((u) => u.source.kind === 'data');
       const jobs: Promise<void>[] = [];
@@ -91,13 +106,9 @@ export function useAttachmentUploads(boardId: string, taskId: string) {
                   .filter((u) => failed.has((u.source as { path: string }).path) === fail)
                   .map((u) => u.id);
               remove(ids(false));
-              setStatus(ids(true), 'failed');
+              markFailed(ids(true));
             },
-            () =>
-              setStatus(
-                byPath.map((u) => u.id),
-                'failed',
-              ),
+            () => markFailed(byPath.map((u) => u.id)),
           ),
         );
       }
@@ -115,7 +126,7 @@ export function useAttachmentUploads(boardId: string, taskId: string) {
             )
             .then(
               () => remove([upload.id]),
-              () => setStatus([upload.id], 'failed'),
+              () => markFailed([upload.id]),
             ),
         );
       }
@@ -137,7 +148,8 @@ export function useAttachmentUploads(boardId: string, taskId: string) {
 
   /**
    * "Ajouter ou déposer": the native dialog and the copy are one call, so the copied files are not
-   * known while it runs (no "Copie…" tiles); failures still come back as red tiles.
+   * known while it runs: the add tile itself shows the indeterminate "Copie…" (`picking`). Failures
+   * come back as red tiles.
    */
   const pick = useCallback(async () => {
     try {
@@ -147,7 +159,7 @@ export function useAttachmentUploads(boardId: string, taskId: string) {
           taskId,
           result.failures.map((f) => ({ fileName: f.fileName, source: { kind: 'path', path: f.path } })),
         );
-        useUploads.getState().setStatus(ids, 'failed');
+        markFailed(ids);
       }
     } catch {
       toast('pickAttachments');

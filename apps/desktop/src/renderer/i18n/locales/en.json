@@ -447,6 +447,7 @@
     "add": "Add or drop",
     "actions": "Actions for {{name}}",
     "open": "Open",
+    "openKey": "↵",
     "reveal": {
       "mac": "Show in Finder",
       "windows": "Show in File Explorer",
@@ -468,10 +469,18 @@
     },
     "copying": "Copying…",
     "failed": "Copy failed",
+    "failedAnnounce": "Copy failed: {{name}}. Retry or remove it from its tile.",
+    "failedAnnounceMany_one": "Copy failed for {{count}} file. Retry or remove it from its tile.",
+    "failedAnnounceMany_other": "Copy failed for {{count}} files. Retry or remove them from their tiles.",
     "retry": "Retry copying {{name}}",
     "dismiss": "Dismiss {{name}}",
     "dismissShort": "Dismiss",
     "loadError": "The attachments could not be loaded.",
+    "notOpened": {
+      "mac": "This type of file doesn’t open from Ordo: it is shown in the Finder.",
+      "windows": "This type of file doesn’t open from Ordo: it is shown in File Explorer.",
+      "other": "This type of file doesn’t open from Ordo: it is shown in its folder."
+    },
     "drop": {
       "title": "Drop to attach",
       "count_one": "{{count}} file · copied into Ordo’s folder",
@@ -506,9 +515,7 @@
       "label": "Insert a block",
       "title": "Blocks",
       "empty": "No matching block",
-      "heading1": "Heading 1",
-      "heading2": "Heading 2",
-      "heading3": "Heading 3",
+      "heading": "Heading",
       "taskList": "Checklist",
       "bulletList": "Bulleted list",
       "codeBlock": "Code block",
@@ -519,18 +526,20 @@
     "link": {
       "dialog": "Link",
       "address": "Link address",
+      "placeholder": "https://",
       "hint": "↵ apply · Esc cancel",
       "invalid": "Invalid address: http, https or mailto.",
       "apply": "Apply",
       "bubble": "Link {{label}}",
       "open": "Open link",
+      "altEnter": "Alt + Enter",
       "edit": "Edit link",
       "remove": "Remove link"
     },
     "image": {
       "deleted": "Image deleted from the attachments",
       "deletedLabel": "Deleted image",
-      "resizeHint": "Drag the handles (or ← →) to resize · {{width}}%"
+      "resizeHint": "Drag the handles (or {{alt}} + ← →) to resize · {{width}}%"
     },
     "table": {
       "addColumn": "Add a column",

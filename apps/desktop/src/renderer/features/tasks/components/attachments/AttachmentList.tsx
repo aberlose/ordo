@@ -7,7 +7,7 @@ import { Button } from '@renderer/shared/ui/button';
 import { AttachmentTile } from './AttachmentTile';
 import type { RevealPlatform } from './format';
 import type { Upload } from './uploads';
-import { UploadTile } from './UploadTile';
+import { IndeterminateBar, UploadTile } from './UploadTile';
 
 export interface AttachmentListProps {
   /** `undefined` while loading: the header and the add tile only. */
@@ -19,6 +19,7 @@ export interface AttachmentListProps {
   onRetryLoad?: () => void;
   /** The native file dialog. */
   onAdd: () => void;
+  /** The native dialog and its copy are running: the add tile shows the indeterminate "Copie…". */
   adding?: boolean;
   onOpen: (attachment: Attachment) => void;
   onReveal: (attachment: Attachment) => void;
@@ -87,8 +88,12 @@ export function AttachmentList({
       </div>
 
       {loadError && (
-        <div role="alert" className="flex items-center gap-3 text-meta text-text-2">
-          {t('attachments.loadError')}
+        // Decided with the lot 6 review: the dashed box with a retry, as the archives and sub-tasks.
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-3 rounded-popover border-2 border-dashed border-border p-5.5 text-center"
+        >
+          <span className="text-meta leading-snug text-text-2">{t('attachments.loadError')}</span>
           {onRetryLoad && (
             <Button onClick={onRetryLoad}>
               <RotateCcw size={14} aria-hidden />
@@ -118,15 +123,27 @@ export function AttachmentList({
           <button
             type="button"
             data-attachment-add={headingId}
-            onClick={onAdd}
+            onClick={adding ? undefined : onAdd}
             aria-busy={adding || undefined}
+            aria-disabled={adding || undefined}
             className={cn(
-              'flex h-13.5 w-59 items-center justify-center gap-2 rounded-card border border-dashed border-border-strong text-meta text-text-3 hover:bg-rail hover:text-text-2',
-              adding && 'cursor-progress',
+              'flex h-13.5 w-59 items-center justify-center gap-2 rounded-card border border-dashed border-border-strong text-meta text-text-3',
+              adding ? 'cursor-progress px-4' : 'hover:bg-rail hover:text-text-2',
             )}
           >
             <Paperclip size={15} aria-hidden />
-            {t('attachments.add')}
+            {adding ? (
+              <span className="flex flex-1 items-center gap-1.5">
+                <IndeterminateBar />
+                {/* Named "Ajouter ou déposer" for assistive technologies, busy. */}
+                <span className="shrink-0 text-caption" aria-hidden>
+                  {t('attachments.copying')}
+                </span>
+                <span className="sr-only">{t('attachments.add')}</span>
+              </span>
+            ) : (
+              t('attachments.add')
+            )}
           </button>
         </li>
       </ul>

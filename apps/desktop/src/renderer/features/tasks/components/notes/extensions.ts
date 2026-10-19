@@ -73,7 +73,8 @@ export const NoteImage = Image.extend({
       this.editor.view.dispatch(tr);
       return true;
     };
-    return { ArrowLeft: resize(-1), ArrowRight: resize(1) };
+    // ⌥/Alt + arrows: the plain arrows keep moving the caret past the image.
+    return { 'Alt-ArrowLeft': resize(-1), 'Alt-ArrowRight': resize(1) };
   },
 });
 
@@ -86,10 +87,8 @@ export function insertBlock(
 ) {
   const chain = editor.chain().focus().deleteRange(range);
   switch (id) {
-    case 'heading1':
-    case 'heading2':
-    case 'heading3':
-      chain.setNode('heading', { level: Number(id.slice(-1)) }).run();
+    case 'heading':
+      chain.setNode('heading', { level: 2 }).run();
       break;
     case 'taskList':
       chain.toggleTaskList().run();

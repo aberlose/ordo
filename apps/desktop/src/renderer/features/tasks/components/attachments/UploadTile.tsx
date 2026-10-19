@@ -6,7 +6,7 @@ import { badgeClass, TileBadge, tileClass } from './AttachmentTile';
 import type { Upload } from './uploads';
 
 /** An indeterminate bar: the copy reports no percentage (user decision for lot 6). */
-function IndeterminateBar() {
+export function IndeterminateBar() {
   const bar = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const element = bar.current;
@@ -47,7 +47,7 @@ export const UploadTile = memo(function UploadTile({ upload, onRetry, onDismiss 
       aria-busy={!failed || undefined}
     >
       {failed ? (
-        <span className={cn(badgeClass, 'bg-danger/10 text-danger')} aria-hidden>
+        <span className={cn(badgeClass, 'bg-danger-soft text-danger')} aria-hidden>
           <TriangleAlert size={16} />
         </span>
       ) : (
