@@ -101,7 +101,10 @@ export function makeColumnUseCases({ boards, columns, tasks, tx, clock, ids }: C
         return toColumn({ ...current, ...patch });
       }),
 
-    /** The column and its tasks go to the trash together; a board keeps at least one column. */
+    /**
+     * The column and its tasks go to the trash together (sub-tasks in it, and the sub-tasks of its
+     * tasks wherever they sit); a board keeps at least one column. `deletedTasks` counts them all.
+     */
     deleteColumn: (id: string): DeleteColumnOutput =>
       tx.run(() => {
         const current = requireColumn(id);

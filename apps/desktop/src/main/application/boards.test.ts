@@ -3,6 +3,7 @@ import { makeBoardUseCases } from './boards';
 import { makeColumnUseCases } from './columns';
 import { NotFoundError, RuleViolationError } from './errors';
 import { fixedDeps, inMemoryRepositories } from './inMemory.testkit';
+import { makeTagUseCases } from './tags';
 import { makeTaskUseCases } from './tasks';
 
 let repos: ReturnType<typeof inMemoryRepositories>;
@@ -309,5 +310,57 @@ describe('archive and restore a board', () => {
   it('fails on unknown boards', () => {
     expect(() => boards.archiveBoard('nope')).toThrow(NotFoundError);
     expect(() => boards.restoreBoard('nope')).toThrow(NotFoundError);
+  });
+});
+
+describe('duplicate a board with tags', () => {
+  function tagged() {
+    const tags = makeTagUseCases({ ...repos, ...deps });
+    const board = newBoard('Source');
+    const todo = board.columns[0]!.id;
+    const design = tags.createTag({ boardId: board.id, name: 'design', color: 'violet' });
+    const urgent = tags.createTag({ boardId: board.id, name: 'urgent' });
+    const a = tasks.createTask({ columnId: todo, title: 'A' });
+    const sub = tasks.createTask({ parentId: a.id, title: 'Sub' });
+    const gone = tasks.createTask({ columnId: todo, title: 'Gone' });
+    tasks.addTag({ taskId: a.id, tagId: design.id });
+    tasks.addTag({ taskId: a.id, tagId: urgent.id });
+    tasks.addTag({ taskId: sub.id, tagId: urgent.id });
+    tasks.addTag({ taskId: gone.id, tagId: design.id });
+    tasks.deleteTask(gone.id);
+    return { board, design, urgent };
+  }
+  const strip = ({ id: _id, ...t }: { id: string }) => t;
+
+  it('copies the tags (new ids) without links when tasks are not included', () => {
+    const { board } = tagged();
+    const links = repos.testing.allLinks().length;
+    const copy = boards.getBoard(
+      boards.duplicateBoard({ id: board.id, name: 'Bare', includeTasks: false }).id,
+    );
+    expect(copy.tags.map(strip)).toEqual([
+      { name: 'design', color: 'violet', taskCount: 0 },
+      { name: 'urgent', color: 'blue', taskCount: 0 },
+    ]);
+    expect(copy.tags.some((t) => boards.getBoard(board.id).tags.some((o) => o.id === t.id))).toBe(false);
+    expect(repos.testing.allLinks()).toHaveLength(links);
+  });
+
+  it('copies the links of the copied tasks and sub-tasks, remapped', () => {
+    const { board } = tagged();
+    const before = boards.getBoard(board.id);
+    const copy = boards.getBoard(
+      boards.duplicateBoard({ id: board.id, name: 'Full', includeTasks: true }).id,
+    );
+    expect(copy.tags.map((t) => [t.name, t.taskCount])).toEqual([
+      ['design', 1],
+      ['urgent', 2],
+    ]);
+    const [design, urgent] = copy.tags.map((t) => t.id) as [string, string];
+    expect(copy.tasks.map((t) => [t.title, t.tagIds])).toEqual([['A', [design, urgent]]]);
+    expect(tasks.listSubtasks(copy.tasks[0]!.id).map((t) => [t.title, t.tagIds])).toEqual([
+      ['Sub', [urgent]],
+    ]);
+    expect(boards.getBoard(board.id)).toEqual(before);
   });
 });

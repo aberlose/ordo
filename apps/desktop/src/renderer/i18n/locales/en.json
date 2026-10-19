@@ -162,7 +162,13 @@
       "updateBoard": "Not saved: the board is back to its name and style.",
       "moveBoard": "Not moved: the board is back in its place.",
       "duplicateBoard": "Not duplicated: the copy was not created.",
-      "archiveBoard": "Not archived: the board is back."
+      "archiveBoard": "Not archived: the board is back.",
+      "tagTask": "Tag not saved: the task got its tags back.",
+      "createTag": "Not saved: the tag was not created.",
+      "updateTag": "Change not saved: the tag got its name and colour back.",
+      "deleteTag": "Deletion not saved: the tag is back.",
+      "createSubtask": "Not added: the sub-task was removed.",
+      "deleteSubtask": "Deletion not saved: the sub-task is back."
     }
   },
   "dnd": {
@@ -369,5 +375,65 @@
     "hand": "Hand, help, volunteering",
     "refresh-cw": "Refresh, redo, cycle",
     "repeat": "Repeat, recurring, routine"
+  },
+  "tags": {
+    "label": "Tags",
+    "add": "Add a tag",
+    "remove": "Remove {{name}}",
+    "taskTags": "Task tags",
+    "boardTags": "Board tags",
+    "search": "Search or create a tag",
+    "create": "Create",
+    "createOption": "Create “{{name}}”",
+    "createHint": "Automatic colour, change it with ⋯",
+    "empty": "No tag on this board yet. Type a name to create one.",
+    "taskCount_one": "{{count}} task",
+    "taskCount_other": "{{count}} tasks",
+    "manage": "Manage tag {{name}}",
+    "manageHint": "Right arrow: edit the active tag.",
+    "keys": {
+      "move": "<kbd>↑↓</kbd> choose",
+      "toggle": "<kbd>↵</kbd> check",
+      "close": "<kbd>Esc</kbd> close"
+    },
+    "edit": {
+      "title": "Edit tag",
+      "back": "Back to tags",
+      "name": "Name",
+      "color": "Colour",
+      "hint": "Changes apply to every task of the board.",
+      "conflict": "A tag “{{name}}” already exists on this board.",
+      "delete": "Delete tag",
+      "count_zero": "No task",
+      "count_one": "{{count}} task",
+      "count_other": "{{count}} tasks",
+      "deleteConfirm_zero": "Delete “{{name}}”? It is on no task.",
+      "deleteConfirm_one": "Delete “{{name}}”? It will be removed from {{count}} task.",
+      "deleteConfirm_other": "Delete “{{name}}”? It will be removed from {{count}} tasks.",
+      "deleteTitle": "Delete tag",
+      "cancel": "Cancel",
+      "confirm": "Delete"
+    },
+    "card": {
+      "list": "Tags: {{names}}",
+      "subtasks": "Sub-tasks done: {{done}} of {{total}}"
+    }
+  },
+  "subtasks": {
+    "title": "Sub-tasks",
+    "progress": "{{done}}/{{total}}",
+    "progressLabel": "{{done}} of {{total}} done",
+    "checkLabel": "Sub-task done: {{title}}",
+    "statusOf": "Status of “{{title}}”: {{status}}",
+    "add": "Add a sub-task",
+    "newTitle": "Sub-task title",
+    "addHint": "↵ add and continue · Esc close",
+    "empty": "No sub-tasks",
+    "emptyHint": "Break the task into steps: each has its own status and window.",
+    "loadError": "Could not load the sub-tasks.",
+    "parent": "Parent",
+    "parentOf": "Sub-task of <b>{{title}}</b>",
+    "parentLink": "Sub-task of “{{title}}”, {{done}} of {{total}} done: back to the parent task",
+    "delete": "Delete sub-task"
   }
 }

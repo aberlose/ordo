@@ -41,6 +41,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # Ubuntu 24.04 restricts unprivileged user namespaces, which Chromium's sandbox needs.
       - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      # Electron downloads its binary on first use: fetch it once here, so parallel Playwright workers
+      # do not race on the download (spawn ETXTBSY).
+      - run: pnpm --filter @ordo/desktop exec node -e "require('electron')"
       - run: xvfb-run -a pnpm --filter @ordo/desktop e2e
       - uses: actions/upload-artifact@v4
         if: always()

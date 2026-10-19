@@ -60,9 +60,12 @@
   --spacing-sidebar: 232px;
   --spacing-rail: 64px;
   --spacing-header: 54px;
-  --spacing-column: 296px;
+  /* Through a variable on :root: the card tag line reads it at run time (CardTags). */
+  --spacing-column: var(--column-width);
   --spacing-popover: 340px;
   --spacing-popover-sm: 320px;
+  /* Tag picker under the "+" of the detail properties (mockup tags-subtasks/TagPicker A). */
+  --spacing-popover-xs: 300px;
   --spacing-menu: 236px;
   --spacing-icon-grid: 148px;
   --spacing-detail: 1040px;
@@ -78,6 +81,9 @@
 }
 
 @layer base {
+  :root {
+    --column-width: 296px;
+  }
   html,
   body,
   #root {

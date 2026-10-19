@@ -99,7 +99,8 @@ export const taskTag = sqliteTable(
       .notNull()
       .references(() => tag.id),
   },
-  (t) => [primaryKey({ columns: [t.taskId, t.tagId] })],
+  // The primary key serves lookups by task; `task_tag_tag` serves the per-tag counts and deletes.
+  (t) => [primaryKey({ columns: [t.taskId, t.tagId] }), index('task_tag_tag').on(t.tagId)],
 );
 
 export const attachment = sqliteTable('attachment', {

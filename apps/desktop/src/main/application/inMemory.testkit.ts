@@ -4,8 +4,12 @@ import type {
   BoardRepository,
   ColumnRecord,
   ColumnRepository,
+  SubtaskCount,
+  TagRecord,
+  TagRepository,
   TaskRecord,
   TaskRepository,
+  TaskTagLink,
   TaskWithDescription,
 } from './ports';
 
@@ -108,6 +112,17 @@ export function inMemoryRepositories() {
     deletedAt: null,
     archivedAt: null,
   });
+  const liveSubtasks = (parentId: string) =>
+    liveTasks().filter((t) => t.parentId === parentId && t.archivedAt === null);
+  const isDone = (columnId: string) =>
+    [...columnRows, ...deletedColumns].find((c) => c.id === columnId)?.category === 'done';
+  const progressOf = (parentIds: ReadonlySet<string>): SubtaskCount[] =>
+    [...parentIds]
+      .map((parentId) => {
+        const subs = liveSubtasks(parentId);
+        return { parentId, total: subs.length, done: subs.filter((t) => isDone(t.columnId)).length };
+      })
+      .filter((p) => p.total > 0);
   const tasks: TaskRepository = {
     listTopLevelByBoard: (boardId) =>
       liveTasks()
@@ -125,13 +140,13 @@ export function inMemoryRepositories() {
     },
     lastRankInColumn: (columnId) =>
       taskRows
-        .filter((t) => t.columnId === columnId)
+        .filter((t) => t.columnId === columnId && t.parentId === null)
         .map((t) => t.rank)
         .sort()
         .at(-1) ?? null,
     adjacentRankInColumn: (columnId, rank, side, excludeId) => {
       const ranks = taskRows
-        .filter((t) => t.columnId === columnId && t.id !== excludeId)
+        .filter((t) => t.columnId === columnId && t.parentId === null && t.id !== excludeId)
         .map((t) => t.rank)
         .filter((r) => (side === 'after' ? r > rank : r < rank))
         .sort();
@@ -149,10 +164,35 @@ export function inMemoryRepositories() {
       if (row) taskRows[i] = { ...row, ...patch };
     },
     softDeleteByColumn: (columnId, now) => {
-      const rows = taskRows.filter((t) => t.columnId === columnId && t.deletedAt === null);
-      for (const row of rows) row.deletedAt = now;
-      return rows.filter((t) => t.parentId === null).length;
+      const inColumn = taskRows.filter((t) => t.columnId === columnId && t.deletedAt === null);
+      const parents = new Set(inColumn.filter((t) => t.parentId === null).map((t) => t.id));
+      const rows = taskRows.filter(
+        (t) => t.deletedAt === null && (t.columnId === columnId || parents.has(t.parentId ?? '')),
+      );
+      for (const row of rows) Object.assign(row, { deletedAt: now, updatedAt: now });
+      return rows.length;
     },
+    listSubtasks: (parentId) => liveSubtasks(parentId).sort(byRank).map(strip),
+    lastSubtaskRank: (parentId) =>
+      taskRows
+        .filter((t) => t.parentId === parentId)
+        .map((t) => t.rank)
+        .sort()
+        .at(-1) ?? null,
+    softDeleteSubtasks: (parentId, now) => {
+      const rows = taskRows.filter((t) => t.parentId === parentId && t.deletedAt === null);
+      for (const row of rows) Object.assign(row, { deletedAt: now, updatedAt: now });
+      return rows.length;
+    },
+    subtaskProgressByBoard: (boardId) =>
+      progressOf(
+        new Set(
+          liveTasks()
+            .filter((t) => t.boardId === boardId && t.parentId !== null)
+            .map((t) => t.parentId ?? ''),
+        ),
+      ),
+    subtaskProgressOf: (parentIds) => progressOf(new Set(parentIds)),
     completeAllInColumn: (columnId, now) => {
       for (const row of taskRows)
         if (row.columnId === columnId && row.deletedAt === null && row.completedAt === null) {
@@ -174,6 +214,64 @@ export function inMemoryRepositories() {
     },
   };
 
+  const tagRows: TagRecord[] = [];
+  let linkRows: TaskTagLink[] = [];
+  const sameLink = (a: TaskTagLink) => (b: TaskTagLink) => a.taskId === b.taskId && a.tagId === b.tagId;
+  const tagWithCount = (tag: TagRecord) => {
+    const carriers = new Set(linkRows.filter((l) => l.tagId === tag.id).map((l) => l.taskId));
+    return {
+      ...tag,
+      taskCount: liveTasks().filter((t) => t.archivedAt === null && carriers.has(t.id)).length,
+    };
+  };
+  const tags: TagRepository = {
+    listByBoard: (boardId) => tagRows.filter((t) => t.boardId === boardId).map((t) => ({ ...t })),
+    listWithCountByBoard: (boardId) => tagRows.filter((t) => t.boardId === boardId).map(tagWithCount),
+    listByIds: (ids) => {
+      const wanted = new Set(ids);
+      return tagRows.filter((t) => wanted.has(t.id)).map((t) => ({ ...t }));
+    },
+    findById: (id) => {
+      const tag = tagRows.find((t) => t.id === id);
+      return tag ? { ...tag } : null;
+    },
+    findWithCountById: (id) => {
+      const tag = tagRows.find((t) => t.id === id);
+      return tag ? tagWithCount(tag) : null;
+    },
+    insert: (tag) => void tagRows.push({ ...tag }),
+    insertMany: (ts) => void tagRows.push(...ts.map((t) => ({ ...t }))),
+    update: (id, patch) => {
+      const i = tagRows.findIndex((t) => t.id === id);
+      const row = tagRows[i];
+      if (row) tagRows[i] = { ...row, ...patch };
+    },
+    delete: (id) => {
+      const i = tagRows.findIndex((t) => t.id === id);
+      if (i >= 0) tagRows.splice(i, 1);
+    },
+    linksByBoard: (boardId) => {
+      const ids = new Set(tagRows.filter((t) => t.boardId === boardId).map((t) => t.id));
+      return linkRows.filter((l) => ids.has(l.tagId));
+    },
+    linksOfTasks: (taskIds) => {
+      const ids = new Set(taskIds);
+      return linkRows.filter((l) => ids.has(l.taskId));
+    },
+    addLink: (link) => {
+      if (linkRows.some(sameLink(link))) return false;
+      linkRows.push({ ...link });
+      return true;
+    },
+    removeLink: (link) => {
+      const before = linkRows.length;
+      linkRows = linkRows.filter((l) => !sameLink(link)(l));
+      return linkRows.length < before;
+    },
+    removeLinksOfTag: (tagId) => void (linkRows = linkRows.filter((l) => l.tagId !== tagId)),
+    insertLinks: (links) => void linkRows.push(...links.map((l) => ({ ...l }))),
+  };
+
   /**
    * Test-only hooks for states no use case produces yet (archived tasks: lot 8; descriptions: the
    * detail window's editor).
@@ -188,9 +286,10 @@ export function inMemoryRepositories() {
       if (row) Object.assign(row, { descriptionJson, descriptionText });
     },
     allTasks: (boardId: string) => liveTasks().filter((t) => t.boardId === boardId),
+    allLinks: () => [...linkRows],
   };
 
-  return { boards, columns, tasks, testing };
+  return { boards, columns, tasks, tags, testing };
 }
 
 export function fixedDeps(now = 1_760_000_000_000) {

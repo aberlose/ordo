@@ -12,3 +12,11 @@ export class RuleViolationError extends Error {
     this.name = 'RuleViolationError';
   }
 }
+
+/** A request that collides with existing data (e.g. a tag name already used on the board). */
+export class ConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConflictError';
+  }
+}
