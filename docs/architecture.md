@@ -77,6 +77,10 @@ ordo/
 
 `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, strict CSP, no `remote`, navigation and new windows blocked, only `window.api` exposed.
 
+- **Attachments** are served to the page through a privileged local protocol, `ordo-file://attachment/<id>` (the only extra `img-src` of the CSP). The main process looks the id up in the database and serves the stored file from the attachments folder; a path never comes from the URL.
+- **Dropped files**: the preload adds one function, `getPathForFile` (Electron's `webUtils`), because the sandboxed page cannot read a dropped file's path; `attachments.add` only copies existing regular files.
+- **Links in notes** open in the default browser: `window.open` of an `http:`, `https:` or `mailto:` URL is handed to `shell.openExternal` by the window-open handler, which denies every new window.
+
 ## IPC contract
 
 - One file per area in `packages/contracts` (`boards.ts`, `tasks.ts`, then `columns.ts`, `tags.ts`, `search.ts`, `settings.ts`, `attachments.ts` as they come), shared building blocks in `schemas.ts`, the channel map in `contract.ts`.
