@@ -1,0 +1,1 @@
+CREATE INDEX `attachment_task` ON `attachment` (`task_id`);

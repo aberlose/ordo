@@ -306,13 +306,24 @@ export function inMemoryRepositories() {
       const ids = new Set(taskIds);
       return countsOf(attachmentRows.filter((a) => ids.has(a.taskId)));
     },
+    listStoredPaths: () => attachmentRows.map((a) => a.storedPath),
   };
 
   /** Files outside the app (by absolute path; `null` = a folder) and files of the attachments folder. */
   const outsideFiles = new Map<string, Uint8Array | null>();
   const storedFiles = new Map<string, Uint8Array>();
-  const failures = { import: new Set<string>(), copy: new Set<string>() };
-  const MIME: Record<string, string> = { png: 'image/png', jpg: 'image/jpeg', pdf: 'application/pdf' };
+  /** Last modification time of a stored file (Unix ms); `0` when not set by the test. */
+  const storedModifiedAt = new Map<string, number>();
+  const failures = { import: new Set<string>(), copy: new Set<string>(), remove: new Set<string>() };
+  const MIME: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    gif: 'image/gif',
+    svg: 'image/svg+xml',
+    pdf: 'application/pdf',
+    exe: 'application/x-msdownload',
+  };
   const extOf = (name: string) => /\.([a-z0-9]+)$/i.exec(name)?.[1]?.toLowerCase() ?? '';
   const storage: AttachmentStorage = {
     inspect: async (path) => {
@@ -336,7 +347,10 @@ export function inMemoryRepositories() {
       storedFiles.set(to, file);
       return file.byteLength;
     },
-    remove: async (storedPath) => storedFiles.delete(storedPath),
+    remove: async (storedPath) => {
+      if (failures.remove.has(storedPath)) throw new Error('EBUSY: resource busy');
+      return storedFiles.delete(storedPath);
+    },
     absolutePath: (storedPath) => {
       if (storedPath.includes('..') || storedPath.startsWith('/')) throw new Error('Outside the folder');
       return `/data/attachments/${storedPath}`;
@@ -344,6 +358,11 @@ export function inMemoryRepositories() {
     exists: async (storedPath) => storedFiles.has(storedPath),
     mimeTypeOf: (name) => MIME[extOf(name)] ?? null,
     extensionOf: (mime) => Object.entries(MIME).find(([, m]) => m === mime)?.[0] ?? null,
+    listStored: async () =>
+      [...storedFiles.keys()].map((storedPath) => ({
+        storedPath,
+        modifiedAt: storedModifiedAt.get(storedPath) ?? 0,
+      })),
   };
 
   const shellCalls = { opened: [] as string[], revealed: [] as string[] };
@@ -376,6 +395,7 @@ export function inMemoryRepositories() {
     allAttachments: () => [...attachmentRows],
     outsideFiles,
     storedFiles,
+    storedModifiedAt,
     failures,
     shellCalls,
     shellState,

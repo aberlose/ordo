@@ -53,4 +53,27 @@ describe('openDatabase', () => {
     upgraded.close();
     expect(readdirSync(dir).filter((f) => f.endsWith('.bak'))).toEqual(['ordo.db.before-migration-42.bak']);
   });
+
+  it('adds the attachment index to a database made by the first two migrations, keeping its rows', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ordo-db-'));
+    const file = join(dir, 'ordo.db');
+    const old = openDatabase(file, firstMigrations(2));
+    expect(indexesOf(old, 'attachment')).not.toContain('attachment_task');
+    old.sqlite.exec(`
+      insert into board (id, name, rank, created_at, updated_at) values ('b', 'B', 'a', 1, 1);
+      insert into board_column (id, board_id, name, color, category, rank, created_at, updated_at)
+        values ('c', 'b', 'C', 'blue', 'todo', 'a', 1, 1);
+      insert into task (id, board_id, column_id, key, title, rank, created_at, updated_at)
+        values ('t', 'b', 'c', 1, 'T', 'a', 1, 1);
+      insert into attachment (id, task_id, file_name, stored_path, created_at)
+        values ('a', 't', 'a.pdf', 'a.pdf', 1);
+    `);
+    old.close();
+
+    const upgraded = openDatabase(file, migrations, () => 43);
+    expect(indexesOf(upgraded, 'attachment')).toContain('attachment_task');
+    expect(upgraded.sqlite.prepare('select id from attachment').all()).toEqual([{ id: 'a' }]);
+    upgraded.close();
+    expect(readdirSync(dir).filter((f) => f.endsWith('.bak'))).toEqual(['ordo.db.before-migration-43.bak']);
+  });
 });

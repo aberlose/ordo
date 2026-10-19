@@ -20,3 +20,14 @@ export class ConflictError extends Error {
     this.name = 'ConflictError';
   }
 }
+
+/**
+ * Input that passed the contract's schema but that the main process still refuses to handle (e.g. a
+ * pasted file that is not an image, notes nested too deep). Reported as `invalid_input`.
+ */
+export class InvalidInputError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'InvalidInputError';
+  }
+}

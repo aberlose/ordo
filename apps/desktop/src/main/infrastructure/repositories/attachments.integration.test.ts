@@ -5,6 +5,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -71,6 +72,7 @@ function setup() {
   };
   return {
     ...ports,
+    ports,
     folder,
     outside,
     file,
@@ -84,6 +86,44 @@ function setup() {
 }
 
 describe('attachments on SQLite and disk', () => {
+  it('counts the attachments of a board only, per task', async () => {
+    const { boards, tasks, files, file, attachments } = setup();
+    const one = boards.createBoard({ name: 'Un', columnNames: COLUMN_NAMES });
+    const two = boards.createBoard({ name: 'Deux', columnNames: COLUMN_NAMES });
+    const a = tasks.createTask({ columnId: one.columns[0]!.id, title: 'A' });
+    const b = tasks.createTask({ columnId: one.columns[1]!.id, title: 'B' });
+    tasks.createTask({ columnId: one.columns[0]!.id, title: 'Sans fichier' });
+    const c = tasks.createTask({ columnId: two.columns[0]!.id, title: 'C' });
+    const pdf = file('a.pdf', 'x');
+    await files.addAttachments({ taskId: a.id, paths: [pdf, pdf] });
+    await files.addAttachments({ taskId: b.id, paths: [pdf] });
+    await files.addAttachments({ taskId: c.id, paths: [pdf] });
+    const sorted = (rows: { taskId: string; count: number }[]) =>
+      [...rows].sort((x, y) => (x.taskId < y.taskId ? -1 : 1));
+    expect(sorted(attachments.countByBoard(one.id))).toEqual(
+      sorted([
+        { taskId: a.id, count: 2 },
+        { taskId: b.id, count: 1 },
+      ]),
+    );
+    expect(attachments.countByBoard(two.id)).toEqual([{ taskId: c.id, count: 1 }]);
+  });
+
+  it('sweeps old orphan files from the folder, never the files of a row', async () => {
+    const { boards, tasks, files, file, folder, ports } = setup();
+    const board = boards.createBoard({ name: 'Perso', columnNames: COLUMN_NAMES });
+    const task = tasks.createTask({ columnId: board.columns[0]!.id, title: 'Relire' });
+    const [kept] = (await files.addAttachments({ taskId: task.id, paths: [file('a.pdf', 'a')] })).attachments;
+    writeFileSync(join(folder, 'crashed-copy.pdf'), 'x');
+    writeFileSync(join(folder, 'in-progress.pdf'), 'x');
+    const old = (Date.now() - 60 * 60 * 1000) / 1000;
+    for (const name of ['crashed-copy.pdf', `${kept!.id}.pdf`]) utimesSync(join(folder, name), old, old);
+    // The use cases' clock is a counter here: give the sweep the real time.
+    const sweeping = makeAttachmentUseCases({ ...ports, clock: { now: () => Date.now() } });
+    expect(await sweeping.sweepOrphanFiles()).toBe(1);
+    expect(readdirSync(folder).sort()).toEqual([`${kept!.id}.pdf`, 'in-progress.pdf'].sort());
+  });
+
   it('copies files into the folder, counts, lists, serves and deletes them', async () => {
     const { boards, tasks, files, folder, outside, file, sql } = setup();
     const board = boards.createBoard({ name: 'Perso', columnNames: COLUMN_NAMES });

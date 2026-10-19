@@ -259,6 +259,8 @@ export interface AttachmentRepository {
   countByBoard(boardId: string): AttachmentCount[];
   /** Counts of the given tasks that have attachments. */
   countOf(taskIds: readonly string[]): AttachmentCount[];
+  /** Stored path of every attachment row, trashed tasks included (orphan file sweep). */
+  listStoredPaths(): string[];
 }
 
 /** What a source path given by the renderer points to. */
@@ -272,7 +274,11 @@ export type SourceFile =
 export interface AttachmentStorage {
   /** Looks at a file the user dropped or picked, without reading it. */
   inspect(sourcePath: string): Promise<SourceFile>;
-  /** Copies an outside file into the folder (streamed); returns the stored size in bytes. */
+  /**
+   * Copies an outside file into the folder (streamed from the handle it opened and checked to be a
+   * regular file; `Error('Not a file')` otherwise); returns the stored size in bytes. The system's
+   * "downloaded from the internet" mark is carried over where Node can read it (best effort).
+   */
   importFile(sourcePath: string, storedPath: string): Promise<number>;
   /** Writes bytes (a pasted image) into the folder; returns the stored size in bytes. */
   writeData(storedPath: string, bytes: Uint8Array): Promise<number>;
@@ -288,6 +294,14 @@ export interface AttachmentStorage {
   mimeTypeOf(fileName: string): string | null;
   /** Usual extension of a mime type (without the dot), `null` when unknown. */
   extensionOf(mimeType: string): string | null;
+  /** Regular, non-hidden files of the folder with their last modification time (orphan sweep). */
+  listStored(): Promise<StoredFileInfo[]>;
+}
+
+export interface StoredFileInfo {
+  readonly storedPath: string;
+  /** Unix ms. */
+  readonly modifiedAt: number;
 }
 
 /** The operating system's side of attachments (Electron's `shell` and `dialog`). */

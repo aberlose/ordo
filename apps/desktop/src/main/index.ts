@@ -21,6 +21,9 @@ import { registerHandlers } from './ipc/handle';
 
 /** Composition root: the only place where infrastructure is wired into use cases and IPC. */
 
+/** The orphan file sweep waits a little after the window shows, so the first paint has the CPU. */
+const ORPHAN_SWEEP_DELAY_MS = 3_000;
+
 function migrationsFolder(): string {
   return app.isPackaged
     ? join(process.resourcesPath, 'migrations')
@@ -75,7 +78,15 @@ function start(): void {
     trustedOrigin,
   );
 
-  createMainWindow();
+  const window = createMainWindow();
+  // Housekeeping off the startup path: once the window shows, remove old files without a row.
+  window.once('show', () => {
+    setTimeout(() => {
+      attachments
+        .sweepOrphanFiles()
+        .catch((error: unknown) => console.warn('[attachments] orphan sweep failed', error));
+    }, ORPHAN_SWEEP_DELAY_MS);
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import {
   mkdtempSync,
   readFileSync,
@@ -6,11 +7,12 @@ import {
   mkdirSync,
   existsSync,
   readdirSync,
+  utimesSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { attachmentStorage } from './attachmentStorage';
+import { attachmentStorage, copyDownloadMark, type DownloadMarkIo } from './attachmentStorage';
 import { extensionOf, mimeTypeOf } from './mimeTypes';
 
 let dir: string;
@@ -67,6 +69,89 @@ describe('attachment storage', () => {
     await expect(storage.writeData('../escape.png', new Uint8Array([1]))).rejects.toThrow(/outside/);
     expect(existsSync(join(dir, 'userData', 'escape.png'))).toBe(false);
     expect(await storage.exists('../ordo.db')).toBe(false);
+  });
+
+  it.skipIf(process.platform === 'win32')(
+    'refuses a FIFO without hanging, even when it replaced the file after the first look',
+    async () => {
+      const storage = attachmentStorage(folder);
+      const fifo = join(dir, 'pipe.pdf');
+      execFileSync('mkfifo', [fifo]);
+      // `importFile` checks the handle it opened itself: no writer ever comes, and it must not wait.
+      await expect(storage.importFile(fifo, 'id-1.pdf')).rejects.toThrow('Not a file');
+      await expect(storage.importFile(dir, 'id-2.pdf')).rejects.toThrow('Not a file');
+      await expect(storage.importFile('relative.pdf', 'id-3.pdf')).rejects.toThrow('File not found');
+      expect(existsSync(folder) ? readdirSync(folder) : []).toEqual([]);
+    },
+    5_000,
+  );
+
+  it('lists the stored files with their modification time, skipping hidden files and folders', async () => {
+    const storage = attachmentStorage(folder);
+    expect(await storage.listStored()).toEqual([]);
+    await storage.writeData('id-1.png', new Uint8Array([1]));
+    utimesSync(join(folder, 'id-1.png'), 1_000, 1_000);
+    writeFileSync(join(folder, '.DS_Store'), 'x');
+    mkdirSync(join(folder, 'sub'));
+    expect(await storage.listStored()).toEqual([{ storedPath: 'id-1.png', modifiedAt: 1_000_000 }]);
+  });
+});
+
+describe('download mark', () => {
+  function fakeIo(marks: Record<string, string>) {
+    const written: Record<string, string> = {};
+    const io: DownloadMarkIo = {
+      read: async (path) => {
+        const mark = marks[path];
+        if (mark === undefined) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+        return Buffer.from(mark);
+      },
+      write: async (path, data) => {
+        written[path] = Buffer.from(data).toString();
+      },
+    };
+    return { io, written };
+  }
+  const zone = '[ZoneTransfer]\r\nZoneId=3\r\n';
+
+  it('carries the Zone.Identifier stream on Windows only, and only when there is one', async () => {
+    const { io, written } = fakeIo({ 'C:\\Dl\\a.pdf:Zone.Identifier': zone });
+    expect(await copyDownloadMark('C:\\Dl\\a.pdf', 'D:\\att\\id.pdf', 'win32', io)).toBe(true);
+    expect(written).toEqual({ 'D:\\att\\id.pdf:Zone.Identifier': zone });
+    expect(await copyDownloadMark('C:\\Dl\\b.pdf', 'D:\\att\\id2.pdf', 'win32', io)).toBe(false);
+    for (const platform of ['darwin', 'linux'] as const) {
+      expect(await copyDownloadMark('C:\\Dl\\a.pdf', 'x', platform, io)).toBe(false);
+    }
+    expect(Object.keys(written)).toHaveLength(1);
+  });
+
+  it('never fails the copy: a refused write or an oversized stream is skipped', async () => {
+    const io: DownloadMarkIo = {
+      read: async () => Buffer.from(zone),
+      write: async () => {
+        throw new Error('EINVAL: streams not supported on this volume');
+      },
+    };
+    expect(await copyDownloadMark('a', 'b', 'win32', io)).toBe(false);
+    const big = fakeIo({ 'a:Zone.Identifier': 'x'.repeat(65 * 1024) });
+    expect(await copyDownloadMark('a', 'b', 'win32', big.io)).toBe(false);
+    expect(big.written).toEqual({});
+  });
+
+  it('is applied by imports and stored copies (forced to Windows on any system)', async () => {
+    writeFileSync(join(dir, 'a.pdf'), 'abc');
+    const { io, written } = fakeIo({ [`${join(dir, 'a.pdf')}:Zone.Identifier`]: zone });
+    const storage = attachmentStorage(folder, { platform: 'win32', markIo: io });
+    expect(await storage.importFile(join(dir, 'a.pdf'), 'id-1.pdf')).toBe(3);
+    expect(written).toEqual({ [`${join(folder, 'id-1.pdf')}:Zone.Identifier`]: zone });
+    // On the real system the stored file has no stream here: the copy still succeeds.
+    expect(await storage.copyStored('id-1.pdf', 'id-2.pdf')).toBe(3);
+    const failing = attachmentStorage(folder, {
+      platform: 'win32',
+      markIo: { read: async () => Buffer.from(zone), write: () => Promise.reject(new Error('EPERM')) },
+    });
+    expect(await failing.importFile(join(dir, 'a.pdf'), 'id-3.pdf')).toBe(3);
+    expect(readdirSync(folder).sort()).toEqual(['id-1.pdf', 'id-2.pdf', 'id-3.pdf']);
   });
 });
 

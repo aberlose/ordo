@@ -103,17 +103,22 @@ export const taskTag = sqliteTable(
   (t) => [primaryKey({ columns: [t.taskId, t.tagId] }), index('task_tag_tag').on(t.tagId)],
 );
 
-export const attachment = sqliteTable('attachment', {
-  id: text('id').primaryKey(),
-  taskId: text('task_id')
-    .notNull()
-    .references(() => task.id),
-  fileName: text('file_name').notNull(),
-  storedPath: text('stored_path').notNull(),
-  mimeType: text('mime_type'),
-  sizeBytes: integer('size_bytes'),
-  createdAt: integer('created_at').notNull(),
-});
+export const attachment = sqliteTable(
+  'attachment',
+  {
+    id: text('id').primaryKey(),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => task.id),
+    fileName: text('file_name').notNull(),
+    storedPath: text('stored_path').notNull(),
+    mimeType: text('mime_type'),
+    sizeBytes: integer('size_bytes'),
+    createdAt: integer('created_at').notNull(),
+  },
+  // Lists and counts by task (detail window, card badges, board duplication).
+  (t) => [index('attachment_task').on(t.taskId)],
+);
 
 export const setting = sqliteTable('setting', {
   key: text('key').primaryKey(),

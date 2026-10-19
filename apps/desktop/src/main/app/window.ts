@@ -1,11 +1,19 @@
 import { join } from 'node:path';
-import { BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, shell } from 'electron';
 import { isExternalUrl } from './externalLinks';
+import { flushRenderer, isSameOrigin } from './windowGuards';
 
 const devServerUrl = process.env['ELECTRON_RENDERER_URL'];
 
 /** URL prefix the renderer is allowed to run from (used to check IPC senders). */
 export const trustedOrigin = (): string => devServerUrl ?? 'file://';
+
+// Set when the app is quitting (menu, Cmd+Q, end of session): after the flush, quit again rather
+// than only closing the window (on macOS the app would otherwise stay open without a window).
+let quitting = false;
+app.on('before-quit', () => {
+  quitting = true;
+});
 
 export function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -30,10 +38,25 @@ export function createMainWindow(): BrowserWindow {
 
   window.once('ready-to-show', () => window.show());
 
+  // Notes typed just before closing are still in the renderer's debounce: let it save them first.
+  let flushed = false;
+  let flushing = false;
+  window.on('close', (event) => {
+    if (flushed) return;
+    event.preventDefault();
+    if (flushing) return;
+    flushing = true;
+    void flushRenderer(window.webContents).finally(() => {
+      flushed = true;
+      if (quitting) app.quit();
+      else if (!window.isDestroyed()) window.close();
+    });
+  });
+
   // No navigation away from the app, no new windows. Links of the notes (`window.open`) open in the
   // system browser or mail app when they are http(s) or mailto; anything else is dropped.
   window.webContents.on('will-navigate', (event, url) => {
-    if (!devServerUrl || !url.startsWith(devServerUrl)) event.preventDefault();
+    if (!devServerUrl || !isSameOrigin(url, devServerUrl)) event.preventDefault();
   });
   window.webContents.setWindowOpenHandler(({ url }) => {
     if (isExternalUrl(url)) {

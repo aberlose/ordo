@@ -1,7 +1,7 @@
 import { contract, fail, ok, type Channel, type Contract, type Output, type Result } from '@ordo/contracts';
 import type { IpcMain, IpcMainInvokeEvent } from 'electron';
 import type { z } from 'zod';
-import { ConflictError, NotFoundError, RuleViolationError } from '../application/errors';
+import { ConflictError, InvalidInputError, NotFoundError, RuleViolationError } from '../application/errors';
 
 export type Handlers = {
   [C in Channel]: (input: z.output<Contract[C]['input']>) => Output<C> | Promise<Output<C>>;
@@ -12,7 +12,13 @@ async function dispatch<C extends Channel>(
   handler: Handlers[C],
   raw: unknown,
 ): Promise<Result<Output<C>>> {
-  const parsed = contract[channel].input.safeParse(raw);
+  let parsed;
+  try {
+    parsed = contract[channel].input.safeParse(raw);
+  } catch {
+    // A pathological input (e.g. nested so deep that a refinement overflows the stack).
+    return fail('invalid_input', 'Input could not be validated');
+  }
   if (!parsed.success) {
     return fail(
       'invalid_input',
@@ -22,6 +28,7 @@ async function dispatch<C extends Channel>(
   try {
     return ok(await handler(parsed.data as never));
   } catch (error) {
+    if (error instanceof InvalidInputError) return fail('invalid_input', error.message);
     if (error instanceof NotFoundError) return fail('not_found', error.message);
     if (error instanceof RuleViolationError) return fail('conflict', error.message);
     if (error instanceof ConflictError) return fail('conflict', error.message);

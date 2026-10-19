@@ -26,7 +26,8 @@ import {
   rankAtEnd,
   rankBetween,
 } from '@ordo/domain';
-import { NotFoundError, RuleViolationError } from './errors';
+import { DESCRIPTION_MAX_DEPTH, exceedsNodeDepth } from './documentDepth';
+import { InvalidInputError, NotFoundError, RuleViolationError } from './errors';
 import type {
   AttachmentCount,
   AttachmentRepository,
@@ -394,10 +395,15 @@ export function makeTaskUseCases({
 
     /**
      * Autosave of the notes. An empty document is stored as no notes (`null`); the plain text for
-     * search is always derived here from the document, never taken from the renderer.
+     * search is always derived here from the document, never taken from the renderer. Documents
+     * nested deeper than `DESCRIPTION_MAX_DEPTH` are refused as invalid input.
      */
-    updateDescription: (input: UpdateDescriptionInput): DescriptionOutput =>
-      tx.run(() => {
+    updateDescription: (input: UpdateDescriptionInput): DescriptionOutput => {
+      // Before any recursive walk of the document (plain text, emptiness, later remapping).
+      if (exceedsNodeDepth(input.json, DESCRIPTION_MAX_DEPTH)) {
+        throw new InvalidInputError(`Notes nested deeper than ${DESCRIPTION_MAX_DEPTH} levels`);
+      }
+      return tx.run(() => {
         const current = requireTask(input.id);
         const doc = input.json as DocNode | null;
         const empty = isEmptyDescription(doc);
@@ -408,7 +414,8 @@ export function makeTaskUseCases({
           updatedAt,
         });
         return toDescriptionOutput(current.id, empty ? null : doc, updatedAt);
-      }),
+      });
+    },
   };
 }
 

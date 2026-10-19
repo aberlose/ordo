@@ -1,6 +1,17 @@
-import { attachmentUrl, type AddAttachmentsOutput, type Attachment, type Input } from '@ordo/contracts';
-import { attachmentStoredPath, fileExtension, normalizeAttachmentName } from '@ordo/domain';
-import { NotFoundError, RuleViolationError } from './errors';
+import {
+  attachmentUrl,
+  type AddAttachmentsOutput,
+  type Attachment,
+  type Input,
+  type OpenAttachmentOutput,
+} from '@ordo/contracts';
+import {
+  attachmentStoredPath,
+  fileExtension,
+  isExecutableAttachment,
+  normalizeAttachmentName,
+} from '@ordo/domain';
+import { InvalidInputError, NotFoundError, RuleViolationError } from './errors';
 import type {
   AttachmentRecord,
   AttachmentRepository,
@@ -28,7 +39,43 @@ export interface AttachmentUseCasesDeps {
 
 /** Display name of a file that has none left after normalisation. */
 const FALLBACK_NAME = 'file';
-const MIME_TYPE = /^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/;
+
+/**
+ * What can be pasted as bytes: raster images the notes can show. SVG is excluded (it can carry
+ * scripts and links); anything else must be dropped or picked as a file.
+ */
+const PASTABLE_IMAGE_TYPES: ReadonlySet<string> = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/avif',
+  'image/bmp',
+]);
+
+/** Files of the attachments folder without a row are removed at startup once they are this old. */
+export const ORPHAN_MIN_AGE_MS = 10 * 60 * 1000;
+
+/**
+ * Why a source path given by the renderer is refused, `null` when it may be read. Device namespaces
+ * (`\\?\`, `\\.\`) are never read (pipes, raw devices); network shares (`\\server\share`,
+ * `//server/share`) only when the user picked them in the native dialog.
+ */
+export function sourcePathProblem(path: string, allowNetwork: boolean): string | null {
+  const windowsStyle = path.replace(/\//g, '\\');
+  if (/^\\\\[?.](\\|$)/.test(windowsStyle) || windowsStyle.startsWith('\\??\\')) {
+    return 'Device paths are not supported';
+  }
+  if (windowsStyle.startsWith('\\\\') && !allowNetwork) return 'Network paths are not supported';
+  return null;
+}
+
+/** `name` with its extension replaced by (or extended with) `ext`. */
+function withExtension(name: string, ext: string, fallback: string): string {
+  const current = fileExtension(name);
+  const base = current === '' ? name : name.slice(0, name.length - current.length - 1);
+  return normalizeAttachmentName(`${base}.${ext}`, fallback);
+}
 
 export function toAttachment(record: AttachmentRecord): Attachment {
   return {
@@ -107,9 +154,11 @@ export function makeAttachmentUseCases({
     fileName: string,
     mimeType: string | null,
     write: (storedPath: string) => Promise<number>,
+    /** The name the stored extension comes from (the display name unless told otherwise). */
+    storedExtensionFrom: string = fileName,
   ): Promise<AttachmentRecord> => {
     const id = ids.next();
-    const storedPath = attachmentStoredPath(id, fileName);
+    const storedPath = attachmentStoredPath(id, storedExtensionFrom);
     const sizeBytes = await write(storedPath);
     try {
       return tx.run(() => {
@@ -132,13 +181,23 @@ export function makeAttachmentUseCases({
     }
   };
 
-  /** One file per path, in order; a file that cannot be added is reported, the others still go. */
-  const addPaths = async (taskId: string, paths: readonly string[]): Promise<AddAttachmentsOutput> => {
+  /**
+   * One file per path, in order; a file that cannot be added is reported, the others still go.
+   * `allowNetwork`: network shares are read only when the user picked them in the native dialog.
+   */
+  const addPaths = async (
+    taskId: string,
+    paths: readonly string[],
+    allowNetwork: boolean,
+  ): Promise<AddAttachmentsOutput> => {
     requireWritableTask(taskId);
     const output: AddAttachmentsOutput = { attachments: [], failures: [] };
     for (const path of paths) {
       const fileName = normalizeAttachmentName(path, FALLBACK_NAME);
       try {
+        const problem = sourcePathProblem(path, allowNetwork);
+        if (problem !== null) throw new Error(problem);
+        // A cheap first look for a clear message; `importFile` checks the opened handle again.
         const source = await storage.inspect(path);
         if (source.kind === 'missing') throw new Error('File not found');
         if (source.kind === 'not-a-file') throw new Error('Not a file');
@@ -165,48 +224,55 @@ export function makeAttachmentUseCases({
 
     /** Files dropped on the window, by absolute path. */
     addAttachments: (input: { taskId: string; paths: readonly string[] }): Promise<AddAttachmentsOutput> =>
-      addPaths(input.taskId, input.paths),
+      addPaths(input.taskId, input.paths, false),
 
     /** The native file dialog, then the same as a drop; nothing happens when it is cancelled. */
     pickAttachments: async (taskId: string): Promise<AddAttachmentsOutput> => {
       requireWritableTask(taskId);
       const paths = await shell.pickFiles();
       if (paths.length === 0) return { attachments: [], failures: [] };
-      return addPaths(taskId, paths);
+      return addPaths(taskId, paths, true);
     },
 
     /**
-     * A pasted image (bytes, no file on disk). Without a usable name it is called `image.<ext>` (or
-     * `file.<ext>`) after its mime type; the extension is added when the name has none.
+     * A pasted image (bytes, no file on disk): PNG, JPEG, GIF, WebP, AVIF or BMP only. The stored
+     * extension always comes from the mime type; the given name is for display only, and gets the
+     * type's extension when its own does not match (`image.<ext>` without a usable name).
      */
     addAttachmentData: async (input: Input<'attachments.addData'>): Promise<Attachment> => {
-      requireWritableTask(input.taskId);
-      const declared = input.mimeType.trim().toLowerCase();
-      const validDeclared = MIME_TYPE.test(declared) ? declared : null;
-      const ext = validDeclared === null ? null : storage.extensionOf(validDeclared);
-      const fallback =
-        ext === null
-          ? FALLBACK_NAME
-          : `${validDeclared?.startsWith('image/') ? 'image' : FALLBACK_NAME}.${ext}`;
-      let fileName = normalizeAttachmentName(input.fileName, fallback);
-      if (fileExtension(fileName) === '' && ext !== null) {
-        fileName = normalizeAttachmentName(`${fileName}.${ext}`, fallback);
+      const mimeType = input.mimeType.trim().toLowerCase();
+      const ext = PASTABLE_IMAGE_TYPES.has(mimeType) ? storage.extensionOf(mimeType) : null;
+      if (ext === null) {
+        throw new InvalidInputError('Only PNG, JPEG, GIF, WebP, AVIF or BMP images can be pasted');
       }
+      requireWritableTask(input.taskId);
+      const fallback = `image.${ext}`;
+      let fileName = normalizeAttachmentName(input.fileName, fallback);
+      if (storage.mimeTypeOf(fileName) !== mimeType) fileName = withExtension(fileName, ext, fallback);
       const record = await store(
         input.taskId,
         fileName,
-        storage.mimeTypeOf(fileName) ?? validDeclared,
+        mimeType,
         (storedPath) => storage.writeData(storedPath, input.bytes),
+        `${FALLBACK_NAME}.${ext}`,
       );
       return toAttachment(record);
     },
 
-    /** Opens the file with its default application; the system's error is reported as a conflict. */
-    openAttachment: async (id: string): Promise<Record<string, never>> => {
+    /**
+     * Opens the file with its default application; the system's error is reported as a conflict.
+     * Programs and scripts (by display name or stored extension) are never run: they are shown in
+     * the Finder / Explorer instead, and `opened` is `false`.
+     */
+    openAttachment: async (id: string): Promise<OpenAttachmentOutput> => {
       const { record, absolutePath } = await requireFile(id);
+      if (isExecutableAttachment(record.fileName) || isExecutableAttachment(record.storedPath)) {
+        shell.showItemInFolder(absolutePath);
+        return { opened: false };
+      }
       const error = await shell.openPath(absolutePath);
       if (error !== '') throw new RuleViolationError(`Could not open ${record.fileName}: ${error}`);
-      return {};
+      return { opened: true };
     },
 
     /** Shows the file in the Finder / Explorer. */
@@ -234,6 +300,28 @@ export function makeAttachmentUseCases({
         log.warn(`[attachments] could not remove the file of ${id}`, error);
       }
       return { id };
+    },
+
+    /**
+     * Startup housekeeping: removes the files of the attachments folder that no row points to (a
+     * crash between copying a file and inserting its row, a removal that failed) once they are older
+     * than `ORPHAN_MIN_AGE_MS`, so a copy in progress is never touched. Returns how many went.
+     */
+    sweepOrphanFiles: async (): Promise<number> => {
+      const now = clock.now();
+      const old = (await storage.listStored()).filter((f) => now - f.modifiedAt >= ORPHAN_MIN_AGE_MS);
+      if (old.length === 0) return 0;
+      const known = new Set(attachments.listStoredPaths());
+      let removed = 0;
+      for (const file of old) {
+        if (known.has(file.storedPath)) continue;
+        try {
+          if (await storage.remove(file.storedPath)) removed += 1;
+        } catch (error) {
+          log.warn(`[attachments] could not remove the orphan file ${file.storedPath}`, error);
+        }
+      }
+      return removed;
     },
 
     /**

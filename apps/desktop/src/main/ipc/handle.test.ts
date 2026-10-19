@@ -1,6 +1,6 @@
 import type { IpcMainInvokeEvent } from 'electron';
 import { describe, expect, it } from 'vitest';
-import { ConflictError, NotFoundError, RuleViolationError } from '../application/errors';
+import { ConflictError, InvalidInputError, NotFoundError, RuleViolationError } from '../application/errors';
 import { registerHandlers, type Handlers } from './handle';
 
 type Listener = (event: IpcMainInvokeEvent, raw: unknown) => unknown;
@@ -58,8 +58,8 @@ function setup(overrides: Partial<Handlers> = {}) {
       failures: paths.map((path) => ({ path, fileName: 'a.pdf', message: 'File not found' })),
     }),
     'attachments.pick': () => ({ attachments: [], failures: [] }),
-    'attachments.addData': () => {
-      throw new Error('not used');
+    'attachments.addData': ({ mimeType }) => {
+      throw new InvalidInputError(`Only images can be pasted (${mimeType})`);
     },
     'attachments.open': ({ id }) => {
       throw new RuleViolationError(`Could not open ${id}: no application`);
@@ -196,6 +196,26 @@ describe('IPC adapter', () => {
         bytes: [1],
       }),
     ).toMatchObject({ ok: false, error: { code: 'invalid_input' } });
+    expect(
+      await invoke('attachments.addData', {
+        taskId: id,
+        fileName: 'a.svg',
+        mimeType: 'image/svg+xml',
+        bytes: new Uint8Array([1]),
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input', message: expect.stringContaining('images') },
+    });
+    // So deep that the schema's own refinement overflows the stack: refused, not thrown.
+    let deep: Record<string, unknown> = { type: 'text', text: 'x' };
+    for (let i = 0; i < 200_000; i += 1) deep = { type: 'paragraph', content: [deep] };
+    expect(
+      await invoke('tasks.updateDescription', { id, json: { type: 'doc', content: [deep] } }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
     expect(await invoke('attachments.pick', { taskId: id })).toEqual({
       ok: true,
       data: { attachments: [], failures: [] },

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, type SQL } from 'drizzle-orm';
+import { asc, count, eq, inArray, type SQL } from 'drizzle-orm';
 import type { AttachmentCount, AttachmentRecord, AttachmentRepository } from '../../application/ports';
 import type { Db } from '../db/client';
 import { attachment, task } from '../db/schema';
@@ -54,16 +54,24 @@ export function attachmentRepository(db: Db): AttachmentRepository {
       db.delete(attachment).where(eq(attachment.id, id)).run();
     },
 
-    // One grouped query over the board's attachments (joined to their task by primary key): the
-    // attachment table is scanned once, whatever the number of tasks.
+    // One grouped query starting from the board's tasks (`task_due` index on board_id), each looked
+    // up in `attachment_task`: the cost follows the board's size, not the whole attachment table.
     countByBoard: (boardId) =>
       db
-        .select({ taskId: attachment.taskId, count: count(attachment.id) })
-        .from(attachment)
-        .innerJoin(task, and(eq(task.id, attachment.taskId), eq(task.boardId, boardId)))
-        .groupBy(attachment.taskId)
+        .select({ taskId: task.id, count: count(attachment.id) })
+        .from(task)
+        .innerJoin(attachment, eq(attachment.taskId, task.id))
+        .where(eq(task.boardId, boardId))
+        .groupBy(task.id)
         .all(),
 
     countOf: (taskIds) => chunked(taskIds).flatMap((ids) => countsWhere(inArray(attachment.taskId, ids))),
+
+    listStoredPaths: () =>
+      db
+        .select({ storedPath: attachment.storedPath })
+        .from(attachment)
+        .all()
+        .map((row) => row.storedPath),
   };
 }

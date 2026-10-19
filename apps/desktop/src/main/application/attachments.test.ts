@@ -1,8 +1,8 @@
 import { attachmentUrl } from '@ordo/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { makeAttachmentUseCases } from './attachments';
+import { makeAttachmentUseCases, ORPHAN_MIN_AGE_MS, sourcePathProblem } from './attachments';
 import { makeBoardUseCases } from './boards';
-import { NotFoundError, RuleViolationError } from './errors';
+import { InvalidInputError, NotFoundError, RuleViolationError } from './errors';
 import { fixedDeps, inMemoryRepositories } from './inMemory.testkit';
 import { makeTaskUseCases } from './tasks';
 
@@ -140,20 +140,86 @@ describe('adding attachments', () => {
       bytes: bytes(1),
     });
     expect(named.fileName).toBe('capture.png');
-    const unknown = await files.addAttachmentData({
+    // Another extension of the same type is kept for display; the stored one is the type's own.
+    const jpeg = await files.addAttachmentData({
       taskId: task.id,
-      fileName: '../../x/notes.weird',
-      mimeType: 'not a type',
+      fileName: '../../x/photo.jpeg',
+      mimeType: 'image/jpeg',
       bytes: bytes(1),
     });
-    expect(unknown).toMatchObject({ fileName: 'notes.weird', mimeType: null });
-    const bare = await files.addAttachmentData({
+    expect(jpeg).toMatchObject({ fileName: 'photo.jpeg', mimeType: 'image/jpeg' });
+    expect(repos.testing.storedFiles.has(`${jpeg.id}.jpg`)).toBe(true);
+  });
+
+  it('takes the stored extension from the mime type, never from the given name', async () => {
+    const { task } = seeded();
+    const disguised = await files.addAttachmentData({
       taskId: task.id,
-      fileName: '',
-      mimeType: 'application/x-unknown',
+      fileName: 'invoice.pdf.exe',
+      mimeType: 'image/gif',
       bytes: bytes(1),
     });
-    expect(bare).toMatchObject({ fileName: 'file', mimeType: 'application/x-unknown' });
+    expect(disguised).toMatchObject({ fileName: 'invoice.pdf.gif', mimeType: 'image/gif' });
+    expect([...repos.testing.storedFiles.keys()]).toEqual([`${disguised.id}.gif`]);
+    const mismatched = await files.addAttachmentData({
+      taskId: task.id,
+      fileName: 'shot.png',
+      mimeType: 'image/jpeg',
+      bytes: bytes(1),
+    });
+    expect(mismatched.fileName).toBe('shot.jpg');
+    expect(repos.testing.storedFiles.has(`${mismatched.id}.jpg`)).toBe(true);
+  });
+
+  it('refuses pasted data that is not a known raster image, before writing anything', async () => {
+    const { task } = seeded();
+    for (const mimeType of [
+      'image/svg+xml',
+      'application/pdf',
+      'application/x-msdownload',
+      'text/html',
+      'image/x-unknown',
+      'not a type',
+      '',
+    ]) {
+      await expect(
+        files.addAttachmentData({ taskId: task.id, fileName: 'a.png', mimeType, bytes: bytes(1) }),
+        mimeType,
+      ).rejects.toThrow(InvalidInputError);
+    }
+    expect(repos.testing.storedFiles.size).toBe(0);
+  });
+
+  it('refuses device paths, and network paths unless picked in the dialog', async () => {
+    const { task } = seeded();
+    const device = ['\\\\?\\C:\\x.pdf', '\\\\.\\pipe\\x', '//./COM1', '//?/C:/x.pdf', '\\??\\C:\\x.pdf'];
+    const network = ['\\\\server\\share\\a.pdf', '//server/share/a.pdf'];
+    for (const path of [...device, ...network, '/Users/alice/photo.png']) {
+      repos.testing.outsideFiles.set(path, bytes(1));
+    }
+    const added = await files.addAttachments({
+      taskId: task.id,
+      paths: [...device, ...network, '/Users/alice/photo.png'],
+    });
+    expect(added.attachments).toHaveLength(1);
+    expect(added.failures.map((f) => f.message)).toEqual([
+      ...device.map(() => 'Device paths are not supported'),
+      ...network.map(() => 'Network paths are not supported'),
+    ]);
+
+    repos.testing.shellState.picked = [...network, device[0]!];
+    const picked = await files.pickAttachments(task.id);
+    expect(picked.attachments).toHaveLength(2);
+    expect(picked.failures.map((f) => f.message)).toEqual(['Device paths are not supported']);
+  });
+
+  it('classifies source paths', () => {
+    expect(sourcePathProblem('C:\\Users\\a.pdf', false)).toBeNull();
+    expect(sourcePathProblem('/Users/alice/a.pdf', false)).toBeNull();
+    expect(sourcePathProblem('\\\\server\\share', true)).toBeNull();
+    expect(sourcePathProblem('\\/server/share', false)).toBe('Network paths are not supported');
+    expect(sourcePathProblem('\\\\?', true)).toBe('Device paths are not supported');
+    expect(sourcePathProblem('\\\\.\\', true)).toBe('Device paths are not supported');
   });
 });
 
@@ -166,12 +232,37 @@ describe('using and deleting attachments', () => {
 
   it('opens and reveals the stored file, reporting the system error', async () => {
     const { file } = await withFile();
-    expect(await files.openAttachment(file.id)).toEqual({});
+    expect(await files.openAttachment(file.id)).toEqual({ opened: true });
     expect(await files.revealAttachment(file.id)).toEqual({});
     const path = `/data/attachments/${file.id}.pdf`;
     expect(repos.testing.shellCalls).toEqual({ opened: [path], revealed: [path] });
     repos.testing.shellState.openError = 'No application knows how to open this file';
     await expect(files.openAttachment(file.id)).rejects.toThrow(/No application/);
+  });
+
+  it('never runs a program or a script: it is shown in the folder instead', async () => {
+    const { task } = seeded();
+    repos.testing.outsideFiles.set('/Users/alice/setup.exe', bytes(1));
+    repos.testing.outsideFiles.set('C:\\Dl\\Facture.PDF.Lnk', bytes(1));
+    repos.testing.outsideFiles.set('/Users/alice/install.command', bytes(1));
+    const added = await files.addAttachments({
+      taskId: task.id,
+      paths: ['/Users/alice/setup.exe', 'C:\\Dl\\Facture.PDF.Lnk', '/Users/alice/install.command'],
+    });
+    for (const file of added.attachments) {
+      expect(await files.openAttachment(file.id), file.fileName).toEqual({ opened: false });
+    }
+    // A row whose display name looks harmless but whose stored file is a program.
+    const [exe] = added.attachments;
+    repos.attachments.insert({
+      ...repos.attachments.findById(exe!.id)!,
+      id: 'renamed',
+      fileName: 'Rapport.pdf',
+    });
+    expect(await files.openAttachment('renamed')).toEqual({ opened: false });
+    expect(repos.testing.shellCalls.opened).toEqual([]);
+    expect(repos.testing.shellCalls.revealed).toHaveLength(4);
+    expect(repos.testing.shellCalls.revealed[0]).toBe(`/data/attachments/${exe!.id}.exe`);
   });
 
   it('reports a missing file or attachment as not found', async () => {
@@ -220,6 +311,37 @@ describe('using and deleting attachments', () => {
   });
 });
 
+describe('orphan files', () => {
+  it('removes old files without a row, keeps recent ones and the files of trashed tasks', async () => {
+    const { task } = seeded();
+    const { attachments } = await files.addAttachments({
+      taskId: task.id,
+      paths: ['/Users/alice/photo.png'],
+    });
+    const kept = `${attachments[0]!.id}.png`;
+    const now = deps.clock.now();
+    const old = now - ORPHAN_MIN_AGE_MS;
+    repos.testing.storedModifiedAt.set(kept, old - 1);
+    repos.testing.storedFiles.set('orphan-old.pdf', bytes(1));
+    repos.testing.storedModifiedAt.set('orphan-old.pdf', old);
+    repos.testing.storedFiles.set('orphan-recent.pdf', bytes(1));
+    repos.testing.storedModifiedAt.set('orphan-recent.pdf', old + 1);
+    tasks.deleteTask(task.id);
+
+    expect(await files.sweepOrphanFiles()).toBe(1);
+    expect([...repos.testing.storedFiles.keys()].sort()).toEqual([kept, 'orphan-recent.pdf'].sort());
+  });
+
+  it('logs a file it cannot remove and goes on', async () => {
+    seeded();
+    for (const name of ['a.pdf', 'b.pdf']) repos.testing.storedFiles.set(name, bytes(1));
+    repos.testing.failures.remove.add('a.pdf');
+    expect(await files.sweepOrphanFiles()).toBe(1);
+    expect(warnings).toEqual(['[attachments] could not remove the orphan file a.pdf']);
+    expect([...repos.testing.storedFiles.keys()]).toEqual(['a.pdf']);
+  });
+});
+
 describe('notes', () => {
   const doc = (...texts: string[]) => ({
     type: 'doc' as const,
@@ -261,6 +383,31 @@ describe('notes', () => {
     tasks.deleteTask(task.id);
     expect(() => tasks.getDescription(sub.id)).toThrow(NotFoundError);
     expect(() => tasks.updateDescription({ id: task.id, json: doc('x') })).toThrow(NotFoundError);
+  });
+
+  it('refuses notes nested deeper than 64 levels, before touching the task', () => {
+    const { task } = seeded();
+    const nested = (levels: number) => {
+      // `levels` nodes deep, the doc included.
+      let node: { type: string; content?: unknown[]; text?: string } = { type: 'text', text: 'x' };
+      for (let i = 2; i < levels; i += 1) node = { type: 'blockquote', content: [node] };
+      return { type: 'doc' as const, content: [node] };
+    };
+    expect(tasks.updateDescription({ id: task.id, json: nested(64) }).json).toEqual(nested(64));
+    const before = repos.testing.taskRow(task.id)?.descriptionJson;
+    for (const levels of [65, 100_000]) {
+      expect(() => tasks.updateDescription({ id: task.id, json: nested(levels) })).toThrow(InvalidInputError);
+    }
+    expect(repos.testing.taskRow(task.id)?.descriptionJson).toBe(before);
+  });
+
+  it('allows notes and attachment deletion on an archived board (never shown, harmless)', async () => {
+    const { board, task } = seeded();
+    const [png] = (await files.addAttachments({ taskId: task.id, paths: ['/Users/alice/photo.png'] }))
+      .attachments;
+    boards.archiveBoard(board.id);
+    expect(tasks.updateDescription({ id: task.id, json: doc('Archivé') }).json).toEqual(doc('Archivé'));
+    expect(await files.deleteAttachment(png!.id)).toEqual({ id: png!.id });
   });
 
   it('reads unreadable stored notes as no notes', () => {
