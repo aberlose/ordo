@@ -1,4 +1,10 @@
-import { COLUMN_CATEGORIES, COLUMN_COLORS, SEARCH_TEXT_MAX_LENGTH } from '@ordo/domain';
+import {
+  COLUMN_CATEGORIES,
+  COLUMN_COLORS,
+  DUE_FILTERS,
+  SEARCH_TEXT_MAX_LENGTH,
+  TAG_NAME_MAX_LENGTH,
+} from '@ordo/domain';
 import { z } from 'zod';
 import { CalendarDay, Id, Priority } from './schemas';
 
@@ -14,10 +20,24 @@ export const BoardTaskIdsOutput = z.object({ taskIds: z.array(Id) });
 
 export const SEARCH_LIMIT_MAX = 50;
 
-/** Full-text search across the non-archived boards, cards and sub-tasks, best matches first. */
+/**
+ * Full-text search across the non-archived boards, cards and sub-tasks, best matches first. The
+ * palette's typed filters apply before the limit: priorities, due options (OR, against `today`, the
+ * renderer's calendar day) and tag names (case and accents ignored, any of them).
+ */
 export const SearchTasksInput = z
-  .object({ text: SearchText, limit: z.number().int().min(1).max(SEARCH_LIMIT_MAX).optional() })
-  .strict();
+  .object({
+    text: SearchText,
+    limit: z.number().int().min(1).max(SEARCH_LIMIT_MAX).optional(),
+    priorities: z.array(Priority).max(5).optional(),
+    due: z.array(z.enum(DUE_FILTERS)).max(DUE_FILTERS.length).optional(),
+    tagNames: z.array(z.string().trim().min(1).max(TAG_NAME_MAX_LENGTH)).max(20).optional(),
+    today: CalendarDay.optional(),
+  })
+  .strict()
+  .refine((input) => !input.due?.length || input.today !== undefined, {
+    message: 'Give today with due filters',
+  });
 
 /** A task found by the palette (or recently opened), with where it lives. */
 export const SearchHit = z.object({

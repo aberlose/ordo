@@ -105,6 +105,16 @@ describe('parseFilterQuery', () => {
   it('dedupes tags ignoring case and accents; a bare # is ignored', () => {
     expect(parseFilterQuery('#Été #ete # #x').tagNames).toEqual(['Été', 'x']);
   });
+  it('keeps quoted words as text', () => {
+    expect(parseFilterQuery('"semaine" de 4 jours haute')).toEqual({
+      priorities: [4, 5],
+      tagNames: [],
+      due: [],
+      text: 'semaine de 4 jours',
+    });
+    expect(parseFilterQuery('très "haute"').text).toBe('très haute');
+    expect(parseFilterQuery('"#front retard').text).toBe('#front retard');
+  });
   it('returns nothing for an empty query', () => {
     expect(parseFilterQuery('   ')).toEqual({ priorities: [], tagNames: [], due: [], text: '' });
   });

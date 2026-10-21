@@ -132,26 +132,47 @@ function union<T>(into: T[], values: readonly T[]): void {
   for (const value of values) if (!into.includes(value)) into.push(value);
 }
 
+/** A word of the query; quoted words are always free text. */
+interface QueryWord {
+  readonly word: string;
+  readonly quoted: boolean;
+}
+
+/** Split a query into words; `"…"` keeps its words as text (an unclosed quote runs to the end). */
+function queryWords(query: string): QueryWord[] {
+  const out: QueryWord[] = [];
+  query.split('"').forEach((part, index) => {
+    const quoted = index % 2 === 1;
+    for (const word of part.split(/\s+/)) if (word !== '') out.push({ word, quoted });
+  });
+  return out;
+}
+
 /**
  * Parse the palette's query: `#tag`, priority words (`haute`, `très basse`, `high`…), due words
  * (`retard`, `semaine`, `sans date`…), the rest is free text. Two-word keywords win over one-word
- * ones. Several priority words add up (`haute basse` = everything but medium).
+ * ones. Several priority words add up (`haute basse` = everything but medium). Words in double
+ * quotes are always text (`"semaine" de 4 jours`).
  */
 export function parseFilterQuery(query: string): ParsedQuery {
-  const words = query.split(/\s+/).filter(Boolean);
-  const folded = words.map(foldText);
+  const words = queryWords(query);
+  const folded = words.map(({ word }) => foldText(word));
   const priorities: Priority[] = [];
   const tagNames: string[] = [];
   const due: DueFilter[] = [];
   const text: string[] = [];
   for (let i = 0; i < words.length; i++) {
-    const word = words[i]!;
+    const { word, quoted } = words[i]!;
+    if (quoted) {
+      text.push(word);
+      continue;
+    }
     if (word.startsWith('#')) {
       const name = word.slice(1);
       if (name !== '' && !tagNames.some((t) => foldTagName(t) === foldTagName(name))) tagNames.push(name);
       continue;
     }
-    const pair = i + 1 < words.length ? `${folded[i]} ${folded[i + 1]}` : null;
+    const pair = i + 1 < words.length && !words[i + 1]!.quoted ? `${folded[i]} ${folded[i + 1]}` : null;
     const single = folded[i]!;
     const prio = PRIORITY_WORDS.find(([w]) => w === pair) ?? PRIORITY_WORDS.find(([w]) => w === single);
     if (prio) {
