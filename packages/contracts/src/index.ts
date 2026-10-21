@@ -5,5 +5,6 @@ export * from './schemas';
 export * from './attachments';
 export * from './boards';
 export * from './columns';
+export * from './search';
 export * from './tags';
 export * from './tasks';

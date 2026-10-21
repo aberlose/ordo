@@ -3,6 +3,7 @@ export * from './board';
 export * from './column';
 export * from './dates';
 export * from './description';
+export * from './filter';
 export * from './move';
 export * from './priority';
 export * from './rank';

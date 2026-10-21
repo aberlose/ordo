@@ -32,6 +32,13 @@ import {
   PickAttachmentsInput,
 } from './attachments';
 import { AppInfo, Empty, Id } from './schemas';
+import {
+  BoardTaskIdsInput,
+  BoardTaskIdsOutput,
+  RecordRecentInput,
+  SearchHit,
+  SearchTasksInput,
+} from './search';
 import { CreateTagInput, DeleteTagInput, DeleteTagOutput, Tag, TaskTagInput, UpdateTagInput } from './tags';
 import {
   CreateTaskInput,
@@ -81,6 +88,12 @@ export const contract = {
   'attachments.reveal': { input: AttachmentIdInput, output: Empty },
   /** Permanent: the row and the file go. */
   'attachments.delete': { input: AttachmentIdInput, output: z.object({ id: Id }) },
+  'search.boardTaskIds': { input: BoardTaskIdsInput, output: BoardTaskIdsOutput },
+  /** Best matches first (at most `limit`, 50 by default). */
+  'search.tasks': { input: SearchTasksInput, output: z.array(SearchHit) },
+  /** The last opened tasks, most recent first; deleted tasks and archived boards are left out. */
+  'recent.list': { input: Empty, output: z.array(SearchHit) },
+  'recent.record': { input: RecordRecentInput, output: Empty },
   'tags.create': { input: CreateTagInput, output: Tag },
   'tags.update': { input: UpdateTagInput, output: Tag },
   /** Permanent: the tag and its links go. */
