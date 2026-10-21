@@ -56,6 +56,10 @@
   --text-note: 14.5px;
   --text-note-h1: 20px;
   --text-note-h2: 16px;
+  /* Command palette (mockups command-palette, search-palette A): its query field, and the initials
+     in the board square of a task found on another board. */
+  --text-palette: 16px;
+  --text-micro: 8.5px;
 
   /* Strong border (text fields, drag previews, drop slots). */
   --border-width-strong: 1.5px;

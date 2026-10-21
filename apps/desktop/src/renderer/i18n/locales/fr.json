@@ -67,6 +67,29 @@
     "loadError": "Impossible de charger ce board.",
     "toggleTheme": "Changer de thème"
   },
+  "filters": {
+    "group": "Filtres du board",
+    "active": "{{name}} : {{values}}",
+    "byPriority": "Filtrer par priorité",
+    "byTag": "Filtrer par tag",
+    "byDue": "Filtrer par échéance",
+    "due": {
+      "overdue": "En retard",
+      "thisWeek": "Cette semaine",
+      "none": "Sans date"
+    },
+    "option_one": "{{label}}, {{count, number}} tâche",
+    "option_other": "{{label}}, {{count, number}} tâches",
+    "noTags": "Aucun tag sur ce board",
+    "clear": "Retirer ce filtre : {{name}}",
+    "text": "Texte : « {{text}} »",
+    "clearText": "Retirer le filtre texte",
+    "typeFilter": "ou tapez un filtre",
+    "result_one": "{{shown, number}} sur {{count, number}} tâche",
+    "result_other": "{{shown, number}} sur {{count, number}} tâches",
+    "clearAll": "Effacer les filtres",
+    "noMatch": "Aucune tâche ne correspond aux filtres"
+  },
   "column": {
     "todo": "À faire",
     "inProgress": "En cours",
@@ -554,5 +577,61 @@
       "deleteColumn": "Supprimer la colonne",
       "deleteTable": "Supprimer le tableau"
     }
+  },
+  "palette": {
+    "title": "Palette de commandes",
+    "inputLabel": "Rechercher, filtrer ou lancer une commande",
+    "placeholder": "Rechercher une tâche, filtrer (#tag, haute…) ou lancer une commande",
+    "results": "Résultats",
+    "keys": {
+      "esc": "Échap"
+    },
+    "footer": {
+      "navigate": "naviguer",
+      "open": "ouvrir",
+      "close": "fermer",
+      "syntax": "Tapez <b>#tag</b>, <b>haute</b> ou <b>retard</b> pour filtrer"
+    },
+    "groups": {
+      "recent": "Récemment ouvertes",
+      "actions": "Actions",
+      "boards": "Aller au board",
+      "tags": "Tags",
+      "thisBoard": "Ce board · {{name}} · {{count, number}}",
+      "otherBoards": "Autres boards · {{count, number}}",
+      "tasks": "Tâches · {{count, number}}",
+      "commands": "Commandes"
+    },
+    "actions": {
+      "newTask": "Nouvelle tâche",
+      "newBoard": "Nouveau board",
+      "toggleTheme": "Basculer clair / sombre",
+      "collapseSidebar": "Réduire la barre latérale",
+      "expandSidebar": "Afficher la barre latérale",
+      "apply": "Appliquer comme filtres du board"
+    },
+    "strip": {
+      "recognised": "Filtres reconnus",
+      "none": "aucun — essayez #front, haute, retard",
+      "result": "Résultat",
+      "count_one": "{{count, number}} tâche sur {{total, number}} sur ce board",
+      "count_other": "{{count, number}} tâches sur {{total, number}} sur ce board",
+      "live": " — le board se met à jour en direct",
+      "openHint": " — ↵ sur une tâche l’ouvre"
+    },
+    "chips": {
+      "priority": "Priorité : {{label}}",
+      "priorityAtLeast": "Priorité ≥ {{label}}",
+      "priorityAtMost": "Priorité ≤ {{label}}",
+      "text": "texte : « {{text}} »"
+    },
+    "due": {
+      "overdue": "En retard",
+      "thisWeek": "Cette semaine",
+      "none": "Sans date"
+    },
+    "location": "{{board}} · {{column}}",
+    "noResult": "Aucune tâche ne correspond à « {{query}} », ni sur ce board ni ailleurs. Vérifiez l’orthographe ou retirez un filtre.",
+    "noneElsewhere": "Aucune tâche ailleurs."
   }
 }

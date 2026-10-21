@@ -28,3 +28,15 @@ export const attachmentKeys = {
 export const descriptionKeys = {
   detail: (taskId: string) => ['description', taskId] as const,
 };
+
+/**
+ * Full-text search (board filters, palette) and the palette's recently opened tasks. Search results
+ * follow the data they search: a key carries the `dataUpdatedAt` of the board query it filters, or is
+ * refetched when the palette opens (`staleTime: 0`).
+ */
+export const searchKeys = {
+  all: ['search'] as const,
+  board: (boardId: string, text: string, version: number) => ['search', 'board', boardId, text, version] as const,
+  tasks: (text: string) => ['search', 'tasks', text] as const,
+  recent: ['search', 'recent'] as const,
+};

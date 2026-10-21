@@ -1,10 +1,10 @@
 import type { BoardDetail, Task } from '@ordo/contracts';
-import { canDeleteColumn } from '@ordo/domain';
+import { canDeleteColumn, visibleCount, type MoveDirection } from '@ordo/domain';
 import { ChevronDown, Moon, Plus, SquareKanban, Sun } from 'lucide-react';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CARD_MOVE_HINT_ID,
@@ -14,13 +14,14 @@ import {
   useTaskMoves,
   useTaskUi,
 } from '@renderer/features/tasks';
+import { FilterBar, useBoardFiltering } from '@renderer/features/search';
 import { altKey } from '@renderer/shared/lib/platform';
 import { useResolvedMode, useAppearance } from '@renderer/shared/appearance/store';
-import { cn } from '@renderer/shared/lib/cn';
 import { today as todayDay } from '@renderer/shared/lib/dates';
 import { useNow } from '@renderer/shared/lib/useNow';
 import { Button } from '@renderer/shared/ui/button';
 import { Kbd } from '@renderer/shared/ui/kbd';
+import { cardNavigationTarget } from '../dnd/cardNavigation';
 import { COLUMN_DRAG, useColumnDrag, useColumnMoves } from '../dnd/useColumnMoves';
 import { BoardColumn, ColumnSlot } from './BoardColumn';
 import { ColumnSettings } from './ColumnSettings';
@@ -46,22 +47,48 @@ export function BoardView({ board }: BoardViewProps) {
   const openQuickAdd = useTaskUi((state) => state.openQuickAdd);
   const firstColumnId = board.columns[0]?.id;
 
+  const { filtered, visibleTasks } = useBoardFiltering(board, today);
+  const countByColumn = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const task of board.tasks) map.set(task.columnId, (map.get(task.columnId) ?? 0) + 1);
+    return map;
+  }, [board.tasks]);
+
+  // The cards shown under the filters: drag and drop, keyboard moves and navigation work on them.
   const tasksByColumn = useMemo(() => {
     const map = new Map<string, Task[]>();
-    for (const task of board.tasks) {
+    for (const task of visibleTasks) {
       const list = map.get(task.columnId);
       if (list) list.push(task);
       else map.set(task.columnId, [task]);
     }
     for (const list of map.values()) list.sort((a, b) => (a.rank < b.rank ? -1 : a.rank > b.rank ? 1 : 0));
     return map;
-  }, [board.tasks]);
+  }, [visibleTasks]);
 
   const usedColors = useMemo(() => board.columns.map((c) => c.color), [board.columns]);
   const canDelete = canDeleteColumn(board.columns.length);
 
   const taskMoves = useTaskMoves(board, tasksByColumn);
   const columnMoves = useColumnMoves(board);
+
+  // Plain arrows between the cards on screen (past the display limit, hidden cards are skipped).
+  const latest = useRef({ columns: board.columns, tasksByColumn });
+  useEffect(() => {
+    latest.current = { columns: board.columns, tasksByColumn };
+  });
+  const navigate = useCallback((taskId: string, direction: MoveDirection) => {
+    const { columns, tasksByColumn: byColumn } = latest.current;
+    const expanded = useTaskUi.getState().expandedColumnIds;
+    const layout = columns.map((column) => {
+      const ids = (byColumn.get(column.id) ?? []).map((task) => task.id);
+      const shown = expanded.has(column.id)
+        ? ids.length
+        : visibleCount(ids.length, column.displayLimit).shown;
+      return { id: column.id, taskIds: ids.slice(0, shown) };
+    });
+    return cardNavigationTarget(layout, taskId, direction);
+  }, []);
   const draggingColumnId = useColumnDrag((state) => state.draggingId);
   const columnTargetIndex = useColumnDrag((state) => state.targetIndex);
 
@@ -134,21 +161,7 @@ export function BoardView({ board }: BoardViewProps) {
         </Button>
       </header>
 
-      <div className={cn('flex items-center gap-2 border-b border-border px-6 py-3', empty && 'opacity-50')}>
-        {[t('board.priority'), t('board.tags'), t('board.due')].map((label) => (
-          <button
-            key={label}
-            type="button"
-            disabled={empty}
-            className="flex h-7.5 items-center gap-1.5 rounded-lg border border-border bg-surface pr-2 pl-3 text-meta text-text-2"
-          >
-            {label}
-            <ChevronDown size={14} aria-hidden />
-          </button>
-        ))}
-        <div className="flex-1" />
-        <span className="text-meta text-text-3">{t('board.taskCount', { count: board.tasks.length })}</span>
-      </div>
+      <FilterBar board={board} today={today} shownCount={visibleTasks.length} filtered={filtered} />
 
       <div
         ref={scrollerRef}
@@ -165,12 +178,15 @@ export function BoardView({ board }: BoardViewProps) {
               boardId={board.id}
               column={column}
               tasks={tasks}
+              totalCount={countByColumn.get(column.id) ?? 0}
+              filtered={filtered}
               today={today}
               emptyHint={empty ? (first ? 'first' : 'other') : null}
               usedColors={usedColors}
               canDelete={canDelete}
               onKeyboardMoveTask={taskMoves.moveWithKeyboard}
               onKeyboardMoveColumn={columnMoves.moveWithKeyboard}
+              onNavigateTask={navigate}
             />
           );
         })}

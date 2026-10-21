@@ -10,8 +10,8 @@ import {
   useNavigate,
   useParams,
 } from '@tanstack/react-router';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLayout } from '@renderer/shared/layout/store';
 import { MainArea } from '@renderer/shared/ui/keyboard-help';
 import { Feedback } from '@renderer/shared/ui/toast';
 import {
@@ -23,10 +23,14 @@ import {
   useBoards,
   useCreateBoard,
 } from '@renderer/features/boards';
+import { CommandPalette, useGlobalShortcuts, useRecordRecentOpens } from '@renderer/features/command-palette';
 
 function Layout() {
   const { data: boards = [] } = useBoards();
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = useLayout((state) => state.sidebarCollapsed);
+  const toggleSidebar = useLayout((state) => state.toggleSidebar);
+  useGlobalShortcuts();
+  useRecordRecentOpens();
   const navigate = useNavigate();
   const params = useParams({ strict: false });
   const matchRoute = useMatchRoute();
@@ -36,7 +40,7 @@ function Layout() {
         boards={boards}
         activeBoardId={params.boardId}
         collapsed={collapsed}
-        onToggle={() => setCollapsed((value) => !value)}
+        onToggle={toggleSidebar}
         onSelectBoard={(boardId) => void navigate({ to: '/boards/$boardId', params: { boardId } })}
         archivesActive={Boolean(matchRoute({ to: '/archives' }))}
         onOpenArchives={() => void navigate({ to: '/archives' })}
@@ -45,6 +49,7 @@ function Layout() {
       <MainArea>
         <Outlet />
       </MainArea>
+      <CommandPalette />
       <Feedback />
     </div>
   );

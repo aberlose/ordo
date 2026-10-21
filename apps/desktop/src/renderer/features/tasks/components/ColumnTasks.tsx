@@ -39,6 +39,12 @@ const ARROWS: Record<string, MoveDirection> = {
 
 type Row = { kind: 'card'; task: Task } | { kind: 'slot' };
 
+/** Where plain arrows go from a card: the card to focus, or `null` at an edge. */
+export type CardNavigate = (
+  taskId: string,
+  direction: MoveDirection,
+) => { taskId: string; columnId: string } | null;
+
 export interface ColumnTasksProps {
   boardId: string;
   column: Column;
@@ -48,6 +54,10 @@ export interface ColumnTasksProps {
   emptyHint: 'first' | 'other' | null;
   /** ⌥/Alt + arrows on a card. */
   onKeyboardMove: (taskId: string, direction: MoveDirection) => boolean;
+  /** Plain arrows on a card: the card to focus next. */
+  onNavigate?: CardNavigate | undefined;
+  /** Board filters may hide cards: an empty column says that nothing matches (approved board mockup). */
+  filtered?: boolean;
 }
 
 interface DraggableCardProps {
@@ -60,6 +70,7 @@ interface DraggableCardProps {
   flash: boolean;
   onOpen: (id: string) => void;
   onKeyboardMove: (taskId: string, direction: MoveDirection) => boolean;
+  onNavigate: CardNavigate | undefined;
   measure: (element: Element | null) => void;
   index: number;
   start: number;
@@ -75,6 +86,7 @@ const DraggableCard = memo(function DraggableCard({
   flash,
   onOpen,
   onKeyboardMove,
+  onNavigate,
   measure,
   index,
   start,
@@ -91,11 +103,19 @@ const DraggableCard = memo(function DraggableCard({
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>) => {
       const direction = ARROWS[event.key];
-      if (!event.altKey || !direction) return;
+      if (!direction) return;
+      if (event.altKey) {
+        event.preventDefault();
+        onKeyboardMove(task.id, direction);
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+      // Plain arrows move the focus; the target column brings the card into view and focuses it.
       event.preventDefault();
-      onKeyboardMove(task.id, direction);
+      const target = onNavigate?.(task.id, direction);
+      if (target) useTaskDrag.setState({ focus: target });
     },
-    [onKeyboardMove, task.id],
+    [onKeyboardMove, onNavigate, task.id],
   );
 
   useEffect(() => {
@@ -245,6 +265,8 @@ export const ColumnTasks = memo(function ColumnTasks({
   today,
   emptyHint,
   onKeyboardMove,
+  onNavigate,
+  filtered = false,
 }: ColumnTasksProps) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -362,6 +384,11 @@ export const ColumnTasks = memo(function ColumnTasks({
       )}
     >
       {emptyHint && !open && <EmptyHint kind={emptyHint} onAdd={() => openQuickAdd(column.id)} />}
+      {!emptyHint && filtered && tasks.length === 0 && (
+        <div className="shrink-0 rounded-card border border-dashed border-border-strong px-3 py-4.5 text-center text-meta text-text-3">
+          {t('filters.noMatch')}
+        </div>
+      )}
       {rows.length > 0 && (
         <div className="relative w-full shrink-0" style={{ height: virtualizer.getTotalSize() }}>
           {virtualizer.getVirtualItems().map((item) => {
@@ -388,6 +415,7 @@ export const ColumnTasks = memo(function ColumnTasks({
                 flash={row.task.id === flashTaskId}
                 onOpen={openTask}
                 onKeyboardMove={onKeyboardMove}
+                onNavigate={onNavigate}
                 measure={virtualizer.measureElement}
                 index={item.index}
                 start={item.start}
