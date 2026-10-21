@@ -1,5 +1,13 @@
-import type { CalendarDay, ColumnCategory, ColumnColor, Priority } from '@ordo/domain';
-import type { SearchHitRecord, SearchRepository } from '../../application/ports';
+import {
+  addDays,
+  type CalendarDay,
+  type ColumnCategory,
+  type ColumnColor,
+  foldTagName,
+  type Priority,
+  startOfWeek,
+} from '@ordo/domain';
+import type { SearchHitRecord, SearchRepository, SearchTaskFilters } from '../../application/ports';
 import type { Db } from '../db/client';
 import { chunked } from './chunks';
 
@@ -36,6 +44,58 @@ const HIT_JOINS = `
   JOIN board_column c ON c.id = t.column_id
   LEFT JOIN task p ON p.id = t.parent_id`;
 
+/** SQL conditions on `t` for the typed filters, with their bound parameters in order. */
+interface FilterSql {
+  readonly where: string;
+  readonly params: readonly (string | number)[];
+  /** Statement cache key: the shape of the conditions, not their values. */
+  readonly shape: string;
+}
+
+/**
+ * The typed filters as SQL. `tagIds` are the ids of the tags whose folded name is wanted (folding
+ * is done in JS: SQLite has no accent folding), bound as one JSON array.
+ */
+function filterSql(filters: SearchTaskFilters, tagIds: readonly string[] | null): FilterSql {
+  const clauses: string[] = [];
+  const params: (string | number)[] = [];
+  const shape: string[] = [];
+  const priorities = filters.priorities ?? [];
+  if (priorities.length > 0) {
+    clauses.push(`t.priority IN (${priorities.map(() => '?').join(', ')})`);
+    params.push(...priorities);
+    shape.push(`p${priorities.length}`);
+  }
+  const due = filters.due;
+  if (due && due.options.length > 0) {
+    const options = [...new Set(due.options)].sort();
+    const ors = options.map((option) => {
+      switch (option) {
+        case 'overdue':
+          params.push(due.today);
+          return '(t.due_date < ? AND t.completed_at IS NULL)';
+        case 'thisWeek': {
+          const monday = startOfWeek(due.today);
+          params.push(monday, addDays(monday, 6));
+          return '(t.due_date BETWEEN ? AND ?)';
+        }
+        case 'none':
+          return 't.due_date IS NULL';
+      }
+    });
+    clauses.push(`(${ors.join(' OR ')})`);
+    shape.push(`d${options.join(',')}`);
+  }
+  if (tagIds !== null) {
+    clauses.push(
+      'EXISTS (SELECT 1 FROM task_tag tt WHERE tt.task_id = t.id AND tt.tag_id IN (SELECT value FROM json_each(?)))',
+    );
+    params.push(JSON.stringify(tagIds));
+    shape.push('t');
+  }
+  return { where: clauses.map((c) => `AND ${c}`).join(' '), params, shape: shape.join('|') };
+}
+
 interface HitRow {
   id: string;
   title: string;
@@ -60,29 +120,48 @@ export function searchRepository(db: Db): SearchRepository {
 
   const boardTaskIds = sqlite.prepare<[string, string], { id: string }>(
     `SELECT t.id AS id FROM task_fts f JOIN task t ON t.id = f.task_id
+       JOIN board_column c ON c.id = t.column_id
      WHERE task_fts MATCH ? AND t.board_id = ?
-       AND t.parent_id IS NULL AND t.deleted_at IS NULL AND t.archived_at IS NULL`,
+       AND t.parent_id IS NULL AND t.deleted_at IS NULL AND t.archived_at IS NULL
+       AND c.deleted_at IS NULL`,
   );
 
   /**
    * Best matches first. The index ranks (bm25) the matches alone, then only the best `cap` of them
-   * are joined and filtered (deleted, archived): ranking every match is cheap, joining every match
-   * of a broad prefix on 10,000 tasks is not. `searchTasks` falls back to the uncapped statement
-   * when the capped one found too few rows to fill the limit.
+   * are joined and filtered (hidden tasks, typed filters): ranking every match is cheap, joining
+   * every match of a broad prefix on 10,000 tasks is not. `searchTasks` falls back to the uncapped
+   * statement when the capped one found too few rows to fill the limit, so the filters always apply
+   * before the limit. Statements are prepared once per shape of filters.
    */
-  const rankedSearch = (capped: boolean) =>
-    sqlite.prepare<[string, ...number[]], HitRow>(
-      `SELECT ${HIT_COLUMNS} FROM (
-         SELECT task_id, ${SCORE} AS score FROM task_fts WHERE task_fts MATCH ?
-         ${capped ? 'ORDER BY score LIMIT ?' : ''}
-       ) m
-       JOIN task t ON t.id = m.task_id ${HIT_JOINS}
-       WHERE ${SHOWN}
-       ORDER BY m.score, t.created_at DESC, t.id
-       LIMIT ?`,
-    );
-  const searchCapped = rankedSearch(true);
-  const searchAll = rankedSearch(false);
+  const statements = new Map<string, ReturnType<typeof sqlite.prepare<(string | number)[], HitRow>>>();
+  const rankedSearch = (capped: boolean, filters: FilterSql) => {
+    const key = `${capped ? 'capped' : 'all'}:${filters.shape}`;
+    let statement = statements.get(key);
+    if (!statement) {
+      statement = sqlite.prepare<(string | number)[], HitRow>(
+        `SELECT ${HIT_COLUMNS} FROM (
+           SELECT task_id, ${SCORE} AS score FROM task_fts WHERE task_fts MATCH ?
+           ${capped ? 'ORDER BY score LIMIT ?' : ''}
+         ) m
+         JOIN task t ON t.id = m.task_id ${HIT_JOINS}
+         WHERE ${SHOWN} ${filters.where}
+         ORDER BY m.score, t.created_at DESC, t.id
+         LIMIT ?`,
+      );
+      statements.set(key, statement);
+    }
+    return statement;
+  };
+
+  const allTags = sqlite.prepare<[], { id: string; name: string }>('SELECT id, name FROM tag');
+  /** Ids of the tags whose folded name is one of `folded`. */
+  const tagIdsNamed = (folded: readonly string[]): string[] => {
+    const wanted = new Set(folded);
+    return allTags
+      .all()
+      .filter((tag) => wanted.has(foldTagName(tag.name)))
+      .map((tag) => tag.id);
+  };
 
   /** Tag names of a few tasks (at most one chunk of ids). */
   const tagNamesOf = (ids: readonly string[]): Map<string, string[]> => {
@@ -129,10 +208,18 @@ export function searchRepository(db: Db): SearchRepository {
   return {
     boardTaskIds: (boardId, ftsQuery) => boardTaskIds.all(searched(ftsQuery), boardId).map((row) => row.id),
 
-    searchTasks: (ftsQuery, limit) => {
+    searchTasks: (ftsQuery, limit, filters = {}) => {
+      let tagIds: string[] | null = null;
+      if (filters.foldedTagNames !== undefined && filters.foldedTagNames.length > 0) {
+        tagIds = tagIdsNamed(filters.foldedTagNames);
+        if (tagIds.length === 0) return [];
+      }
+      const where = filterSql(filters, tagIds);
       const query = searched(ftsQuery);
-      const capped = searchCapped.all(query, limit * OVERFETCH, limit);
-      return withTags(capped.length === limit ? capped : searchAll.all(query, limit));
+      const capped = rankedSearch(true, where).all(query, limit * OVERFETCH, ...where.params, limit);
+      return withTags(
+        capped.length === limit ? capped : rankedSearch(false, where).all(query, ...where.params, limit),
+      );
     },
 
     hits: (ids) => {

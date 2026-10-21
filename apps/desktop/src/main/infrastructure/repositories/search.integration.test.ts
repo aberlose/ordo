@@ -212,6 +212,68 @@ describe('full-text search on SQLite', () => {
   });
 });
 
+describe('typed filters of the palette search', () => {
+  const TODAY = '2026-10-21'; // a Wednesday: this week is 2026-10-19 to 2026-10-25
+
+  it('applies priorities, due options and tag names before the limit', () => {
+    const { boards, tasks, tags, search } = setup();
+    const board = boards.createBoard({ name: 'Perso', columnNames: COLUMN_NAMES });
+    const other = boards.createBoard({ name: 'Autre', columnNames: COLUMN_NAMES });
+    const [todo, , done] = board.columns.map((c) => c.id) as [string, string, string];
+    // 60 short titles rank first; the filtered tasks have long titles (they rank last) and come first.
+    const urgent = tasks.createTask({ columnId: todo, title: 'Rapport très long à rédiger pour le client' });
+    tasks.updateTask({ id: urgent.id, priority: 5, dueDate: '2026-10-20' });
+    const urgentDone = tasks.createTask({ columnId: done, title: 'Rapport très long déjà rendu au client' });
+    tasks.updateTask({ id: urgentDone.id, priority: 5, dueDate: '2026-10-01' });
+    const weekly = tasks.createTask({ columnId: todo, title: 'Rapport très long de la semaine en cours' });
+    tasks.updateTask({ id: weekly.id, priority: 4, dueDate: '2026-10-25' });
+    const nextWeek = tasks.createTask({ columnId: todo, title: 'Rapport très long de la semaine suivante' });
+    tasks.updateTask({ id: nextWeek.id, priority: 1, dueDate: '2026-10-26' });
+    const tagged = tasks.createTask({ columnId: other.columns[0]!.id, title: 'Rapport très long étiqueté' });
+    tags.createTag({ boardId: other.id, name: 'Été', taskId: tagged.id });
+    const taggedHere = tasks.createTask({ columnId: todo, title: 'Rapport très long étiqueté ici' });
+    tags.createTag({ boardId: board.id, name: 'ete', taskId: taggedHere.id });
+    tasks.updateTask({ id: taggedHere.id, priority: 4 });
+    for (let i = 0; i < 60; i += 1) tasks.createTask({ columnId: todo, title: `Rapport ${i}` });
+
+    const ids = (filters: Omit<Parameters<typeof search.searchTasks>[0], 'text'>) =>
+      search
+        .searchTasks({ text: 'rapport', ...filters })
+        .map((hit) => hit.id)
+        .sort();
+    const sorted = (...list: { id: string }[]) => list.map((t) => t.id).sort();
+
+    expect(search.searchTasks({ text: 'rapport' })).toHaveLength(50);
+    expect(search.searchTasks({ text: 'rapport' }).map((hit) => hit.id)).not.toContain(urgent.id);
+
+    expect(ids({ priorities: [5] })).toEqual(sorted(urgent, urgentDone));
+    expect(ids({ priorities: [4, 5] })).toEqual(sorted(urgent, urgentDone, weekly, taggedHere));
+    // Overdue leaves out completed tasks; due options combine with OR.
+    expect(ids({ due: ['overdue'], today: TODAY })).toEqual(sorted(urgent));
+    expect(ids({ due: ['thisWeek'], today: TODAY })).toEqual(sorted(urgent, weekly));
+    expect(ids({ due: ['thisWeek'], today: '2026-10-25' })).toEqual(sorted(urgent, weekly));
+    expect(ids({ due: ['thisWeek'], today: '2026-10-26' })).toEqual(sorted(nextWeek));
+    expect(ids({ due: ['overdue', 'thisWeek'], today: TODAY })).toEqual(sorted(urgent, weekly));
+    expect(ids({ due: ['none'], today: TODAY })).toHaveLength(50);
+    expect(search.searchTasks({ text: 'rapport', due: ['none'], today: TODAY, limit: 5 })).toHaveLength(5);
+    // Tag names: case and accents ignored, any of them, across boards.
+    expect(ids({ tagNames: ['ÉTÉ'] })).toEqual(sorted(tagged, taggedHere));
+    expect(ids({ tagNames: ['inconnu', 'Ete'] })).toEqual(sorted(tagged, taggedHere));
+    expect(ids({ tagNames: ['inconnu'] })).toEqual([]);
+    // Kinds combine with AND; empty kinds do not filter.
+    expect(ids({ tagNames: ['été'], priorities: [4], due: ['none'], today: TODAY })).toEqual(
+      sorted(taggedHere),
+    );
+    expect(ids({ priorities: [4, 5], due: ['thisWeek'], today: TODAY })).toEqual(sorted(urgent, weekly));
+    expect(ids({ priorities: [], due: [], tagNames: [] })).toHaveLength(50);
+    // Hidden tasks stay out.
+    tasks.deleteTask(urgent.id);
+    boards.archiveBoard(other.id);
+    expect(ids({ priorities: [5] })).toEqual(sorted(urgentDone));
+    expect(ids({ tagNames: ['ete'] })).toEqual(sorted(taggedHere));
+  });
+});
+
 describe('full-text index kept in sync', () => {
   it('follows task creation, renames and notes', () => {
     const { boards, tasks, titles } = setup();
@@ -264,7 +326,7 @@ describe('full-text index kept in sync', () => {
   });
 
   it('leaves out deleted tasks, sub-tasks of deleted parents, deleted columns and archived boards', () => {
-    const { boards, tasks, columns, titles, boardIds } = setup();
+    const { boards, tasks, columns, sqlite, titles, boardIds } = setup();
     const board = boards.createBoard({ name: 'Perso', columnNames: COLUMN_NAMES });
     const [todo, doing] = board.columns.map((c) => c.id) as [string, string];
     const gone = tasks.createTask({ columnId: todo, title: 'Topic gone' });
@@ -284,6 +346,74 @@ describe('full-text index kept in sync', () => {
     expect(titles('topic')).toEqual([]);
     boards.restoreBoard(board.id);
     expect(titles('topic')).toEqual(['Topic kept']);
+
+    // A deleted column hides its cards even when they are not marked deleted themselves.
+    sqlite.prepare('update board_column set deleted_at = 1 where id = ?').run(todo);
+    expect(titles('topic')).toEqual([]);
+    expect(boardIds(board.id, 'topic')).toEqual([]);
+  });
+
+  it('finds the row of each task by its whole id: UUIDv7 ids of the same instant, odd ids', () => {
+    const { boards, tasks, tags, sqlite, titles } = setup();
+    const board = boards.createBoard({ name: 'Perso', columnNames: COLUMN_NAMES });
+    const todo = board.columns[0]!.id;
+    const ftsRows = () =>
+      sqlite.prepare('select task_id as id, title, tags from task_fts order by task_id').all() as {
+        id: string;
+        title: string;
+        tags: string;
+      }[];
+    const taskRows = () =>
+      sqlite
+        .prepare(
+          `select t.id as id, t.title as title,
+             (select coalesce(group_concat(tg.name, ' '), '') from task_tag tt join tag tg on tg.id = tt.tag_id
+               where tt.task_id = t.id) as tags
+           from task t order by t.id`,
+        )
+        .all();
+
+    // Real ids made in the same millisecond share their first tokens; ids sharing their last
+    // 12 characters; and ids that are not UUIDs (quotes, FTS5 syntax, one id inside another, no token).
+    const sameInstant = Array.from({ length: 5 }, () => uuidv7(1_800_000_000_000));
+    const tail = sameInstant[0]!.slice(-12);
+    const odd = [
+      `00000000-0000-7000-8000-${tail}`,
+      'a"b c',
+      '"',
+      'task_id : x OR *',
+      'abc def',
+      'abc def ghi',
+      'zz abc def',
+      '---',
+      '- -',
+    ];
+    const insert = sqlite.prepare(
+      `insert into task (id, board_id, column_id, key, title, rank, created_at, updated_at)
+       values (?, ?, ?, ?, ?, ?, 1, 1)`,
+    );
+    [...sameInstant, ...odd].forEach((id, i) => insert.run(id, board.id, todo, 100 + i, `Odd ${i}`, `z${i}`));
+    expect(ftsRows()).toEqual(taskRows());
+
+    const tag = tags.createTag({ boardId: board.id, name: 'Lima' });
+    for (const [i, id] of [...sameInstant, ...odd].entries()) {
+      tasks.updateTask({ id, title: `Renamed ${i}` });
+      if (i % 2 === 0) tasks.addTag({ taskId: id, tagId: tag.id });
+    }
+    expect(ftsRows()).toEqual(taskRows());
+    expect(titles('renamed')).toHaveLength(sameInstant.length + odd.length);
+    tags.updateTag({ id: tag.id, name: 'Mike' });
+    expect(ftsRows()).toEqual(taskRows());
+    tasks.removeTag({ taskId: 'abc def', tagId: tag.id });
+    tasks.removeTag({ taskId: '---', tagId: tag.id });
+    expect(ftsRows()).toEqual(taskRows());
+
+    // A purge (lot 8) removes exactly its row.
+    sqlite.prepare('delete from task_tag where task_id in (?, ?, ?)').run('abc def', '---', sameInstant[0]!);
+    for (const id of ['abc def', '---', sameInstant[0]!])
+      sqlite.prepare('delete from task where id = ?').run(id);
+    expect(ftsRows()).toEqual(taskRows());
+    expect(ftsRows().map((row) => row.id)).toContain('abc def ghi');
   });
 
   it('indexes the tasks, notes and tags of a duplicated board', async () => {
@@ -408,6 +538,15 @@ describe('search performance', () => {
       'search.tasks "tache"': median(() => search.searchTasks({ text: 'tache' })),
       'search.tasks "head"': median(() => search.searchTasks({ text: 'head' })),
       'search.tasks "gen ete"': median(() => search.searchTasks({ text: 'gen ete' })),
+      // Typed filters that leave few or no matches: the capped pass cannot fill the limit, so the
+      // uncapped one joins every match.
+      'search.tasks "tache" #generees': median(() =>
+        search.searchTasks({ text: 'tache', tagNames: ['generees'] }),
+      ),
+      'search.tasks "tache" priority 5': median(() => search.searchTasks({ text: 'tache', priorities: [5] })),
+      'search.tasks "tache" overdue|week': median(() =>
+        search.searchTasks({ text: 'tache', due: ['overdue', 'thisWeek'], today: '2026-10-21' }),
+      ),
       'search.boardTaskIds "tache"': median(() =>
         search.searchBoardTaskIds({ boardId: board.id, text: 'tache' }),
       ),
@@ -417,6 +556,8 @@ describe('search performance', () => {
     };
     expect(search.searchBoardTaskIds({ boardId: board.id, text: 'tache' }).taskIds).toHaveLength(TASKS);
     expect(search.searchTasks({ text: 'generees' })).toHaveLength(50);
+    expect(search.searchTasks({ text: 'tache', tagNames: ['Générées'] })).toHaveLength(50);
+    expect(search.searchTasks({ text: 'tache', priorities: [5] })).toEqual([]);
 
     // Trigger cost on a full index: one tag link and one rename.
     const first = sqlite.prepare('select id from task order by key limit 1').get() as { id: string };

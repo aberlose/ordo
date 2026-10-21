@@ -1,3 +1,4 @@
+import { foldTagName, matchesDue } from '@ordo/domain';
 import type {
   AttachmentRecord,
   AttachmentRepository,
@@ -10,6 +11,7 @@ import type {
   DesktopShell,
   SearchHitRecord,
   SearchRepository,
+  SearchTaskFilters,
   SettingRepository,
   SubtaskCount,
   TagRecord,
@@ -336,16 +338,29 @@ export function inMemoryRepositories() {
       tagNames: tagNamesOf(task.id),
     };
   };
+  const passes = (hit: SearchHitRecord, { priorities, due, foldedTagNames }: SearchTaskFilters) =>
+    (!priorities?.length || priorities.includes(hit.priority)) &&
+    (!due?.options.length ||
+      due.options.some((option) =>
+        matchesDue(
+          { priority: hit.priority, dueDate: hit.dueDate, completed: hit.completedAt !== null, tags: [] },
+          option,
+          due.today,
+        ),
+      )) &&
+    (!foldedTagNames?.length || hit.tagNames.some((name) => foldedTagNames.includes(foldTagName(name))));
   const search: SearchRepository = {
     boardTaskIds: (boardId, ftsQuery) =>
       liveTasks()
         .filter((t) => t.boardId === boardId && t.parentId === null && t.archivedAt === null)
+        .filter((t) => columnRows.some((c) => c.id === t.columnId))
         .filter((t) => matches(t, ftsQuery))
         .map((t) => t.id),
-    searchTasks: (ftsQuery, limit) =>
+    searchTasks: (ftsQuery, limit, filters = {}) =>
       taskRows
         .filter((t) => matches(t, ftsQuery))
         .flatMap((t) => hitOf(t) ?? [])
+        .filter((hit) => passes(hit, filters))
         .slice(0, limit),
     hits: (ids) =>
       [...new Set(ids)].flatMap((id) => {

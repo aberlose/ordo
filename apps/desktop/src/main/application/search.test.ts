@@ -54,6 +54,33 @@ describe('search use cases', () => {
   });
 });
 
+describe('typed filters', () => {
+  it('passes priorities, due options against today and folded tag names to the index', () => {
+    const board = newBoard();
+    const [todo, , done] = board.columns.map((c) => c.id) as [string, string, string];
+    const late = tasks.createTask({ columnId: todo, title: 'Facture en retard' });
+    tasks.updateTask({ id: late.id, priority: 5, dueDate: '2026-10-01' });
+    const lateDone = tasks.createTask({ columnId: done, title: 'Facture payée' });
+    tasks.updateTask({ id: lateDone.id, priority: 5, dueDate: '2026-10-01' });
+    const tagged = tasks.createTask({ columnId: todo, title: 'Facture du gîte' });
+    tags.createTag({ boardId: board.id, name: 'Été', taskId: tagged.id });
+    const ids = (filters: object) =>
+      search
+        .searchTasks({ text: 'facture', ...filters })
+        .map((hit) => hit.id)
+        .sort();
+
+    expect(ids({})).toHaveLength(3);
+    expect(ids({ priorities: [5] })).toEqual([late.id, lateDone.id].sort());
+    expect(ids({ due: ['overdue'], today: '2026-10-21' })).toEqual([late.id]);
+    expect(ids({ due: ['none'], today: '2026-10-21' })).toEqual([tagged.id]);
+    expect(ids({ tagNames: ['ETE', 'ÉTÉ'] })).toEqual([tagged.id]);
+    expect(ids({ tagNames: ['ete'], priorities: [5] })).toEqual([]);
+    // Due options without today are refused by the contract; the use case then ignores them.
+    expect(ids({ due: ['overdue'] })).toHaveLength(3);
+  });
+});
+
 describe('recently opened', () => {
   it('lists the last opened tasks, most recent first, without duplicates, at most 5', () => {
     const column = newBoard().columns[0]!.id;

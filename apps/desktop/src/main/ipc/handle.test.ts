@@ -258,6 +258,32 @@ describe('IPC adapter', () => {
       error: { code: 'invalid_input' },
     });
     expect(await invoke('search.tasks', { text: 'x' })).toEqual({ ok: true, data: [] });
+    // Typed filters: due options need the renderer's today.
+    expect(await invoke('search.tasks', { text: 'x', due: ['overdue'] })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(
+      await invoke('search.tasks', {
+        text: 'x',
+        priorities: [4, 5],
+        due: ['overdue', 'none'],
+        today: '2026-10-21',
+        tagNames: ['Été'],
+      }),
+    ).toEqual({ ok: true, data: [] });
+    expect(await invoke('search.tasks', { text: 'x', due: [], tagNames: [] })).toEqual({
+      ok: true,
+      data: [],
+    });
+    expect(await invoke('search.tasks', { text: 'x', priorities: [6] })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('search.tasks', { text: 'x', tagNames: ['  '] })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
     expect(await invoke('recent.list', {})).toEqual({ ok: true, data: [] });
     expect(await invoke('recent.record', { taskId: id })).toMatchObject({
       ok: false,

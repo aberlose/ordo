@@ -1,9 +1,10 @@
 import type { Input, SearchHit } from '@ordo/contracts';
-import { pushRecent, RECENT_TASKS_MAX, toFtsQuery } from '@ordo/domain';
+import { foldTagName, pushRecent, RECENT_TASKS_MAX, toFtsQuery } from '@ordo/domain';
 import { NotFoundError } from './errors';
 import type {
   SearchHitRecord,
   SearchRepository,
+  SearchTaskFilters,
   SettingRepository,
   TaskRepository,
   Transactor,
@@ -24,6 +25,18 @@ export const RECENT_TASKS_SETTING = 'recentTasks';
 
 function toSearchHit(hit: SearchHitRecord): SearchHit {
   return { ...hit, tagNames: [...hit.tagNames] };
+}
+
+/** The typed filters of a `search.tasks` input, as the repository takes them. */
+function filtersOf(input: Input<'search.tasks'>): SearchTaskFilters {
+  const due =
+    input.due?.length && input.today !== undefined ? { options: input.due, today: input.today } : undefined;
+  const foldedTagNames = input.tagNames?.length ? [...new Set(input.tagNames.map(foldTagName))] : undefined;
+  return {
+    ...(input.priorities?.length ? { priorities: input.priorities } : {}),
+    ...(due ? { due } : {}),
+    ...(foldedTagNames ? { foldedTagNames } : {}),
+  };
 }
 
 export function makeSearchUseCases({ search, settings, tasks, tx }: SearchUseCasesDeps) {
@@ -48,11 +61,16 @@ export function makeSearchUseCases({ search, settings, tasks, tx }: SearchUseCas
       return { taskIds: query === null ? [] : search.boardTaskIds(input.boardId, query) };
     },
 
-    /** Cards and sub-tasks of the non-archived boards matching the free text, best first. */
+    /**
+     * Cards and sub-tasks of the non-archived boards matching the free text and the typed filters
+     * (applied before the limit), best first.
+     */
     searchTasks: (input: Input<'search.tasks'>): SearchHit[] => {
       const query = toFtsQuery(input.text);
       if (query === null) return [];
-      return search.searchTasks(query, input.limit ?? DEFAULT_SEARCH_LIMIT).map(toSearchHit);
+      return search
+        .searchTasks(query, input.limit ?? DEFAULT_SEARCH_LIMIT, filtersOf(input))
+        .map(toSearchHit);
     },
 
     /** Recently opened tasks, most recent first; deleted tasks and archived boards are left out. */
