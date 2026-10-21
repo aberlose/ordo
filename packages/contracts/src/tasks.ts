@@ -1,4 +1,4 @@
-import { TITLE_MAX_LENGTH } from '@ordo/domain';
+import { DESCRIPTION_MAX_JSON_LENGTH, TITLE_MAX_LENGTH } from '@ordo/domain';
 import { z } from 'zod';
 import { CalendarDay, Id, Priority } from './schemas';
 
@@ -28,6 +28,8 @@ export const Task = z.object({
   /** Board tags on the task, alphabetical. */
   tagIds: z.array(Id),
   subtasks: SubtaskProgress,
+  /** Files attached to the task (shown on the card). */
+  attachmentCount: z.number().int().nonnegative(),
 });
 
 const Title = z.string().trim().min(1).max(TITLE_MAX_LENGTH);
@@ -70,6 +72,21 @@ export const UpdateTaskInput = z
 export const DeleteTaskInput = z.object({ id: Id }).strict();
 
 export const GetTaskInput = z.object({ id: Id }).strict();
+
+/**
+ * The notes: the editor's document as ProseMirror JSON (a `doc` node), `null` for no notes. Bounded so a
+ * runaway paste cannot fill the database; images are attachments, never inlined.
+ */
+export const Description = z
+  .looseObject({ type: z.literal('doc'), content: z.array(z.unknown()).optional() })
+  .refine((doc) => JSON.stringify(doc).length <= DESCRIPTION_MAX_JSON_LENGTH, 'Notes too long');
+export const DescriptionOutput = z.object({
+  id: Id,
+  json: Description.nullable(),
+  updatedAt: z.number().int(),
+});
+/** Autosave of the notes; the plain text for search is derived in the main process. */
+export const UpdateDescriptionInput = z.object({ id: Id, json: Description.nullable() }).strict();
 /** A task's live sub-tasks, in their list order. */
 export const ListSubtasksInput = z.object({ parentId: Id }).strict();
 

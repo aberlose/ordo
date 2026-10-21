@@ -10,11 +10,12 @@ Schema changes go through Drizzle migrations only, and only after the user has a
 - **Status = column.** `task.column_id` carries the status; `board_column.category` (`todo`, `in_progress`, `done`) gives it business meaning.
 - **Description stored twice:** editor JSON (`description_json`, for rendering) and plain text (`description_text`, for search).
 - **Search uses FTS5**, kept in sync by triggers.
-- **Soft delete** (`deleted_at`) backs both the trash (purged after 30 days) and undo.
+- **Soft delete** (`deleted_at`) backs both the trash (purged after 30 days) and undo; purging a task also deletes its attachment rows and files.
 - **Dates:** `start_date` / `due_date` are calendar days (`YYYY-MM-DD`), no time, no timezone. Timestamps (`*_at`) are Unix epoch milliseconds.
 - **Sub-tasks:** one level only — a task whose `parent_id` is set cannot itself be a parent (enforced in the domain).
 - **Tags are scoped to a board**: names are unique per board ignoring case and accents (checked in the use case with `isSameTagName`; the `UNIQUE (board_id, name)` index only catches exact duplicates). Deleting a tag is permanent: its `task_tag` links go with it.
-- **Attachments** are copied into `userData/attachments/`; the DB stores only the relative path.
+- **Attachments** are copied into `userData/attachments/` as `<id>.<ext>` (the original name is only in `file_name`); the DB stores only the relative path. Deleting one is permanent (row and file). Files with no row (a crash between copy and insert) are removed at startup (3 s after the window shows) once they are 10 minutes old. Indexed by `task_id` (migration `0002`). Images of the notes are attachments: the image node stores `attachmentId` and a width in %.
+- **Notes:** `description_json` is the editor's ProseMirror JSON (`NULL` when empty; at most 2 MB serialised and 64 levels deep); `description_text` is always derived from it in the main process (`descriptionText`), never sent by the renderer.
 - **Priority:** 1 = Very low … 5 = Very high, default 3 (Medium).
 
 ## Schema (MVP)

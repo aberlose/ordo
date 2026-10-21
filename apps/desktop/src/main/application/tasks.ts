@@ -1,11 +1,16 @@
 import type {
   CreateTaskInput,
+  Input,
   MoveTaskInput,
+  Output,
   SubtaskProgress,
   Task,
   TaskTagInput,
   UpdateTaskInput,
 } from '@ordo/contracts';
+
+type DescriptionOutput = Output<'tasks.getDescription'>;
+type UpdateDescriptionInput = Input<'tasks.updateDescription'>;
 import {
   areDatesOrdered,
   canBeParent,
@@ -13,13 +18,19 @@ import {
   compareTags,
   completionAfterMove,
   DEFAULT_PRIORITY,
+  descriptionText,
+  isEmptyDescription,
+  type DocNode,
   nextTaskKey,
   normalizeTitle,
   rankAtEnd,
   rankBetween,
 } from '@ordo/domain';
-import { NotFoundError, RuleViolationError } from './errors';
+import { DESCRIPTION_MAX_DEPTH, exceedsNodeDepth } from './documentDepth';
+import { InvalidInputError, NotFoundError, RuleViolationError } from './errors';
 import type {
+  AttachmentCount,
+  AttachmentRepository,
   BoardRepository,
   Clock,
   ColumnRecord,
@@ -40,6 +51,7 @@ export interface TaskUseCasesDeps {
   readonly tasks: TaskRepository;
   readonly columns: ColumnRepository;
   readonly tags: TagRepository;
+  readonly attachments: AttachmentRepository;
   readonly tx: Transactor;
   readonly clock: Clock;
   readonly ids: IdGenerator;
@@ -51,6 +63,7 @@ export function toTask(
   record: TaskRecord,
   tagIds: readonly string[] = [],
   subtasks: SubtaskProgress = NO_SUBTASKS,
+  attachmentCount = 0,
 ): Task {
   return {
     id: record.id,
@@ -67,11 +80,13 @@ export function toTask(
     updatedAt: record.updatedAt,
     tagIds: [...tagIds],
     subtasks: { done: subtasks.done, total: subtasks.total },
+    attachmentCount,
   };
 }
 
 /**
- * Joins records with their tags (alphabetical) and sub-task progress, from a few set-based reads.
+ * Joins records with their tags (alphabetical), sub-task progress and attachment counts, from a few
+ * set-based reads.
  * `knownTags` must hold every tag the links point to; links to other tags are dropped.
  */
 function assemble(
@@ -79,7 +94,9 @@ function assemble(
   knownTags: readonly TagRecord[],
   progress: readonly SubtaskCount[],
   links: readonly TaskTagLink[],
+  attachmentCounts: readonly AttachmentCount[],
 ): Task[] {
+  const countOf = new Map(attachmentCounts.map((c) => [c.taskId, c.count]));
   const order = new Map([...knownTags].sort(compareTags).map((tag, i) => [tag.id, i]));
   const progressOf = new Map(progress.map((p) => [p.parentId, p]));
   const tagIdsOf = new Map<string, string[]>();
@@ -95,26 +112,38 @@ function assemble(
       record,
       (tagIdsOf.get(record.id) ?? []).sort((a, b) => rankOf(a) - rankOf(b)),
       record.parentId === null ? (progressOf.get(record.id) ?? NO_SUBTASKS) : NO_SUBTASKS,
+      countOf.get(record.id) ?? 0,
     ),
   );
 }
 
-/** Builds the `Task` outputs: tag ids and sub-task progress come from grouped queries, never per task. */
-export function taskPresenter(tasks: TaskRepository, tags: TagRepository) {
+/**
+ * Builds the `Task` outputs: tag ids, sub-task progress and attachment counts come from grouped
+ * queries, never per task.
+ */
+export function taskPresenter(tasks: TaskRepository, tags: TagRepository, attachments: AttachmentRepository) {
   return {
     /** The top-level tasks of a board detail, given the board's tags already read. */
     ofBoard: (boardId: string, records: readonly TaskRecord[], boardTags: readonly TagRecord[]): Task[] =>
-      assemble(records, boardTags, tasks.subtaskProgressByBoard(boardId), tags.linksByBoard(boardId)),
+      assemble(
+        records,
+        boardTags,
+        tasks.subtaskProgressByBoard(boardId),
+        tags.linksByBoard(boardId),
+        attachments.countByBoard(boardId),
+      ),
 
     /** Any tasks: only the tags their links point to are read, without counts. */
     many: (records: readonly TaskRecord[]): Task[] => {
       if (records.length === 0) return [];
-      const links = tags.linksOfTasks(records.map((r) => r.id));
+      const ids = records.map((r) => r.id);
+      const links = tags.linksOfTasks(ids);
       return assemble(
         records,
         tags.listByIds(links.map((link) => link.tagId)),
         tasks.subtaskProgressOf(records.filter((r) => r.parentId === null).map((r) => r.id)),
         links,
+        attachments.countOf(ids),
       );
     },
   };
@@ -126,8 +155,36 @@ function requireTitle(raw: string): string {
   return title;
 }
 
-export function makeTaskUseCases({ boards, tasks, columns, tags, tx, clock, ids }: TaskUseCasesDeps) {
-  const present = taskPresenter(tasks, tags);
+/** Stored notes back to a document; unreadable JSON (never written by Ordo) reads as no notes. */
+function parseDescription(json: string | null): DocNode | null {
+  if (json === null) return null;
+  try {
+    const doc = JSON.parse(json) as unknown;
+    return typeof doc === 'object' && doc !== null && (doc as DocNode).type === 'doc'
+      ? (doc as DocNode)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+const toDescriptionOutput = (id: string, doc: DocNode | null, updatedAt: number): DescriptionOutput => ({
+  id,
+  json: doc as DescriptionOutput['json'],
+  updatedAt,
+});
+
+export function makeTaskUseCases({
+  boards,
+  tasks,
+  columns,
+  tags,
+  attachments,
+  tx,
+  clock,
+  ids,
+}: TaskUseCasesDeps) {
+  const present = taskPresenter(tasks, tags, attachments);
   const one = (record: TaskRecord): Task => present.many([record])[0] ?? toTask(record);
 
   const requireColumn = (id: string) => {
@@ -328,6 +385,37 @@ export function makeTaskUseCases({ boards, tasks, columns, tags, tx, clock, ids 
 
     /** Idempotent: a tag not on the task changes nothing. */
     removeTag: (input: TaskTagInput): Task => changeTag(input, (link) => tags.removeLink(link)),
+
+    /** The notes of a live task or sub-task (the detail window's editor). */
+    getDescription: (id: string): DescriptionOutput => {
+      const stored = tasks.findDescription(id);
+      if (!stored) throw new NotFoundError('task', id);
+      return toDescriptionOutput(id, parseDescription(stored.descriptionJson), stored.updatedAt);
+    },
+
+    /**
+     * Autosave of the notes. An empty document is stored as no notes (`null`); the plain text for
+     * search is always derived here from the document, never taken from the renderer. Documents
+     * nested deeper than `DESCRIPTION_MAX_DEPTH` are refused as invalid input.
+     */
+    updateDescription: (input: UpdateDescriptionInput): DescriptionOutput => {
+      // Before any recursive walk of the document (plain text, emptiness, later remapping).
+      if (exceedsNodeDepth(input.json, DESCRIPTION_MAX_DEPTH)) {
+        throw new InvalidInputError(`Notes nested deeper than ${DESCRIPTION_MAX_DEPTH} levels`);
+      }
+      return tx.run(() => {
+        const current = requireTask(input.id);
+        const doc = input.json as DocNode | null;
+        const empty = isEmptyDescription(doc);
+        const updatedAt = clock.now();
+        tasks.update(current.id, {
+          descriptionJson: empty ? null : JSON.stringify(doc),
+          descriptionText: empty ? null : descriptionText(doc),
+          updatedAt,
+        });
+        return toDescriptionOutput(current.id, empty ? null : doc, updatedAt);
+      });
+    },
   };
 }
 

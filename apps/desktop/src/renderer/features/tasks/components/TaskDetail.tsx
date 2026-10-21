@@ -16,6 +16,14 @@ const SubtaskSection = lazy(() =>
   import('./subtasks/SubtaskSection').then((m) => ({ default: m.SubtaskSection })),
 );
 const TaskTags = lazy(() => import('./tags/TaskTags').then((m) => ({ default: m.TaskTags })));
+// The editor (Tiptap) is the heaviest part of the window: its own chunk, loaded on first open.
+const NotesEditor = lazy(() => import('./notes/NotesEditor'));
+const AttachmentSection = lazy(() =>
+  import('./attachments/AttachmentSection').then((m) => ({ default: m.AttachmentSection })),
+);
+const AttachmentDropTarget = lazy(() =>
+  import('./attachments/AttachmentDropTarget').then((m) => ({ default: m.AttachmentDropTarget })),
+);
 
 /** Focuses the first element found among `selectors`, waiting a few frames for it to render. */
 function focusSoon(selectors: readonly string[], frames = 10) {
@@ -127,9 +135,24 @@ export function TaskDetail({ board, today }: { board: BoardDetail; today: string
               ),
             }
           : {})}
+        notes={
+          <Suspense fallback={<div className="min-h-24 w-full" />}>
+            <NotesEditor key={task.id} boardId={board.id} taskId={task.id} />
+          </Suspense>
+        }
         tags={
           <Suspense fallback={null}>
             <TaskTags boardId={board.id} task={task} />
+          </Suspense>
+        }
+        attachments={
+          <Suspense fallback={null}>
+            <AttachmentSection key={task.id} boardId={board.id} taskId={task.id} />
+          </Suspense>
+        }
+        dropTarget={
+          <Suspense fallback={null}>
+            <AttachmentDropTarget key={task.id} boardId={board.id} taskId={task.id} />
           </Suspense>
         }
       />

@@ -55,6 +55,8 @@ function mockApi() {
       case 'tasks.delete':
         list = list.filter((s) => s.id !== input['id']);
         return { id: input['id'] };
+      case 'attachments.list':
+        return [];
       default:
         return input;
     }

@@ -52,6 +52,10 @@
   --text-display: 28px;
   /* Text fields (rename field, name of a copy): the 14 px base size, set explicitly on inputs. */
   --text-input: 14px;
+  /* Task notes (mockup notes-attachments/NotesEditor A): body and level 3 heading, level 1, level 2. */
+  --text-note: 14.5px;
+  --text-note-h1: 20px;
+  --text-note-h2: 16px;
 
   /* Strong border (text fields, drag previews, drop slots). */
   --border-width-strong: 1.5px;
@@ -62,11 +66,20 @@
   --spacing-header: 54px;
   /* Through a variable on :root: the card tag line reads it at run time (CardTags). */
   --spacing-column: var(--column-width);
-  --spacing-popover: 340px;
+  /* Through variables on :root: the notes editor reads them at run time to keep its floating parts inside. */
+  --spacing-popover: var(--popover-width);
   --spacing-popover-sm: 320px;
   /* Tag picker under the "+" of the detail properties (mockup tags-subtasks/TagPicker A). */
   --spacing-popover-xs: 300px;
   --spacing-menu: 236px;
+  /* "/" block menu of the notes (task-detail/FullScreen). */
+  --spacing-menu-blocks: var(--menu-blocks-width);
+  /* ⋯ menu of an attachment tile (notes-attachments/Attachments A). */
+  --spacing-menu-file: 250px;
+  /* Address in the link bubble, truncated beyond (notes-attachments/NoteLinks A). */
+  --spacing-bubble-label: 170px;
+  /* Space between a line of text (or a table) and what floats under or beside it. */
+  --spacing-float-gap: var(--float-gap);
   --spacing-icon-grid: 148px;
   --spacing-detail: 1040px;
   --spacing-detail-full: 1120px;
@@ -83,6 +96,9 @@
 @layer base {
   :root {
     --column-width: 296px;
+    --popover-width: 340px;
+    --menu-blocks-width: 280px;
+    --float-gap: 6px;
   }
   html,
   body,

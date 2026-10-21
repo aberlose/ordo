@@ -111,13 +111,22 @@ export interface TaskWithDescription extends TaskRecord {
 
 export type TaskPatch = Partial<
   Pick<TaskRecord, 'title' | 'columnId' | 'priority' | 'startDate' | 'dueDate' | 'rank' | 'completedAt'>
-> & { readonly updatedAt: number };
+> &
+  Partial<Pick<TaskWithDescription, 'descriptionJson' | 'descriptionText'>> & { readonly updatedAt: number };
+
+/** The stored notes of a task: serialised ProseMirror JSON, `null` for no notes. */
+export interface StoredDescription {
+  readonly descriptionJson: string | null;
+  readonly updatedAt: number;
+}
 
 export interface TaskRepository {
   /** Top-level, not deleted, not archived tasks of a board, ordered by rank. */
   listTopLevelByBoard(boardId: string): TaskRecord[];
   /** A task that is not deleted. */
   findById(id: string): TaskRecord | null;
+  /** The notes of a task that is not deleted. */
+  findDescription(id: string): StoredDescription | null;
   /** Highest rank in the column, deleted tasks included (a restored task must not collide). */
   lastRankInColumn(columnId: string): Rank | null;
   /**
@@ -215,4 +224,96 @@ export interface TagRepository {
   removeLinksOfTag(tagId: string): void;
   /** Bulk insert (board duplication). */
   insertLinks(links: readonly TaskTagLink[]): void;
+}
+
+export interface AttachmentRecord {
+  readonly id: string;
+  readonly taskId: string;
+  /** Original (normalised) file name, shown on the tile. */
+  readonly fileName: string;
+  /** Relative to the attachments folder (`attachmentStoredPath`). */
+  readonly storedPath: string;
+  readonly mimeType: string | null;
+  readonly sizeBytes: number | null;
+  readonly createdAt: number;
+}
+
+/** Number of attachments of a task (only tasks that have some). */
+export interface AttachmentCount {
+  readonly taskId: string;
+  readonly count: number;
+}
+
+export interface AttachmentRepository {
+  /** A task's attachments, oldest first. */
+  listByTask(taskId: string): AttachmentRecord[];
+  /** Attachments of the given tasks, oldest first (board duplication). */
+  listByTasks(taskIds: readonly string[]): AttachmentRecord[];
+  findById(id: string): AttachmentRecord | null;
+  insert(record: AttachmentRecord): void;
+  /** Bulk insert (board duplication). */
+  insertMany(records: readonly AttachmentRecord[]): void;
+  /** Permanent: the row only (the file is removed by the use case after the commit). */
+  delete(id: string): void;
+  /** Counts of every task of the board that has attachments (one grouped query). */
+  countByBoard(boardId: string): AttachmentCount[];
+  /** Counts of the given tasks that have attachments. */
+  countOf(taskIds: readonly string[]): AttachmentCount[];
+  /** Stored path of every attachment row, trashed tasks included (orphan file sweep). */
+  listStoredPaths(): string[];
+}
+
+/** What a source path given by the renderer points to. */
+export type SourceFile =
+  { readonly kind: 'file'; readonly size: number } | { readonly kind: 'missing' | 'not-a-file' };
+
+/**
+ * The attachments folder (`<userData>/attachments/`). Stored paths are relative to it; the storage
+ * refuses any path that would resolve outside of it.
+ */
+export interface AttachmentStorage {
+  /** Looks at a file the user dropped or picked, without reading it. */
+  inspect(sourcePath: string): Promise<SourceFile>;
+  /**
+   * Copies an outside file into the folder (streamed from the handle it opened and checked to be a
+   * regular file; `Error('Not a file')` otherwise); returns the stored size in bytes. The system's
+   * "downloaded from the internet" mark is carried over where Node can read it (best effort).
+   */
+  importFile(sourcePath: string, storedPath: string): Promise<number>;
+  /** Writes bytes (a pasted image) into the folder; returns the stored size in bytes. */
+  writeData(storedPath: string, bytes: Uint8Array): Promise<number>;
+  /** Copies a stored file to another stored path (board duplication); returns the size in bytes. */
+  copyStored(fromStoredPath: string, toStoredPath: string): Promise<number>;
+  /** Removes a stored file; `false` when it was already gone. */
+  remove(storedPath: string): Promise<boolean>;
+  /** Absolute path of a stored file, checked to stay inside the folder. */
+  absolutePath(storedPath: string): string;
+  /** Whether a stored file is still on disk. */
+  exists(storedPath: string): Promise<boolean>;
+  /** Mime type from the file name's extension, `null` when unknown. */
+  mimeTypeOf(fileName: string): string | null;
+  /** Usual extension of a mime type (without the dot), `null` when unknown. */
+  extensionOf(mimeType: string): string | null;
+  /** Regular, non-hidden files of the folder with their last modification time (orphan sweep). */
+  listStored(): Promise<StoredFileInfo[]>;
+}
+
+export interface StoredFileInfo {
+  readonly storedPath: string;
+  /** Unix ms. */
+  readonly modifiedAt: number;
+}
+
+/** The operating system's side of attachments (Electron's `shell` and `dialog`). */
+export interface DesktopShell {
+  /** Native "open files" dialog (several files); `[]` when cancelled. */
+  pickFiles(): Promise<string[]>;
+  /** Opens a file with its default application; `''` on success, else the system's error message. */
+  openPath(absolutePath: string): Promise<string>;
+  /** Shows the file in the Finder / Explorer. */
+  showItemInFolder(absolutePath: string): void;
+}
+
+export interface Logger {
+  warn(message: string, error?: unknown): void;
 }

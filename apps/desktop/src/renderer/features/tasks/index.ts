@@ -4,3 +4,4 @@ export { TaskDetail } from './components/TaskDetail';
 export { useTaskMoves } from './dnd/useTaskMoves';
 export { useTaskUi } from './store';
 export { cardDropDataForBoard, cardDropDataForColumn, isTaskDrag } from './dnd/state';
+export { installNotesFlush } from './hooks/notes';

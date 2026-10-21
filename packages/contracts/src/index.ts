@@ -2,6 +2,7 @@ export * from './channels';
 export * from './contract';
 export * from './result';
 export * from './schemas';
+export * from './attachments';
 export * from './boards';
 export * from './columns';
 export * from './tags';

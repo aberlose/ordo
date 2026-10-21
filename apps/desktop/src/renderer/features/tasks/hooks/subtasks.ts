@@ -122,6 +122,7 @@ export function useCreateSubtask(boardId: string) {
           updatedAt: now,
           tagIds: [],
           subtasks: { done: 0, total: 0 },
+          attachmentCount: 0,
         };
         return [...list, temp];
       });

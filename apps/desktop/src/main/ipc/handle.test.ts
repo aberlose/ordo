@@ -1,6 +1,6 @@
 import type { IpcMainInvokeEvent } from 'electron';
 import { describe, expect, it } from 'vitest';
-import { ConflictError, NotFoundError, RuleViolationError } from '../application/errors';
+import { ConflictError, InvalidInputError, NotFoundError, RuleViolationError } from '../application/errors';
 import { registerHandlers, type Handlers } from './handle';
 
 type Listener = (event: IpcMainInvokeEvent, raw: unknown) => unknown;
@@ -50,6 +50,24 @@ function setup(overrides: Partial<Handlers> = {}) {
     'tasks.removeTag': () => {
       throw new Error('not used');
     },
+    'tasks.getDescription': ({ id }) => ({ id, json: null, updatedAt: 1 }),
+    'tasks.updateDescription': ({ id, json }) => ({ id, json, updatedAt: 2 }),
+    'attachments.list': () => [],
+    'attachments.add': ({ paths }) => ({
+      attachments: [],
+      failures: paths.map((path) => ({ path, fileName: 'a.pdf', message: 'File not found' })),
+    }),
+    'attachments.pick': () => ({ attachments: [], failures: [] }),
+    'attachments.addData': ({ mimeType }) => {
+      throw new InvalidInputError(`Only images can be pasted (${mimeType})`);
+    },
+    'attachments.open': ({ id }) => {
+      throw new RuleViolationError(`Could not open ${id}: no application`);
+    },
+    'attachments.reveal': ({ id }) => {
+      throw new NotFoundError('attachment file', id);
+    },
+    'attachments.delete': async ({ id }) => ({ id }),
     'tags.create': () => {
       throw new ConflictError('A tag named "x" already exists on the board');
     },
@@ -144,5 +162,73 @@ describe('IPC adapter', () => {
       ok: false,
       error: { code: 'invalid_input' },
     });
+  });
+
+  it('serves the notes and attachment channels', async () => {
+    const { invoke } = setup();
+    const id = '0192f0a0-0000-7000-8000-000000000001';
+    const doc = { type: 'doc', content: [{ type: 'paragraph' }] };
+    expect(await invoke('tasks.getDescription', { id })).toEqual({
+      ok: true,
+      data: { id, json: null, updatedAt: 1 },
+    });
+    expect(await invoke('tasks.updateDescription', { id, json: doc })).toEqual({
+      ok: true,
+      data: { id, json: doc, updatedAt: 2 },
+    });
+    expect(await invoke('tasks.updateDescription', { id, json: { type: 'paragraph' } })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('attachments.add', { taskId: id, paths: ['/x/a.pdf'] })).toMatchObject({
+      ok: true,
+      data: { failures: [{ path: '/x/a.pdf', message: 'File not found' }] },
+    });
+    expect(await invoke('attachments.add', { taskId: id, paths: [] })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(
+      await invoke('attachments.addData', {
+        taskId: id,
+        fileName: 'a.png',
+        mimeType: 'image/png',
+        bytes: [1],
+      }),
+    ).toMatchObject({ ok: false, error: { code: 'invalid_input' } });
+    expect(
+      await invoke('attachments.addData', {
+        taskId: id,
+        fileName: 'a.svg',
+        mimeType: 'image/svg+xml',
+        bytes: new Uint8Array([1]),
+      }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input', message: expect.stringContaining('images') },
+    });
+    // So deep that the schema's own refinement overflows the stack: refused, not thrown.
+    let deep: Record<string, unknown> = { type: 'text', text: 'x' };
+    for (let i = 0; i < 200_000; i += 1) deep = { type: 'paragraph', content: [deep] };
+    expect(
+      await invoke('tasks.updateDescription', { id, json: { type: 'doc', content: [deep] } }),
+    ).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('attachments.pick', { taskId: id })).toEqual({
+      ok: true,
+      data: { attachments: [], failures: [] },
+    });
+    expect(await invoke('attachments.open', { id })).toMatchObject({
+      ok: false,
+      error: { code: 'conflict', message: expect.stringContaining('no application') },
+    });
+    expect(await invoke('attachments.reveal', { id })).toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
+    expect(await invoke('attachments.delete', { id })).toEqual({ ok: true, data: { id } });
+    expect(await invoke('attachments.list', { taskId: id })).toEqual({ ok: true, data: [] });
   });
 });

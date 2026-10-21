@@ -70,6 +70,7 @@ export function useCreateTask(boardId: string) {
           updatedAt: now,
           tagIds: [],
           subtasks: { done: 0, total: 0 },
+          attachmentCount: 0,
         };
         return { ...board, taskCount: board.taskCount + 1, tasks: [...board.tasks, temp] };
       });

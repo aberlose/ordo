@@ -52,6 +52,7 @@ const task = (columnIndex: number, rank: string, fields: Partial<Task> & { title
   updatedAt: at - 2 * 3_600_000,
   tagIds: [],
   subtasks: { done: 0, total: 0 },
+  attachmentCount: 0,
   ...fields,
 });
 

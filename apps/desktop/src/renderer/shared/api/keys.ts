@@ -19,3 +19,12 @@ export const taskKeys = {
   /** Not under `detail(parentId)`: invalidating the parent's own task leaves its list alone. */
   subtasks: (parentId: string) => ['subtasks', parentId] as const,
 };
+
+/** A task's attachments and notes (detail window). */
+export const attachmentKeys = {
+  all: ['attachments'] as const,
+  list: (taskId: string) => ['attachments', taskId] as const,
+};
+export const descriptionKeys = {
+  detail: (taskId: string) => ['description', taskId] as const,
+};

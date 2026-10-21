@@ -90,6 +90,13 @@ export function taskRepository(db: Db): TaskRepository {
       return row ? toRecord(row) : null;
     },
 
+    findDescription: (id) =>
+      db
+        .select({ descriptionJson: task.descriptionJson, updatedAt: task.updatedAt })
+        .from(task)
+        .where(and(eq(task.id, id), live))
+        .get() ?? null,
+
     // Deleted tasks count too: a task restored from the trash must never share a rank. Sub-tasks do
     // not: their rank is their place in the parent's list.
     lastRankInColumn: (columnId) =>
