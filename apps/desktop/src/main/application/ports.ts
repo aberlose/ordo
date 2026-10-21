@@ -226,6 +226,48 @@ export interface TagRepository {
   insertLinks(links: readonly TaskTagLink[]): void;
 }
 
+/** A task found by full-text search (or recently opened), with where it lives. */
+export interface SearchHitRecord {
+  readonly id: string;
+  readonly title: string;
+  readonly parentId: string | null;
+  readonly parentTitle: string | null;
+  readonly boardId: string;
+  readonly boardName: string;
+  readonly boardIcon: string | null;
+  readonly boardColor: ColumnColor | null;
+  readonly columnId: string;
+  readonly columnName: string;
+  readonly columnIcon: string | null;
+  readonly columnColor: ColumnColor;
+  readonly columnCategory: ColumnCategory;
+  readonly priority: Priority;
+  readonly dueDate: CalendarDay | null;
+  readonly completedAt: number | null;
+  /** Tag names, sorted alphabetically (case ignored). */
+  readonly tagNames: readonly string[];
+}
+
+/**
+ * The full-text index (title, notes text, tag names). `ftsQuery` is built by the domain's
+ * `toFtsQuery`, never raw user text. Only live tasks (not deleted, not archived) of live boards are
+ * returned, and a sub-task only while its parent is live.
+ */
+export interface SearchRepository {
+  /** Ids of the matching top-level tasks of a board (archived or not), no limit, in no particular order. */
+  boardTaskIds(boardId: string, ftsQuery: string): string[];
+  /** Matching tasks and sub-tasks of the non-archived boards, best first (title > tags > notes). */
+  searchTasks(ftsQuery: string, limit: number): SearchHitRecord[];
+  /** The given tasks that are still shown (live, non-archived board), in the given order. */
+  hits(ids: readonly string[]): SearchHitRecord[];
+}
+
+/** Key–value app settings (table `setting`). */
+export interface SettingRepository {
+  get(key: string): string | null;
+  set(key: string, value: string): void;
+}
+
 export interface AttachmentRecord {
   readonly id: string;
   readonly taskId: string;

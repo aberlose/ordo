@@ -27,7 +27,7 @@ packages/contracts (channels + Zod schemas + types) is imported by renderer, pre
 4. The `moveTask` use case checks the neighbours, ranks the task between `before` and its true successor in the database (so a stale client can never create a duplicate rank) and writes the single row in a transaction. `columns.move` works the same way for columns.
 5. On error the board is reloaded from the database (moves can overlap, so no snapshot rollback) and the error toast offers to retry.
 
-Columns are virtualised (TanStack Virtual): only the visible cards plus a small overscan are in the DOM; the focused card is always kept rendered. `e2e/performance.spec.ts` seeds 10,000 tasks and checks the cold-start budget, the virtualisation and a keyboard move.
+Columns are virtualised (TanStack Virtual): only the visible cards plus a small overscan are in the DOM; the focused card is always kept rendered. `e2e/performance.spec.ts` seeds 10,000 tasks and checks the cold-start budget, the virtualisation and a keyboard move. `search.integration.test.ts` (main) seeds 10,000 tasks with notes in SQLite and checks that `search.tasks` and `search.boardTaskIds` stay under 50 ms (median after a warm-up).
 
 ## Folder structure
 
@@ -97,7 +97,7 @@ Target: a board of 10,000 tasks stays fluid. Measured in CI on a generated datas
 | ------------------------- | --------- | ------------------------------------------------------------------------------------ |
 | Cold start to board shown | < 1.5 s   | Show window when ready, lazy-load editor and secondary views, prefetch current board |
 | Drag and drop             | 60 fps    | Pragmatic DnD, memoised cards, virtualised columns, one row written thanks to `rank` |
-| Search on 10,000 tasks    | < 50 ms   | FTS5 index, 150 ms input debounce                                                    |
+| Search on 10,000 tasks    | < 50 ms   | FTS5 index (bm25 ranks first, joins only the best rows), 150 ms input debounce       |
 | Open a task               | < 100 ms  | Primary-key query, editor kept loaded after first use                                |
 | Idle memory               | < 300 MB  | One window, no heavy library at startup                                              |
 | Note save                 | Invisible | Autosave 500 ms after last keystroke, in a transaction                               |

@@ -8,6 +8,9 @@ import type {
   ColumnRecord,
   ColumnRepository,
   DesktopShell,
+  SearchHitRecord,
+  SearchRepository,
+  SettingRepository,
   SubtaskCount,
   TagRecord,
   TagRepository,
@@ -280,6 +283,83 @@ export function inMemoryRepositories() {
     insertLinks: (links) => void linkRows.push(...links.map((l) => ({ ...l }))),
   };
 
+  /**
+   * Naive full-text search for use-case tests: every quoted term of the FTS query must start a word
+   * of the title, notes or tag names (case and accents ignored). Ranking is not simulated.
+   */
+  const fold = (text: string) =>
+    text
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .toLowerCase();
+  const termsOf = (ftsQuery: string) => [...ftsQuery.matchAll(/"([^"]*)"/g)].map((m) => fold(m[1] ?? ''));
+  const tagNamesOf = (taskId: string) =>
+    linkRows
+      .filter((l) => l.taskId === taskId)
+      .flatMap((l) => tagRows.find((t) => t.id === l.tagId)?.name ?? [])
+      .sort((a, b) => a.localeCompare(b));
+  const matches = (task: TaskRow, ftsQuery: string) => {
+    const words = fold([task.title, task.descriptionText ?? '', ...tagNamesOf(task.id)].join(' ')).split(
+      /[^\p{L}\p{N}]+/u,
+    );
+    return termsOf(ftsQuery).every((term) => words.some((word) => word.startsWith(term)));
+  };
+  const hitOf = (task: TaskRow): SearchHitRecord | null => {
+    const board = boardRows.find((b) => b.id === task.boardId);
+    const column = columnRows.find((c) => c.id === task.columnId);
+    const parent = task.parentId === null ? null : taskRows.find((t) => t.id === task.parentId);
+    const shown =
+      task.deletedAt === null &&
+      task.archivedAt === null &&
+      board !== undefined &&
+      board.archivedAt === null &&
+      column !== undefined &&
+      (parent === null || (parent !== undefined && parent.deletedAt === null && parent.archivedAt === null));
+    if (!shown) return null;
+    return {
+      id: task.id,
+      title: task.title,
+      parentId: task.parentId,
+      parentTitle: parent?.title ?? null,
+      boardId: board.id,
+      boardName: board.name,
+      boardIcon: board.icon,
+      boardColor: board.color,
+      columnId: column.id,
+      columnName: column.name,
+      columnIcon: column.icon,
+      columnColor: column.color,
+      columnCategory: column.category,
+      priority: task.priority,
+      dueDate: task.dueDate,
+      completedAt: task.completedAt,
+      tagNames: tagNamesOf(task.id),
+    };
+  };
+  const search: SearchRepository = {
+    boardTaskIds: (boardId, ftsQuery) =>
+      liveTasks()
+        .filter((t) => t.boardId === boardId && t.parentId === null && t.archivedAt === null)
+        .filter((t) => matches(t, ftsQuery))
+        .map((t) => t.id),
+    searchTasks: (ftsQuery, limit) =>
+      taskRows
+        .filter((t) => matches(t, ftsQuery))
+        .flatMap((t) => hitOf(t) ?? [])
+        .slice(0, limit),
+    hits: (ids) =>
+      [...new Set(ids)].flatMap((id) => {
+        const task = taskRows.find((t) => t.id === id);
+        return (task && hitOf(task)) ?? [];
+      }),
+  };
+
+  const settingRows = new Map<string, string>();
+  const settings: SettingRepository = {
+    get: (key) => settingRows.get(key) ?? null,
+    set: (key, value) => void settingRows.set(key, value),
+  };
+
   let attachmentRows: AttachmentRecord[] = [];
   const byCreation = (a: AttachmentRecord, b: AttachmentRecord) =>
     a.createdAt - b.createdAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -399,9 +479,10 @@ export function inMemoryRepositories() {
     failures,
     shellCalls,
     shellState,
+    settingRows,
   };
 
-  return { boards, columns, tasks, tags, attachments, storage, shell, testing };
+  return { boards, columns, tasks, tags, attachments, storage, shell, search, settings, testing };
 }
 
 export function fixedDeps(now = 1_760_000_000_000) {

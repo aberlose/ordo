@@ -9,7 +9,8 @@ Schema changes go through Drizzle migrations only, and only after the user has a
 - **Order uses fractional keys** (`rank`, text, e.g. via `fractional-indexing`): moving a card writes one row, whatever the column size. Never renumber.
 - **Status = column.** `task.column_id` carries the status; `board_column.category` (`todo`, `in_progress`, `done`) gives it business meaning.
 - **Description stored twice:** editor JSON (`description_json`, for rendering) and plain text (`description_text`, for search).
-- **Search uses FTS5**, kept in sync by triggers.
+- **Search uses FTS5** (`task_fts`, migration `0003`), kept in sync by triggers; see [Full-text search](#full-text-search).
+- **Recently opened tasks** (palette) are the setting `recentTasks`: a JSON array of task ids, most recent first, at most 5 (`pushRecent`). A missing or unreadable value reads as an empty list; entries no longer shown (deleted task, archived board) are skipped on read and dropped on the next write.
 - **Soft delete** (`deleted_at`) backs both the trash (purged after 30 days) and undo; purging a task also deletes its attachment rows and files.
 - **Dates:** `start_date` / `due_date` are calendar days (`YYYY-MM-DD`), no time, no timezone. Timestamps (`*_at`) are Unix epoch milliseconds.
 - **Sub-tasks:** one level only — a task whose `parent_id` is set cannot itself be a parent (enforced in the domain).
@@ -82,13 +83,30 @@ CREATE TABLE attachment (
   created_at INTEGER NOT NULL
 );
 
+-- Own copy of the searched text (not external content); see "Full-text search" below.
 CREATE VIRTUAL TABLE task_fts USING fts5(
-  title, description_text, tags,
-  content='', tokenize='unicode61 remove_diacritics 2'
+  task_id, title, description_text, tags,
+  tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3'
 );
 
 CREATE TABLE setting (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- language, theme, …
 ```
+
+## Full-text search
+
+`task_fts` (migration `0003`, raw SQL: not declared in `schema.ts`, which drizzle-kit ignores) holds one row per task, deleted ones included:
+
+| Column             | Content                                                    | bm25 weight |
+| ------------------ | ---------------------------------------------------------- | ----------- |
+| `task_id`          | `task.id`; indexed only so that triggers find the row fast | 0           |
+| `title`            | `task.title`                                               | 10          |
+| `description_text` | `task.description_text` (`''` when no notes)               | 1           |
+| `tags`             | names of the task's tags, joined by spaces                 | 5           |
+
+- **Tokenizer:** `unicode61 remove_diacritics 2`, so case and accents are ignored (`ete` finds `Été`); prefix indexes for 2 and 3 characters.
+- **Queries** come from the domain's `toFtsQuery`: each typed word quoted and used as a prefix (`"head"*`), all words required. The repository restricts them to `{title description_text tags}` (ids are never searched) and binds them as parameters. Results leave out deleted or archived tasks, tasks of deleted columns, archived boards and sub-tasks whose parent is gone. The palette's search ranks with `bm25(task_fts, 0, 10, 1, 5)`, then newest first; it ranks all matches in the index, then joins only the best 4 × limit rows (all rows when that does not fill the limit).
+- **Triggers:** `task` AFTER INSERT (new row, current tags), AFTER UPDATE OF `title`, `description_text` (copy both), AFTER DELETE (remove the row: purge); `task_tag` AFTER INSERT / AFTER DELETE (recompute the task's `tags`); `tag` AFTER UPDATE OF `name` (recompute `tags` for every task carrying it). Deleting a tag removes its `task_tag` links first (no cascade), so the link trigger covers it. A trigger finds a task's row by `MATCH 'task_id : "<last 12 characters of the id>"'` plus `task_id = id`, through the index rather than a scan of the table.
+- **Soft delete and archive** do not touch the index: queries filter on `deleted_at` / `archived_at`.
 
 ## Planned (V1)
 
