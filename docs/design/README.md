@@ -44,3 +44,4 @@ The clarity of Jira, the restraint of LiteLLM, with a vivid blue/violet identity
 - **Boards** (create, menu, archives, reorder) — approved 2026-10-14: `mockups/boards/`.
 - **Tags and sub-tasks** (tag picker and management, sub-task rows and window, tags on a card) — approved 2026-10-16: `mockups/tags-subtasks/`.
 - **Rich notes and attachments** (editor, links, image and table, attachment tiles) — approved 2026-10-19: `mockups/notes-attachments/`.
+- **Search in the palette** (results on this board and others, sub-tasks, no result) — approved 2026-10-21: `mockups/search-palette/`.
