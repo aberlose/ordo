@@ -31,23 +31,34 @@ test('filter the board, search across boards from the palette, and reopen a rece
     const [board] = unwrap(await api.invoke('boards.list', {}));
     const detail = unwrap(await api.invoke('boards.get', { id: board!.id }));
     const todo = detail.columns[0]!.id;
-    const header = unwrap(await api.invoke('tasks.create', { columnId: todo, title: 'Intégrer le nouveau header' }));
+    const header = unwrap(
+      await api.invoke('tasks.create', { columnId: todo, title: 'Intégrer le nouveau header' }),
+    );
     await api.invoke('tasks.update', { id: header.id, priority: 5 });
     unwrap(await api.invoke('tasks.create', { columnId: todo, title: 'Maquetter la page tarifs' }));
-    const notes = unwrap(await api.invoke('tasks.create', { columnId: todo, title: 'Revoir le pied de page' }));
+    const notes = unwrap(
+      await api.invoke('tasks.create', { columnId: todo, title: 'Revoir le pied de page' }),
+    );
     unwrap(
       await api.invoke('tasks.updateDescription', {
         id: notes.id,
         json: {
           type: 'doc',
-          content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Aligner avec le Héadér du site' }] }],
+          content: [
+            { type: 'paragraph', content: [{ type: 'text', text: 'Aligner avec le Héadér du site' }] },
+          ],
         },
       }),
     );
     const other = unwrap(
       await api.invoke('boards.create', { name: 'Veille tech', columnNames: ['À lire', 'En cours', 'Lu'] }),
     );
-    unwrap(await api.invoke('tasks.create', { columnId: other.columns[0]!.id, title: 'Sticky headers done right' }));
+    unwrap(
+      await api.invoke('tasks.create', {
+        columnId: other.columns[0]!.id,
+        title: 'Sticky headers done right',
+      }),
+    );
   });
   await app.close();
   app = await launch(dataDir);
@@ -78,7 +89,10 @@ test('filter the board, search across boards from the palette, and reopen a rece
   await expect(cards(page)).toHaveCount(3);
 
   // Filter buttons: the priority menu.
-  await page.getByRole('button', { name: /Priorité/ }).first().click();
+  await page
+    .getByRole('button', { name: /Priorité/ })
+    .first()
+    .click();
   await page.getByRole('menuitemcheckbox', { name: /Très haute/ }).click();
   await page.keyboard.press('Escape');
   await expect(cards(page)).toHaveCount(1);
@@ -102,7 +116,9 @@ test('filter the board, search across boards from the palette, and reopen a rece
   await page.keyboard.press(`${mod}+K`);
   await expect(page.getByText('Récemment ouvertes')).toBeVisible();
   await expect(
-    page.getByRole('dialog', { name: 'Palette de commandes' }).getByRole('option', { name: /Sticky headers done right/ }),
+    page
+      .getByRole('dialog', { name: 'Palette de commandes' })
+      .getByRole('option', { name: /Sticky headers done right/ }),
   ).toBeVisible();
   await page.keyboard.press('Escape');
   await app.close();
