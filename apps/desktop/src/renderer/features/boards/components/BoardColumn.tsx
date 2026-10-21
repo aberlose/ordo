@@ -35,6 +35,8 @@ export interface BoardColumnProps {
   totalCount?: number;
   /** Board filters may hide cards. */
   filtered?: boolean;
+  /** The filters' text result is on its way. */
+  filterPending?: boolean;
   today: string;
   /** Empty board: call to action in the first column, drop hint in the others. */
   emptyHint: 'first' | 'other' | null;
@@ -59,6 +61,7 @@ export const BoardColumn = memo(
     tasks,
     totalCount = tasks.length,
     filtered = false,
+    filterPending = false,
     today,
     emptyHint,
     usedColors,
@@ -212,6 +215,7 @@ export const BoardColumn = memo(
           onKeyboardMove={onKeyboardMoveTask}
           onNavigate={onNavigateTask}
           filtered={filtered}
+          filterPending={filterPending}
         />
       </section>
     );
@@ -229,6 +233,7 @@ export const BoardColumn = memo(
     previous.onNavigateTask === next.onNavigateTask &&
     previous.totalCount === next.totalCount &&
     previous.filtered === next.filtered &&
+    previous.filterPending === next.filterPending &&
     previous.tasks.length === next.tasks.length &&
     previous.tasks.every((task, i) => task === next.tasks[i]),
 );

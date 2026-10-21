@@ -10,3 +10,8 @@ export const isMac = (): boolean => typeof navigator !== 'undefined' && /Mac/i.t
 export function altKey(): string {
   return isMac() ? '⌥' : 'Alt';
 }
+
+/** Shift key label: ⇧ on macOS, Shift elsewhere. */
+export function shiftKey(): string {
+  return isMac() ? '⇧' : 'Shift';
+}

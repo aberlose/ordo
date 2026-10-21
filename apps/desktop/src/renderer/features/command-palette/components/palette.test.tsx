@@ -1,4 +1,4 @@
-import type { BoardSummary, SearchHit } from '@ordo/contracts';
+import type { BoardDetail, BoardSummary, SearchHit, Task } from '@ordo/contracts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import { useState, type ReactNode } from 'react';
@@ -58,21 +58,27 @@ const otherHit = hit({
 });
 
 let searchResults: SearchHit[] = [];
+let shownBoard: BoardDetail = board;
+/** Ids `search.boardTaskIds` returns; by default this board's card hits. */
+let boardIds: string[] | null = null;
+let searchFails = false;
 const invoke = vi.fn(async (channel: string, input: unknown) => {
   const data = (() => {
     switch (channel) {
       case 'boards.list':
         return boards;
       case 'boards.get':
-        return board;
+        return shownBoard;
       case 'recent.list':
         return [headerHit, subtaskHit];
       case 'recent.record':
         return {};
       case 'search.tasks':
+        if (searchFails) return { error: true };
         return searchResults;
       case 'search.boardTaskIds': {
         const text = (input as { text: string }).text;
+        if (boardIds) return { taskIds: boardIds };
         return {
           taskIds: searchResults
             .filter((h) => h.boardId === board.id && !h.parentId && text)
@@ -83,6 +89,9 @@ const invoke = vi.fn(async (channel: string, input: unknown) => {
         throw new Error(`Unexpected ${channel}`);
     }
   })();
+  if (data && typeof data === 'object' && 'error' in data) {
+    return { ok: false, error: { code: 'internal', message: 'Search failed' } };
+  }
   return { ok: true, data };
 });
 
@@ -98,11 +107,14 @@ beforeEach(() => {
   );
   Element.prototype.scrollIntoView = vi.fn();
   searchResults = [];
+  shownBoard = board;
+  boardIds = null;
+  searchFails = false;
   invoke.mockClear();
   useSearchStore.setState({ byBoard: {}, preview: null });
   useTaskUi.setState({ openTaskId: null, quickAddColumnId: null });
   usePalette.setState({ open: false, initialQuery: '' });
-  useLayout.setState({ sidebarCollapsed: false });
+  useLayout.setState({ sidebarCollapsed: false, newColumnRequest: 0 });
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -279,6 +291,152 @@ describe('Palette — typed query', () => {
     await waitFor(() => expect(useTaskUi.getState().openTaskId).toBe(otherHit.id));
     expect(onShowBoard).toHaveBeenCalledWith(id(1));
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+/** A board of `count` cards titled "Tâche n", all in the first column. */
+function bigBoard(count: number): BoardDetail {
+  const cards: Task[] = Array.from({ length: count }, (_, i) => ({
+    ...board.tasks[0]!,
+    id: `01920000-0000-7000-8000-${String(i).padStart(12, '0')}`,
+    title: `Tâche ${i + 1}`,
+    priority: 3,
+    dueDate: null,
+    tagIds: [],
+    rank: `a${String(i).padStart(3, '0')}`,
+  }));
+  return { ...board, tags, taskCount: count, tasks: cards };
+}
+
+const lastInput = (channel: string) =>
+  invoke.mock.calls.filter(([c]) => c === channel).at(-1)?.[1] as Record<string, unknown> | undefined;
+
+describe('Palette — lot 7 review states', () => {
+  it('builds "Ce board" from every matching card past the search limit, 6 rows and a grey rest', async () => {
+    shownBoard = bigBoard(60);
+    boardIds = shownBoard.tasks.map((task) => task.id);
+    // The search limit: 50 hits, all on this board.
+    searchResults = shownBoard.tasks.slice(0, 50).map((task) => hit({ id: task.id, title: task.title }));
+    const input = renderPalette(board.id);
+    type(input, 'tâche');
+    const heading = await screen.findByText('Ce board · Refonte site client · 60');
+    const group = heading.parentElement!;
+    expect(within(group).getAllByRole('option')).toHaveLength(6);
+    const rest = within(group).getByText('+ 54 autres — ↵ sur Appliquer pour tout voir sur le board');
+    expect(rest.closest('[role="option"]')).toBeNull();
+    expect(screen.getByText('60 tâches sur 60 sur ce board — le board se met à jour en direct')).toBeTruthy();
+    fireEvent.keyDown(input, { key: 'Home' });
+    expect(screen.getByText('60 tâches sur 60 sur ce board — ↵ sur une tâche l’ouvre')).toBeTruthy();
+  });
+
+  it('sends the typed filters with the text so the limit applies after them, and cuts other boards at 6', async () => {
+    searchResults = Array.from({ length: 50 }, (_, i) =>
+      hit({
+        id: `01920000-0000-7000-8000-1${String(i).padStart(11, '0')}`,
+        title: `Header ${i}`,
+        priority: 5,
+        tagNames: ['Front'],
+        dueDate: '2020-01-01',
+        boardId: id(1),
+        boardName: 'Perso',
+      }),
+    );
+    const input = renderPalette(board.id);
+    await screen.findByText('Aller au board');
+    type(input, 'haute retard #front header');
+    await screen.findByText('Autres boards · 50+');
+    expect(lastInput('search.tasks')).toMatchObject({
+      text: 'header',
+      limit: 50,
+      priorities: [4, 5],
+      due: ['overdue'],
+      tagNames: ['front'],
+    });
+    expect(lastInput('search.tasks')?.['today']).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const group = screen.getByText('Autres boards · 50+').parentElement!;
+    expect(within(group).getAllByRole('option')).toHaveLength(6);
+    expect(within(group).getByText('+ 44 autres ou plus — affinez la recherche')).toBeTruthy();
+  });
+
+  it('counts "+ N autres" exactly when the search did not hit its limit', async () => {
+    searchResults = Array.from({ length: 8 }, (_, i) =>
+      hit({
+        id: `01920000-0000-7000-8000-2${String(i).padStart(11, '0')}`,
+        title: `Header ${i}`,
+        boardId: id(1),
+      }),
+    );
+    const input = renderPalette(board.id);
+    type(input, 'header');
+    await screen.findByText('Autres boards · 8');
+    expect(screen.getByText('+ 2 autres — affinez la recherche')).toBeTruthy();
+  });
+
+  it('with no board shown, finds tasks under "Tâches", ignores the typed filters and says so', async () => {
+    searchResults = [headerHit, otherHit];
+    const input = renderPalette(undefined);
+    type(input, 'haute header');
+    await screen.findByText('Tâches · 2');
+    expect(screen.getByText('Ouvrez un board pour filtrer')).toBeTruthy();
+    expect(lastInput('search.tasks')).toEqual({ text: 'header', limit: 50 });
+    expect(option(/Header de la newsletter perso/).textContent).toContain('Perso · À faire');
+    expect(screen.queryByText('Commandes')).toBeNull();
+  });
+
+  it('with no board shown and filters only, offers the boards to open instead of an empty list', async () => {
+    const input = renderPalette(undefined);
+    type(input, 'haute');
+    expect(screen.getByText('Ouvrez un board pour filtrer')).toBeTruthy();
+    await screen.findByText('Aller au board');
+    expect(option(/^Refonte site client/)).toBeTruthy();
+  });
+
+  it('says when the board has no card for filters only', async () => {
+    const input = renderPalette(board.id);
+    await screen.findByText('Aller au board');
+    type(input, '#back');
+    expect(screen.getByText('Ce board · Refonte site client · 0')).toBeTruthy();
+    expect(screen.getByText('Aucune tâche de ce board ne correspond aux filtres.')).toBeTruthy();
+    expect(screen.queryByText(/ni sur ce board ni ailleurs/)).toBeNull();
+    expect(option(/Appliquer comme filtres du board/)).toBeTruthy();
+  });
+
+  it('shows a failed search with "Réessayer", which searches again', async () => {
+    searchFails = true;
+    const input = renderPalette(board.id);
+    type(input, 'header');
+    expect((await screen.findByRole('alert')).textContent).toBe('La recherche a échoué.');
+    expect(option(/Appliquer comme filtres du board/)).toBeTruthy();
+    searchFails = false;
+    searchResults = [otherHit];
+    fireEvent.click(option(/^Réessayer/));
+    await screen.findByText('Autres boards · 1');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('"Nouvelle colonne" asks the board for its new-column popover, and needs a board', async () => {
+    renderPalette(board.id);
+    await screen.findByRole('option', { name: 'Nouvelle colonne' });
+    const actions = screen.getByText('Actions').parentElement!;
+    const names = within(actions)
+      .getAllByRole('option')
+      .map((row) => row.textContent);
+    expect(names.slice(0, 3)).toEqual(['Nouvelle tâcheN', 'Nouvelle colonne', 'Nouveau board']);
+    fireEvent.click(option('Nouvelle colonne'));
+    await waitFor(() => expect(useLayout.getState().newColumnRequest).toBe(1));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('hides "Nouvelle colonne" with no board shown', async () => {
+    renderPalette(undefined);
+    await screen.findByText('Aller au board');
+    expect(screen.queryByRole('option', { name: 'Nouvelle colonne' })).toBeNull();
+  });
+
+  it('labels the theme shortcut with words off macOS', async () => {
+    renderPalette(board.id);
+    await screen.findByText('Actions');
+    expect(option(/Basculer clair/).textContent).toBe('Basculer clair / sombreCtrlShiftL');
   });
 });
 

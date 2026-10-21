@@ -270,7 +270,7 @@ export function Sidebar({
       <button
         type="button"
         onClick={() => openPalette()}
-        className="mb-3 flex h-8 items-center gap-2 rounded-lg border border-border bg-surface px-2.5 text-left text-meta text-text-3"
+        className="mb-3 flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-2.5 text-left text-meta text-text-3 hover:bg-rail"
       >
         <Search size={14} aria-hidden />
         <span className="flex-1">{t('sidebar.search')}</span>

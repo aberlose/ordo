@@ -6,6 +6,7 @@ import { BoardView } from '@renderer/features/boards';
 import { boardKeys, searchKeys } from '@renderer/shared/api/keys';
 import { MainArea } from '@renderer/shared/ui/keyboard-help';
 import { columns, taggedBoard } from '@renderer/test/fixtures';
+import { paletteTasksKey } from '../hooks/usePaletteSearch';
 import { Palette } from './CommandPalette';
 
 const board = { ...taggedBoard, icon: 'kanban', color: 'blue' as const };
@@ -73,32 +74,61 @@ const headerHits: SearchHit[] = [
   }),
 ];
 
+/** "haute header": the header card here, a high task elsewhere. */
+const highHeaderHits: SearchHit[] = [
+  headerHits[0]!,
+  hit({
+    id: id(9),
+    title: 'Header sticky sur mobile',
+    priority: 4,
+    boardId: id(2),
+    boardName: 'Veille tech',
+    boardColor: 'violet',
+    columnName: 'À lire',
+  }),
+];
+/** Ten hits on other boards: six rows and "+ 4 autres — affinez la recherche". */
+const noteHits: SearchHit[] = Array.from({ length: 10 }, (_, i) =>
+  hit({
+    id: `01920000-0000-7000-8000-0000000007${String(i).padStart(2, '0')}`,
+    title: `Note de lecture ${i + 1}`,
+    boardId: i % 2 === 0 ? id(2) : id(3),
+    boardName: i % 2 === 0 ? 'Veille tech' : 'Déménagement',
+    boardColor: i % 2 === 0 ? 'violet' : 'amber',
+    columnName: 'À lire',
+  }),
+);
+
 function seeded(): QueryClient {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
   client.setQueryData(boardKeys.all, boards);
   client.setQueryData(boardKeys.detail(board.id), board);
   client.setQueryData(searchKeys.recent, recent);
-  client.setQueryData(searchKeys.tasks('header'), headerHits);
-  client.setQueryData(searchKeys.tasks('hedaer'), []);
-  const version = client.getQueryState(boardKeys.detail(board.id))?.dataUpdatedAt ?? 0;
-  client.setQueryData(searchKeys.board(board.id, 'header', version), { taskIds: [header.id, id(6)] });
-  client.setQueryData(searchKeys.board(board.id, 'hedaer', version), { taskIds: [] });
+  client.setQueryData(paletteTasksKey('header'), headerHits);
+  client.setQueryData(paletteTasksKey('hedaer'), []);
+  // What the main process returns with the typed filters (applied before the limit).
+  client.setQueryData(
+    paletteTasksKey('header', { priorities: [4, 5], due: [], tagNames: [] }),
+    highHeaderHits,
+  );
+  client.setQueryData(paletteTasksKey('note'), noteHits);
+  client.setQueryData(searchKeys.board(board.id, 'note'), { taskIds: [] });
+  client.setQueryData(searchKeys.board(board.id, 'header'), { taskIds: [header.id, id(6)] });
+  client.setQueryData(searchKeys.board(board.id, 'hedaer'), { taskIds: [] });
   return client;
 }
 
-function Screen({ query }: { query: string }) {
+function Screen({ query, noBoard = false }: { query: string; noBoard?: boolean }) {
   const [client] = useState(seeded);
   return (
     <QueryClientProvider client={client}>
       <div className="flex h-screen overflow-hidden [background:var(--canvas-bg)]">
-        <MainArea>
-          <BoardView board={board} />
-        </MainArea>
+        <MainArea>{!noBoard && <BoardView board={board} />}</MainArea>
         <Palette
           open
           initialQuery={query}
           onClose={() => undefined}
-          boardId={board.id}
+          boardId={noBoard ? undefined : board.id}
           onShowBoard={() => undefined}
         />
       </div>
@@ -129,3 +159,32 @@ export const TagSuggestionsDark: Story = { ...TagSuggestions, globals: { mode: '
 /** Approved mockup search-palette A: no result anywhere, the commands stay. */
 export const NoResult: Story = { render: () => <Screen query="hedaer" /> };
 export const NoResultDark: Story = { ...NoResult, globals: { mode: 'dark' } };
+
+/** Approved board mockup "haute header" with a task selected (↓): "↵ sur une tâche l’ouvre". */
+export const TaskSelected: Story = {
+  render: () => <Screen query="haute header" />,
+  play: async () => {
+    const input = document.querySelector<HTMLInputElement>('[cmdk-input]');
+    for (let i = 0; i < 50 && !document.querySelector('[cmdk-item][data-value^="task:"]'); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    input?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+  },
+};
+export const TaskSelectedDark: Story = { ...TaskSelected, globals: { mode: 'dark' } };
+
+/** Approved with the lot 7 review: a group cut at 6 rows, the rest in a grey row. */
+export const ManyResults: Story = { render: () => <Screen query="note" /> };
+export const ManyResultsDark: Story = { ...ManyResults, globals: { mode: 'dark' } };
+
+/** Approved with the lot 7 review: filters only, no card of this board matches. */
+export const NoBoardMatch: Story = { render: () => <Screen query="#back" /> };
+export const NoBoardMatchDark: Story = { ...NoBoardMatch, globals: { mode: 'dark' } };
+
+/** Approved with the lot 7 review: no board shown, the typed filters are ignored. */
+export const NoBoardShown: Story = { render: () => <Screen query="haute header" noBoard /> };
+export const NoBoardShownDark: Story = { ...NoBoardShown, globals: { mode: 'dark' } };
+
+/** Approved with the lot 7 review: the search failed (no main process in Storybook), "Réessayer". */
+export const SearchError: Story = { render: () => <Screen query="zzz" /> };
+export const SearchErrorDark: Story = { ...SearchError, globals: { mode: 'dark' } };

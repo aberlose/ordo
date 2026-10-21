@@ -30,13 +30,13 @@ export const descriptionKeys = {
 };
 
 /**
- * Full-text search (board filters, palette) and the palette's recently opened tasks. Search results
- * follow the data they search: a key carries the `dataUpdatedAt` of the board query it filters, or is
- * refetched when the palette opens (`staleTime: 0`).
+ * Full-text search (board filters, palette) and the palette's recently opened tasks. The task
+ * mutations that can change what the index holds (title, notes, tags, sub-tasks, create, delete)
+ * invalidate `all`; moves do not (the text is the same). The palette refetches when it opens.
  */
 export const searchKeys = {
   all: ['search'] as const,
-  board: (boardId: string, text: string, version: number) => ['search', 'board', boardId, text, version] as const,
+  board: (boardId: string, text: string) => ['search', 'board', boardId, text] as const,
   tasks: (text: string) => ['search', 'tasks', text] as const,
   recent: ['search', 'recent'] as const,
 };

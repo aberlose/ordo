@@ -18,8 +18,20 @@ const ROW =
   'group flex h-9.5 cursor-pointer items-center rounded-lg px-2.5 text-input text-text data-[selected=true]:bg-accent-soft';
 
 /** Explanation line under a group ("Aucune tâche ailleurs."). */
-export function GroupNote({ children }: { children: ReactNode }) {
-  return <div className="px-2.5 pt-1.5 pb-2.5 text-meta leading-normal text-text-3">{children}</div>;
+export function GroupNote({ children, role }: { children: ReactNode; role?: 'alert' }) {
+  return (
+    <div role={role} className="px-2.5 pt-1.5 pb-2.5 text-meta leading-normal text-text-3">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Last grey row of a group cut at 6 rows ("+ N autres — affinez la recherche"): not an option, ↑ ↓
+ * skip it (approved with the lot 7 review).
+ */
+export function MoreRow({ children }: { children: ReactNode }) {
+  return <div className="flex h-9.5 items-center px-2.5 text-small text-text-3">{children}</div>;
 }
 
 /** Colour of a board's icon and initials; boards created before lot 4 have none (as the sidebar). */

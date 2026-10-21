@@ -1,8 +1,9 @@
 import { EMPTY_FILTERS, type TaskFilters } from '@ordo/domain';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { searchKeys } from '@renderer/shared/api/keys';
 import { usePalette } from '@renderer/shared/keyboard/palette';
 import { today as todayDay } from '@renderer/shared/lib/dates';
 import { taggedBoard, tags } from '@renderer/test/fixtures';
@@ -102,6 +103,18 @@ describe('FilterBar', () => {
     expect(openPalette).toHaveBeenCalled();
   });
 
+  it("draws the menu checkboxes as the app's other checkboxes", async () => {
+    renderBar();
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'Priorité' }), { button: 0, ctrlKey: false });
+    const menu = await screen.findByRole('menu', { name: 'Priorité' });
+    const box = within(menu)
+      .getByRole('menuitemcheckbox', { name: 'Haute, 2 tâches' })
+      .querySelector('span')!;
+    expect(box.className.split(' ')).toEqual(
+      expect.arrayContaining(['size-4', 'rounded-sm', 'border-strong']),
+    );
+  });
+
   it('toggles priorities from the menu, which stays open, and labels the active button', async () => {
     renderBar();
     const trigger = screen.getByRole('button', { name: 'Priorité' });
@@ -153,35 +166,82 @@ describe('FilterBar', () => {
 
 describe('useTextMatches', () => {
   const invoke = vi.fn();
+  const other = { ...board, id: '01920000-0000-7000-8000-0000000000ff' };
+  let fail = false;
   beforeEach(() => {
+    fail = false;
     invoke.mockReset();
-    invoke.mockImplementation((channel: string, input: { text: string }) =>
-      Promise.resolve(
-        channel === 'search.boardTaskIds'
-          ? { ok: true, data: { taskIds: input.text === 'pdf' ? [overduePdf!.id] : [] } }
-          : { ok: true, data: board },
-      ),
-    );
+    invoke.mockImplementation((channel: string, input: { text: string }) => {
+      if (channel !== 'search.boardTaskIds') return Promise.resolve({ ok: true, data: board });
+      if (fail) return Promise.resolve({ ok: false, error: { code: 'internal', message: 'boom' } });
+      return Promise.resolve({ ok: true, data: { taskIds: input.text === 'pdf' ? [overduePdf!.id] : [] } });
+    });
     vi.stubGlobal('api', { invoke, getPathForFile: () => '' });
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it('is null without text, then the ids the index returns after the debounce', async () => {
+  const searches = () => invoke.mock.calls.filter(([channel]) => channel === 'search.boardTaskIds');
+
+  it('does not filter without text, then gives the ids the index returns after the debounce', async () => {
     const { result, rerender } = renderHook(({ text }) => useTextMatches(board.id, text), {
       wrapper,
       initialProps: { text: '' },
     });
-    expect(result.current).toBeNull();
+    expect(result.current).toEqual({ matches: null, pending: false });
+    // While the first result is on its way the board keeps what it showed: every card.
     rerender({ text: 'pdf' });
-    expect(result.current).toBeNull();
-    await waitFor(() => expect(result.current).toEqual(new Set([overduePdf!.id])));
-    const searches = invoke.mock.calls.filter(([channel]) => channel === 'search.boardTaskIds');
-    expect(searches).toEqual([['search.boardTaskIds', { boardId: board.id, text: 'pdf' }]]);
+    expect(result.current).toEqual({ matches: null, pending: false });
+    await waitFor(() => expect(result.current.matches).toEqual(new Set([overduePdf!.id])));
+    expect(searches()).toEqual([['search.boardTaskIds', { boardId: board.id, text: 'pdf' }]]);
     // Typing on keeps the previous result until the new one arrives.
     rerender({ text: 'pdfx' });
-    expect(result.current).toEqual(new Set([overduePdf!.id]));
-    await waitFor(() => expect(result.current).toEqual(new Set()));
+    expect(result.current.matches).toEqual(new Set([overduePdf!.id]));
+    await waitFor(() => expect(result.current.matches).toEqual(new Set()));
     rerender({ text: '  ' });
-    expect(result.current).toBeNull();
+    expect(result.current).toEqual({ matches: null, pending: false });
+  });
+
+  it("never shows another board's result: an opened board waits for its own, cards hidden", async () => {
+    const { result, rerender } = renderHook(({ id, text }) => useTextMatches(id, text), {
+      wrapper,
+      initialProps: { id: other.id, text: 'pdf' },
+    });
+    expect(result.current).toEqual({ matches: new Set(), pending: true });
+    await waitFor(() => expect(result.current.pending).toBe(false));
+    // Switching board searches the new board's text at once (no debounce) and hides its cards meanwhile.
+    rerender({ id: board.id, text: 'pdf' });
+    expect(result.current).toEqual({ matches: new Set(), pending: true });
+    await waitFor(() => expect(result.current.matches).toEqual(new Set([overduePdf!.id])));
+    expect(searches().at(-1)).toEqual(['search.boardTaskIds', { boardId: board.id, text: 'pdf' }]);
+  });
+
+  it('keeps the last result of the board when a search fails', async () => {
+    const { result, rerender } = renderHook(({ text }) => useTextMatches(board.id, text), {
+      wrapper,
+      initialProps: { text: 'pdf' },
+    });
+    await waitFor(() => expect(result.current.matches).toEqual(new Set([overduePdf!.id])));
+    fail = true;
+    rerender({ text: 'pdfx' });
+    await waitFor(() => expect(searches()).toHaveLength(2));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result.current).toEqual({ matches: new Set([overduePdf!.id]), pending: false });
+  });
+
+  it('does not hide every card when the first search of a board fails', async () => {
+    fail = true;
+    const { result } = renderHook(() => useTextMatches(board.id, 'pdf'), { wrapper });
+    await waitFor(() => expect(result.current).toEqual({ matches: null, pending: false }));
+  });
+
+  it('refreshes after a mutation invalidates the search results', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { result } = renderHook(() => useTextMatches(board.id, 'pdf'), {
+      wrapper: ({ children }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>,
+    });
+    await waitFor(() => expect(result.current.matches).toEqual(new Set([overduePdf!.id])));
+    invoke.mockImplementation(() => Promise.resolve({ ok: true, data: { taskIds: [header!.id] } }));
+    await act(() => client.invalidateQueries({ queryKey: searchKeys.all }));
+    await waitFor(() => expect(result.current.matches).toEqual(new Set([header!.id])));
   });
 });

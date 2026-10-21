@@ -5,6 +5,7 @@ import { call } from '@renderer/shared/api/client';
 import { boardKeys, taskKeys } from '@renderer/shared/api/keys';
 import { useFeedback } from '@renderer/shared/feedback/store';
 import i18n from '@renderer/i18n';
+import { refreshSearch } from './searchCache';
 
 const isDone = (columns: readonly Column[], columnId: string) =>
   columns.find((c) => c.id === columnId)?.category === 'done';
@@ -83,6 +84,8 @@ function refresh(client: QueryClient, boardId: string, parentId: string, id?: st
   void client.invalidateQueries({ queryKey: taskKeys.subtasks(parentId) });
   void client.invalidateQueries({ queryKey: boardKeys.detail(boardId), exact: true });
   if (id) void client.invalidateQueries({ queryKey: taskKeys.detail(id) });
+  // The palette searches sub-tasks too.
+  refreshSearch(client);
 }
 
 const SUBTASK_MUTATION = ['subtasks', 'mutation'] as const;

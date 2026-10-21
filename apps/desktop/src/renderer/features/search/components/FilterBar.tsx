@@ -99,7 +99,8 @@ function FilterButton({
             >
               <span
                 aria-hidden
-                className="flex size-3.5 shrink-0 items-center justify-center rounded-xs border border-border-strong bg-surface text-accent-fg group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent"
+                // The app's checkbox (notes task list, sub-tasks): 16 px, strong border, 4 px radius.
+                className="flex size-4 shrink-0 items-center justify-center rounded-sm border-strong border-border-strong bg-surface text-surface group-data-[highlighted]:border-text-3 group-data-[state=checked]:border-accent group-data-[state=checked]:bg-accent"
               >
                 <Menu.ItemIndicator>
                   <Check size={11} strokeWidth={3} />

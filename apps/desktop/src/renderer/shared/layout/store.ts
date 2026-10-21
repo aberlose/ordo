@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 
 /**
- * Layout state shared by the sidebar, the app layout and the command palette (its "Réduire la barre
- * latérale" and "Nouveau board" actions, the ⌘\ shortcut), so none of them imports another feature.
+ * Layout state shared by the sidebar, the board view, the app layout and the command palette (its
+ * "Réduire la barre latérale", "Nouveau board" and "Nouvelle colonne" actions, the ⌘\ shortcut), so
+ * none of them imports another feature.
  * Ephemeral: the sidebar opens at every start (approved board mockup: open by default).
  */
 interface LayoutState {
@@ -11,6 +12,9 @@ interface LayoutState {
   /** Bumped to ask the sidebar to open its "Nouveau board" popover under "+". */
   newBoardRequest: number;
   requestNewBoard: () => void;
+  /** Bumped to ask the board shown to open its "Nouvelle colonne" popover. */
+  newColumnRequest: number;
+  requestNewColumn: () => void;
 }
 
 export const useLayout = create<LayoutState>((set) => ({
@@ -18,4 +22,6 @@ export const useLayout = create<LayoutState>((set) => ({
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   newBoardRequest: 0,
   requestNewBoard: () => set((state) => ({ newBoardRequest: state.newBoardRequest + 1 })),
+  newColumnRequest: 0,
+  requestNewColumn: () => set((state) => ({ newColumnRequest: state.newColumnRequest + 1 })),
 }));

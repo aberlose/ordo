@@ -4,7 +4,7 @@ import { ChevronDown, Moon, Plus, SquareKanban, Sun } from 'lucide-react';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import { dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   CARD_MOVE_HINT_ID,
@@ -17,6 +17,7 @@ import {
 import { FilterBar, useBoardFiltering } from '@renderer/features/search';
 import { altKey } from '@renderer/shared/lib/platform';
 import { useResolvedMode, useAppearance } from '@renderer/shared/appearance/store';
+import { useLayout } from '@renderer/shared/layout/store';
 import { today as todayDay } from '@renderer/shared/lib/dates';
 import { useNow } from '@renderer/shared/lib/useNow';
 import { Button } from '@renderer/shared/ui/button';
@@ -47,7 +48,13 @@ export function BoardView({ board }: BoardViewProps) {
   const openQuickAdd = useTaskUi((state) => state.openQuickAdd);
   const firstColumnId = board.columns[0]?.id;
 
-  const { filtered, visibleTasks } = useBoardFiltering(board, today);
+  // A card created by quick add under filters stays shown until the filters (applied or previewed) change.
+  const keptTaskIds = useTaskUi((state) => state.keptTaskIds);
+  const { filters, filtered, pending, visibleTasks } = useBoardFiltering(board, today, keptTaskIds);
+  // Before paint: no frame shows the kept cards under the new filters.
+  useLayoutEffect(() => {
+    useTaskUi.getState().clearKeptTasks();
+  }, [filters, board.id]);
   const countByColumn = useMemo(() => {
     const map = new Map<string, number>();
     for (const task of board.tasks) map.set(task.columnId, (map.get(task.columnId) ?? 0) + 1);
@@ -118,6 +125,18 @@ export function BoardView({ board }: BoardViewProps) {
     );
   }, []);
 
+  // The palette's "Nouvelle colonne" opens the popover under "+ Nouvelle colonne", as a click would.
+  const newColumnButton = useRef<HTMLButtonElement>(null);
+  const newColumnRequest = useLayout((state) => state.newColumnRequest);
+  const seenColumnRequest = useRef(newColumnRequest);
+  useEffect(() => {
+    if (newColumnRequest === seenColumnRequest.current) return;
+    seenColumnRequest.current = newColumnRequest;
+    const button = newColumnButton.current;
+    button?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    button?.click();
+  }, [newColumnRequest]);
+
   // N opens quick add in the first column (full shortcut system: lot 7).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -180,6 +199,7 @@ export function BoardView({ board }: BoardViewProps) {
               tasks={tasks}
               totalCount={countByColumn.get(column.id) ?? 0}
               filtered={filtered}
+              filterPending={pending}
               today={today}
               emptyHint={empty ? (first ? 'first' : 'other') : null}
               usedColors={usedColors}
@@ -199,6 +219,7 @@ export function BoardView({ board }: BoardViewProps) {
           align="start"
           trigger={
             <button
+              ref={newColumnButton}
               type="button"
               className="flex h-10 w-45 shrink-0 cursor-pointer items-center gap-2 rounded-card px-1 text-text-3 hover:bg-rail data-[state=open]:bg-accent-soft data-[state=open]:text-accent data-[state=open]:outline-2 data-[state=open]:outline-accent"
             >

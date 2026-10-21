@@ -49,6 +49,8 @@ export function KeyboardHelp() {
       ) : target === 'card' ? (
         <>
           <span className="text-text-3">·</span>
+          <Trans i18nKey="dnd.help.navigate" components={{ kbd: <Kbd /> }} />
+          <span className="text-text-3">·</span>
           <Trans i18nKey="dnd.help.order" values={{ alt }} components={{ kbd: <Kbd /> }} />
           <span className="text-text-3">·</span>
           <Trans i18nKey="dnd.help.column" values={{ alt }} components={{ kbd: <Kbd /> }} />

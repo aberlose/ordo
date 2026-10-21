@@ -6,6 +6,7 @@ import { ApiError, call } from '@renderer/shared/api/client';
 import { boardKeys, taskKeys } from '@renderer/shared/api/keys';
 import { useFeedback } from '@renderer/shared/feedback/store';
 import i18n from '@renderer/i18n';
+import { refreshSearch } from './searchCache';
 
 /** What a card needs to draw a tag (no task count: toggling a tag elsewhere does not re-render cards). */
 export interface TagLook {
@@ -139,6 +140,8 @@ export function useToggleTag(boardId: string) {
     onSuccess: (task) =>
       patchTask(client, boardId, task.id, (cached) => ({ ...cached, tagIds: task.tagIds })),
     onError: (_error, input) => failed(client, boardId, 'tagTask', () => mutation.mutate(input)),
+    // Tag names are searched.
+    onSettled: () => refreshSearch(client),
   });
   return mutation;
 }
@@ -204,6 +207,7 @@ export function useCreateTag(boardId: string) {
     },
     onError: (_error, input) =>
       failed(client, boardId, 'createTag', () => mutation.mutate({ ...input, tempId: nextTempTagId() })),
+    onSettled: (_tag, _error, { taskId }) => taskId && refreshSearch(client),
   });
   return mutation;
 }
@@ -245,6 +249,7 @@ export function useUpdateTag(boardId: string) {
       }
       failed(client, boardId, 'updateTag', () => mutation.mutate(input));
     },
+    onSettled: (_tag, _error, input) => input.name !== undefined && refreshSearch(client),
   });
   return mutation;
 }
@@ -265,6 +270,7 @@ export function useDeleteTag(boardId: string) {
       patchCachedTasks(client, (task) => (task.tagIds.includes(id) ? drop(task) : null));
     },
     onError: (_error, id) => failed(client, boardId, 'deleteTag', () => mutation.mutate(id)),
+    onSettled: () => refreshSearch(client),
   });
   return mutation;
 }

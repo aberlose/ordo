@@ -213,10 +213,11 @@
       "columnSelected": "1 colonne sélectionnée",
       "order": "<kbd>{{alt}}</kbd> <kbd>↑↓</kbd> ordre",
       "column": "<kbd>{{alt}}</kbd> <kbd>←→</kbd> colonne",
+      "navigate": "<kbd>Flèches</kbd> naviguer",
       "open": "<kbd>Entrée</kbd> ouvrir",
       "moveColumn": "<kbd>{{alt}}</kbd> <kbd>←→</kbd> déplacer"
     },
-    "cardHint": "{{alt}} + flèches : déplacer la carte. Entrée : ouvrir.",
+    "cardHint": "Flèches : naviguer. {{alt}} + flèches : déplacer la carte. Entrée : ouvrir.",
     "edge": "Impossible d'aller plus loin"
   },
   "colors": {
@@ -600,7 +601,10 @@
       "thisBoard": "Ce board · {{name}} · {{count, number}}",
       "otherBoards": "Autres boards · {{count, number}}",
       "tasks": "Tâches · {{count, number}}",
-      "commands": "Commandes"
+      "commands": "Commandes",
+      "tasksHeading": "Tâches",
+      "otherBoardsAtLeast": "Autres boards · {{count, number}}+",
+      "tasksAtLeast": "Tâches · {{count, number}}+"
     },
     "actions": {
       "newTask": "Nouvelle tâche",
@@ -608,7 +612,8 @@
       "toggleTheme": "Basculer clair / sombre",
       "collapseSidebar": "Réduire la barre latérale",
       "expandSidebar": "Afficher la barre latérale",
-      "apply": "Appliquer comme filtres du board"
+      "apply": "Appliquer comme filtres du board",
+      "newColumn": "Nouvelle colonne"
     },
     "strip": {
       "recognised": "Filtres reconnus",
@@ -616,8 +621,11 @@
       "result": "Résultat",
       "count_one": "{{count, number}} tâche sur {{total, number}} sur ce board",
       "count_other": "{{count, number}} tâches sur {{total, number}} sur ce board",
-      "live": " — le board se met à jour en direct",
-      "openHint": " — ↵ sur une tâche l’ouvre"
+      "countLive_one": "{{count, number}} tâche sur {{total, number}} sur ce board — le board se met à jour en direct",
+      "countLive_other": "{{count, number}} tâches sur {{total, number}} sur ce board — le board se met à jour en direct",
+      "countOpen_one": "{{count, number}} tâche sur {{total, number}} sur ce board — ↵ sur une tâche l’ouvre",
+      "countOpen_other": "{{count, number}} tâches sur {{total, number}} sur ce board — ↵ sur une tâche l’ouvre",
+      "openBoard": "Ouvrez un board pour filtrer"
     },
     "chips": {
       "priority": "Priorité : {{label}}",
@@ -632,6 +640,16 @@
     },
     "location": "{{board}} · {{column}}",
     "noResult": "Aucune tâche ne correspond à « {{query}} », ni sur ce board ni ailleurs. Vérifiez l’orthographe ou retirez un filtre.",
-    "noneElsewhere": "Aucune tâche ailleurs."
+    "noneElsewhere": "Aucune tâche ailleurs.",
+    "more": {
+      "thisBoard_one": "+ {{count, number}} autre — ↵ sur Appliquer pour tout voir sur le board",
+      "thisBoard_other": "+ {{count, number}} autres — ↵ sur Appliquer pour tout voir sur le board",
+      "elsewhere_one": "+ {{count, number}} autre — affinez la recherche",
+      "elsewhere_other": "+ {{count, number}} autres — affinez la recherche",
+      "elsewhereAtLeast_one": "+ {{count, number}} autre ou plus — affinez la recherche",
+      "elsewhereAtLeast_other": "+ {{count, number}} autres ou plus — affinez la recherche"
+    },
+    "searchError": "La recherche a échoué.",
+    "noBoardMatch": "Aucune tâche de ce board ne correspond aux filtres."
   }
 }

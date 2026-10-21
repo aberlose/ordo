@@ -1,7 +1,18 @@
+import type { BoardSummary } from '@ordo/contracts';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { Command } from 'cmdk';
-import { FileText, Filter, Moon, PanelLeft, Plus, Search, SquareKanban } from 'lucide-react';
+import {
+  Columns2,
+  FileText,
+  Filter,
+  Moon,
+  PanelLeft,
+  Plus,
+  RotateCcw,
+  Search,
+  SquareKanban,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -11,7 +22,7 @@ import { useTaskUi } from '@renderer/features/tasks';
 import { usePalette } from '@renderer/shared/keyboard/palette';
 import { useLayout } from '@renderer/shared/layout/store';
 import { today as todayDay } from '@renderer/shared/lib/dates';
-import { isMac } from '@renderer/shared/lib/platform';
+import { isMac, shiftKey } from '@renderer/shared/lib/platform';
 import { useNow } from '@renderer/shared/lib/useNow';
 import { ColumnIcon } from '@renderer/shared/ui/column-icon';
 import { Kbd } from '@renderer/shared/ui/kbd';
@@ -27,10 +38,11 @@ import {
   priorityChip,
   type PaletteTask,
 } from '../model';
-import { CommandRow, GROUP, GroupNote, TagRow, TaskRow, TaskTitle } from './rows';
+import { CommandRow, GROUP, GroupNote, MoreRow, TagRow, TaskRow, TaskTitle } from './rows';
 
 const APPLY = 'cmd:apply';
 const NEW_TASK = 'cmd:new-task';
+const modLabel = () => (isMac() ? '⌘' : 'Ctrl');
 
 export interface PaletteProps {
   open: boolean;
@@ -104,7 +116,7 @@ function PaletteBody({ initialQuery, boardId, onShowBoard, close, closeThen }: B
   const boardQuery = usePaletteBoard(boardId);
   const board = boardId !== undefined && boardQuery.data?.id === boardId ? boardQuery.data : undefined;
   const today = todayDay(new Date(useNow()));
-  const search = usePaletteSearch(query, board, boardQuery.dataUpdatedAt, today);
+  const search = usePaletteSearch(query, board, today, boardId !== undefined);
   const recent = useRecentTasks();
   const sidebarCollapsed = useLayout((state) => state.sidebarCollapsed);
   const { openTask, openQuickAdd } = useTaskUi(
@@ -150,6 +162,10 @@ function PaletteBody({ initialQuery, boardId, onShowBoard, close, closeThen }: B
       void Promise.resolve(shown).then(() => openTask(task.id));
     });
   const newTask = () => firstColumnId && closeThen(() => openQuickAdd(firstColumnId));
+  const showBoard = (id: string) => {
+    close();
+    void onShowBoard(id);
+  };
   const words = useMemo(() => highlightWords(search.parsed.text), [search.parsed.text]);
 
   return (
@@ -188,6 +204,9 @@ function PaletteBody({ initialQuery, boardId, onShowBoard, close, closeThen }: B
             words={words}
             hasBoard={board !== undefined}
             boardName={board?.name ?? ''}
+            otherBoardsGroup={
+              boardId === undefined && <BoardsGroup boards={boards} boardId={boardId} onShow={showBoard} />
+            }
             canAddTask={firstColumnId !== undefined}
             onPickTag={(name) => onQueryChange(completeTag(query, name))}
             onOpen={openFound}
@@ -225,6 +244,14 @@ function PaletteBody({ initialQuery, boardId, onShowBoard, close, closeThen }: B
                   onSelect={newTask}
                 />
               )}
+              {board && (
+                <CommandRow
+                  value="cmd:new-column"
+                  icon={<Columns2 size={15} />}
+                  label={t('palette.actions.newColumn')}
+                  onSelect={() => closeThen(() => useLayout.getState().requestNewColumn())}
+                />
+              )}
               <CommandRow
                 value="cmd:new-board"
                 icon={<SquareKanban size={15} />}
@@ -235,7 +262,7 @@ function PaletteBody({ initialQuery, boardId, onShowBoard, close, closeThen }: B
                 value="cmd:theme"
                 icon={<Moon size={15} />}
                 label={t('palette.actions.toggleTheme')}
-                keys={isMac() ? ['⇧', '⌘', 'L'] : ['Ctrl', '⇧', 'L']}
+                keys={isMac() ? [shiftKey(), '⌘', 'L'] : ['Ctrl', shiftKey(), 'L']}
                 onSelect={() => {
                   close();
                   toggleTheme();
@@ -247,33 +274,14 @@ function PaletteBody({ initialQuery, boardId, onShowBoard, close, closeThen }: B
                 label={t(
                   sidebarCollapsed ? 'palette.actions.expandSidebar' : 'palette.actions.collapseSidebar',
                 )}
-                keys={isMac() ? ['⌘', '\\'] : ['Ctrl', '\\']}
+                keys={[modLabel(), '\\']}
                 onSelect={() => {
                   close();
                   useLayout.getState().toggleSidebar();
                 }}
               />
             </Command.Group>
-            {boards.some((b) => b.id !== boardId) && (
-              <Command.Group heading={t('palette.groups.boards')} className={GROUP}>
-                {boards
-                  .filter((b) => b.id !== boardId)
-                  .map((b) => (
-                    <CommandRow
-                      key={b.id}
-                      value={`board:${b.id}`}
-                      icon={<ColumnIcon icon={b.icon ?? 'kanban'} size={15} />}
-                      tint={b.color}
-                      label={b.name}
-                      meta={t('board.taskCount', { count: b.taskCount })}
-                      onSelect={() => {
-                        close();
-                        void onShowBoard(b.id);
-                      }}
-                    />
-                  ))}
-              </Command.Group>
-            )}
+            <BoardsGroup boards={boards} boardId={boardId} onShow={showBoard} />
           </>
         )}
       </Command.List>
@@ -311,17 +319,20 @@ function defaultValueFor(query: string, hasBoard: boolean, canAddTask: boolean):
 /** "Filtres reconnus" and "Résultat" (approved board mockup, kept by search-palette A). */
 function Strip({ search, taskSelected }: { search: PaletteSearch; taskSelected: boolean }) {
   const { t } = useTranslation();
-  const { parsed, tags, boardCount } = search;
+  const { parsed, tags, boardCount, filtersIgnored } = search;
   const chips = [
     priorityChip(parsed.priorities, t),
-    ...tags.map((tag) => `#${tag.name}`),
+    ...(filtersIgnored ? parsed.tagNames : tags.map((tag) => tag.name)).map((name) => `#${name}`),
     ...parsed.due.map((due) => dueChip(due, t)),
     ...(parsed.text.trim() !== '' ? [t('palette.chips.text', { text: parsed.text.trim() })] : []),
   ].filter((chip): chip is string => chip !== null);
-  const suffix =
-    boardCount && boardCount.shown > 0
-      ? t(taskSelected ? 'palette.strip.openHint' : 'palette.strip.live')
-      : '';
+  // One sentence per variant (no concatenated suffix): plain, live, or "↵ on a task opens it".
+  const countKey =
+    !boardCount || boardCount.shown === 0
+      ? 'palette.strip.count'
+      : taskSelected
+        ? 'palette.strip.countOpen'
+        : 'palette.strip.countLive';
   return (
     <div className="flex shrink-0 flex-col gap-1.5 border-b border-border bg-rail px-4.5 py-2.5">
       <div className="flex flex-wrap items-center gap-1.5">
@@ -339,16 +350,47 @@ function Strip({ search, taskSelected }: { search: PaletteSearch; taskSelected: 
           ))
         )}
       </div>
-      {boardCount && (
+      {(boardCount || filtersIgnored) && (
         <div className="flex items-center gap-1.5">
           <span className="w-30 shrink-0 text-small text-text-3">{t('palette.strip.result')}</span>
           <span className="text-label text-text-2">
-            {t('palette.strip.count', { count: boardCount.shown, total: boardCount.total })}
-            {suffix}
+            {boardCount
+              ? t(countKey, { count: boardCount.shown, total: boardCount.total })
+              : t('palette.strip.openBoard')}
           </span>
         </div>
       )}
     </div>
+  );
+}
+
+/** "Aller au board": every board but the one shown. */
+function BoardsGroup({
+  boards,
+  boardId,
+  onShow,
+}: {
+  boards: readonly BoardSummary[];
+  boardId: string | undefined;
+  onShow: (boardId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const others = boards.filter((b) => b.id !== boardId);
+  if (others.length === 0) return null;
+  return (
+    <Command.Group heading={t('palette.groups.boards')} className={GROUP}>
+      {others.map((b) => (
+        <CommandRow
+          key={b.id}
+          value={`board:${b.id}`}
+          icon={<ColumnIcon icon={b.icon ?? 'kanban'} size={15} />}
+          tint={b.color}
+          label={b.name}
+          meta={t('board.taskCount', { count: b.taskCount })}
+          onSelect={() => onShow(b.id)}
+        />
+      ))}
+    </Command.Group>
   );
 }
 
@@ -359,13 +401,18 @@ interface TypedGroupsProps {
   hasBoard: boolean;
   boardName: string;
   canAddTask: boolean;
+  /** "Aller au board", shown for a filter-only query when no board is (approved state). */
+  otherBoardsGroup: ReactNode;
   onPickTag: (name: string) => void;
   onOpen: (task: PaletteTask) => void;
   onApply: () => void;
   onNewTask: () => void;
 }
 
-/** Results of a typed query (approved mockup search-palette A). */
+/**
+ * Results of a typed query (approved mockup search-palette A, and the states approved with the lot 7
+ * review): at most 6 rows per group, its header giving the total and a last grey row the rest.
+ */
 function TypedGroups({
   query,
   search,
@@ -373,15 +420,15 @@ function TypedGroups({
   hasBoard,
   boardName,
   canAddTask,
+  otherBoardsGroup,
   onPickTag,
   onOpen,
   onApply,
   onNewTask,
 }: TypedGroupsProps) {
   const { t } = useTranslation();
-  const { suggestions, thisBoard, otherBoards, loading } = search;
+  const { suggestions, thisBoard, otherBoards, otherTruncated, loading, error } = search;
   const withText = search.parsed.text.trim() !== '';
-  const nothing = !loading && thisBoard.length === 0 && otherBoards.length === 0 && (withText || hasBoard);
   const rows = (tasks: readonly PaletteTask[], showBoard: boolean): ReactNode =>
     tasks
       .slice(0, GROUP_MAX_ROWS)
@@ -394,6 +441,80 @@ function TypedGroups({
           onSelect={() => onOpen(task)}
         />
       ));
+  const more = (count: number, key: string) =>
+    count > GROUP_MAX_ROWS && <MoreRow>{t(key, { count: count - GROUP_MAX_ROWS })}</MoreRow>;
+
+  let tasks: ReactNode = null;
+  if (error) {
+    // Approved state: an error line and "Réessayer" (as the other load errors), the commands stay.
+    tasks = (
+      <Command.Group heading={t('palette.groups.tasksHeading')} className={GROUP}>
+        <GroupNote role="alert">{t('palette.searchError')}</GroupNote>
+        <CommandRow
+          value="cmd:retry"
+          icon={<RotateCcw size={15} />}
+          label={t('feedback.retry')}
+          onSelect={search.retry}
+        />
+      </Command.Group>
+    );
+  } else if (!withText) {
+    // Filters only: the board's cards (approved state for no match), or open a board first.
+    tasks = hasBoard ? (
+      <Command.Group
+        heading={t('palette.groups.thisBoard', { name: boardName, count: thisBoard.length })}
+        className={GROUP}
+      >
+        {thisBoard.length === 0 ? (
+          <GroupNote>{t('palette.noBoardMatch')}</GroupNote>
+        ) : (
+          <>
+            {rows(thisBoard, false)}
+            {more(thisBoard.length, 'palette.more.thisBoard')}
+          </>
+        )}
+      </Command.Group>
+    ) : (
+      otherBoardsGroup
+    );
+  } else if (!loading && thisBoard.length === 0 && otherBoards.length === 0) {
+    tasks = (
+      <Command.Group heading={t('palette.groups.tasks', { count: 0 })} className={GROUP}>
+        <GroupNote>{t('palette.noResult', { query: query.trim() })}</GroupNote>
+      </Command.Group>
+    );
+  } else if (!loading) {
+    const elsewhere = hasBoard ? 'palette.groups.otherBoards' : 'palette.groups.tasks';
+    tasks = (
+      <>
+        {hasBoard && thisBoard.length > 0 && (
+          <Command.Group
+            heading={t('palette.groups.thisBoard', { name: boardName, count: thisBoard.length })}
+            className={GROUP}
+          >
+            {rows(thisBoard, false)}
+            {more(thisBoard.length, 'palette.more.thisBoard')}
+          </Command.Group>
+        )}
+        <Command.Group
+          heading={t(otherTruncated ? `${elsewhere}AtLeast` : elsewhere, { count: otherBoards.length })}
+          className={GROUP}
+        >
+          {otherBoards.length === 0 ? (
+            <GroupNote>{t('palette.noneElsewhere')}</GroupNote>
+          ) : (
+            <>
+              {rows(otherBoards, true)}
+              {more(
+                otherBoards.length,
+                otherTruncated ? 'palette.more.elsewhereAtLeast' : 'palette.more.elsewhere',
+              )}
+            </>
+          )}
+        </Command.Group>
+      </>
+    );
+  }
 
   return (
     <>
@@ -404,38 +525,7 @@ function TypedGroups({
           ))}
         </Command.Group>
       )}
-      {nothing ? (
-        <Command.Group heading={t('palette.groups.tasks', { count: 0 })} className={GROUP}>
-          <GroupNote>{t('palette.noResult', { query: query.trim() })}</GroupNote>
-        </Command.Group>
-      ) : (
-        !loading && (
-          <>
-            {hasBoard && thisBoard.length > 0 && (
-              <Command.Group
-                heading={t('palette.groups.thisBoard', { name: boardName, count: thisBoard.length })}
-                className={GROUP}
-              >
-                {rows(thisBoard, false)}
-              </Command.Group>
-            )}
-            {withText && (
-              <Command.Group
-                heading={t(hasBoard ? 'palette.groups.otherBoards' : 'palette.groups.tasks', {
-                  count: otherBoards.length,
-                })}
-                className={GROUP}
-              >
-                {otherBoards.length === 0 ? (
-                  <GroupNote>{t('palette.noneElsewhere')}</GroupNote>
-                ) : (
-                  rows(otherBoards, true)
-                )}
-              </Command.Group>
-            )}
-          </>
-        )
-      )}
+      {tasks}
       {hasBoard && (
         <Command.Group heading={t('palette.groups.commands')} className={GROUP}>
           <CommandRow

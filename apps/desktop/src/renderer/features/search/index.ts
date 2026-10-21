@@ -3,7 +3,13 @@ import { useSearchStore, type SearchState } from './store';
 export { FilterBar, type FilterBarProps } from './components/FilterBar';
 export { effectiveFilters, filterTasks, filterable, optionCounts } from './filtering';
 export { useBoardFiltering, type BoardFiltering } from './hooks/useBoardFiltering';
-export { TEXT_DEBOUNCE_MS, useDebouncedValue, useTextMatches } from './hooks/useTextMatches';
+export {
+  SEARCH_GC_MS,
+  TEXT_DEBOUNCE_MS,
+  useDebouncedValue,
+  useTextMatches,
+  type TextMatches,
+} from './hooks/useTextMatches';
 export {
   useBoardFilters,
   useIsPreviewing,

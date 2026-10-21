@@ -58,6 +58,8 @@ export interface ColumnTasksProps {
   onNavigate?: CardNavigate | undefined;
   /** Board filters may hide cards: an empty column says that nothing matches (approved board mockup). */
   filtered?: boolean;
+  /** The filters' text result is on its way: no "nothing matches" yet. */
+  filterPending?: boolean;
 }
 
 interface DraggableCardProps {
@@ -109,10 +111,10 @@ const DraggableCard = memo(function DraggableCard({
         onKeyboardMove(task.id, direction);
         return;
       }
-      if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || !onNavigate) return;
       // Plain arrows move the focus; the target column brings the card into view and focuses it.
       event.preventDefault();
-      const target = onNavigate?.(task.id, direction);
+      const target = onNavigate(task.id, direction);
       if (target) useTaskDrag.setState({ focus: target });
     },
     [onKeyboardMove, onNavigate, task.id],
@@ -267,6 +269,7 @@ export const ColumnTasks = memo(function ColumnTasks({
   onKeyboardMove,
   onNavigate,
   filtered = false,
+  filterPending = false,
 }: ColumnTasksProps) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -384,7 +387,7 @@ export const ColumnTasks = memo(function ColumnTasks({
       )}
     >
       {emptyHint && !open && <EmptyHint kind={emptyHint} onAdd={() => openQuickAdd(column.id)} />}
-      {!emptyHint && filtered && tasks.length === 0 && (
+      {!emptyHint && filtered && !filterPending && !open && tasks.length === 0 && (
         <div className="shrink-0 rounded-card border border-dashed border-border-strong px-3 py-4.5 text-center text-meta text-text-3">
           {t('filters.noMatch')}
         </div>
@@ -452,10 +455,16 @@ export const ColumnTasks = memo(function ColumnTasks({
               useTaskUi.getState().setColumnExpanded(column.id, true);
             }
             highlight(tempId);
+            // Under filters the new card stays shown, even if it does not match, until they change.
+            if (filtered) useTaskUi.getState().keepTask(tempId);
             create.mutate(
               { columnId: column.id, title, tempId },
               {
-                onSuccess: (task) => useTaskUi.getState().highlightedTaskId === tempId && highlight(task.id),
+                onSuccess: (task) => {
+                  const ui = useTaskUi.getState();
+                  ui.replaceKeptTask(tempId, task.id);
+                  if (ui.highlightedTaskId === tempId) highlight(task.id);
+                },
               },
             );
           }}

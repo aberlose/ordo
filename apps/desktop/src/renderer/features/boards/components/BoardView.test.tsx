@@ -1,7 +1,10 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import type { BoardDetail, Task } from '@ordo/contracts';
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useSearchStore } from '@renderer/features/search';
+import { useTaskUi } from '@renderer/features/tasks';
+import { useLayout } from '@renderer/shared/layout/store';
 import { taggedBoard as board } from '@renderer/test/fixtures';
 import { BoardView } from './BoardView';
 
@@ -11,6 +14,7 @@ const original = HTMLElement.prototype.getBoundingClientRect;
 const sizes = ['offsetWidth', 'offsetHeight'] as const;
 const descriptors = sizes.map((size) => Object.getOwnPropertyDescriptor(HTMLElement.prototype, size));
 beforeAll(() => {
+  Element.prototype.scrollIntoView = () => undefined;
   HTMLElement.prototype.getBoundingClientRect = () => ({ ...rect, toJSON: () => rect });
   for (const size of sizes) {
     Object.defineProperty(HTMLElement.prototype, size, { configurable: true, get: () => 800 });
@@ -94,5 +98,83 @@ describe('BoardView keyboard navigation', () => {
     fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
     // "Terminé" shows no card: nothing further right.
     expect(document.activeElement).toBe(card(/export PDF/));
+  });
+});
+
+describe('BoardView quick add under filters', () => {
+  const doneColumn = board.columns[2]!;
+  const created: Task = {
+    ...board.tasks[5]!,
+    id: '01920000-0000-7000-8000-000000000999',
+    title: 'Nouvelle tâche hors filtre',
+    priority: 3,
+    rank: 'z',
+    tagIds: [],
+  };
+
+  /** The board as the app shows it: read from the query cache, so optimistic patches show. */
+  function LiveBoard() {
+    const { data } = useQuery<BoardDetail>({ queryKey: ['boards', board.id], queryFn: () => board });
+    return data ? <BoardView board={data} /> : null;
+  }
+
+  function renderLive() {
+    vi.stubGlobal('api', {
+      invoke: (channel: string) =>
+        Promise.resolve({ ok: true, data: channel === 'tasks.create' ? created : board }),
+      getPathForFile: () => '',
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    client.setQueryData(['boards', board.id], board);
+    render(
+      <QueryClientProvider client={client}>
+        <LiveBoard />
+      </QueryClientProvider>,
+    );
+    return client;
+  }
+
+  beforeEach(() => useTaskUi.setState({ quickAddColumnId: null, keptTaskIds: new Set() }));
+
+  it('keeps the new card shown until the filters change, without the dashed box while adding', async () => {
+    useSearchStore.getState().apply(board.id, { priorities: [5], tags: [], due: [], text: '' });
+    renderLive();
+    const done = column('Terminé');
+    expect(within(done).getByText('Aucune tâche ne correspond aux filtres')).toBeTruthy();
+
+    act(() => useTaskUi.getState().openQuickAdd(doneColumn.id));
+    expect(within(done).queryByText('Aucune tâche ne correspond aux filtres')).toBeNull();
+
+    const input = within(done).getByRole('textbox', { name: 'Titre de la nouvelle tâche' });
+    fireEvent.change(input, { target: { value: created.title } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    // Shown at once (temporary id), then as the saved task, although its priority does not match.
+    expect(await within(done).findByRole('button', { name: /Nouvelle tâche hors filtre/ })).toBeTruthy();
+    await waitFor(() => expect(useTaskUi.getState().keptTaskIds).toEqual(new Set([created.id])));
+    expect(within(done).getByRole('button', { name: /Nouvelle tâche hors filtre/ })).toBeTruthy();
+    expect(screen.getByText('2 sur 7 tâches')).toBeTruthy();
+
+    act(() => useSearchStore.getState().toggle(board.id, 'priorities', 4));
+    expect(within(done).queryByRole('button', { name: /Nouvelle tâche hors filtre/ })).toBeNull();
+    expect(useTaskUi.getState().keptTaskIds.size).toBe(0);
+  });
+
+  it('keeps nothing when no filter is active', () => {
+    renderLive();
+    act(() => useTaskUi.getState().openQuickAdd(doneColumn.id));
+    const input = within(column('Terminé')).getByRole('textbox', { name: 'Titre de la nouvelle tâche' });
+    fireEvent.change(input, { target: { value: created.title } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(useTaskUi.getState().keptTaskIds.size).toBe(0);
+  });
+});
+
+describe('BoardView new column request', () => {
+  it('opens the new-column popover when the palette asks for it', async () => {
+    renderBoard();
+    expect(screen.queryByText('Nouvelle colonne', { selector: 'h2, h3, [id]' })).toBeNull();
+    act(() => useLayout.getState().requestNewColumn());
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy());
+    expect(within(screen.getByRole('dialog')).getAllByText('Nouvelle colonne').length).toBeGreaterThan(0);
   });
 });

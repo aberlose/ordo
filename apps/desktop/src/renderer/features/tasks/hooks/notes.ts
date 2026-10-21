@@ -7,6 +7,7 @@ import { descriptionKeys } from '@renderer/shared/api/keys';
 import { useFeedback } from '@renderer/shared/feedback/store';
 import i18n from '@renderer/i18n';
 import { useAddAttachmentData, useAddAttachmentPaths } from './attachments';
+import { refreshSearch } from './searchCache';
 
 /**
  * Notes of a task (lot 6): the editor's document, loaded once when the detail opens, saved
@@ -90,6 +91,7 @@ export function useSaveDescription(taskId: string) {
     },
     // Only the newest save may write its answer (an older one finishing late would roll the text back).
     onSuccess: (saved, json) => {
+      refreshSearch(client);
       if (latest.get(taskId) !== json) return;
       client.setQueryData(descriptionKeys.detail(taskId), saved);
       latest.delete(taskId);
