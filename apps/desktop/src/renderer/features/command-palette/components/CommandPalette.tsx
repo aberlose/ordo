@@ -82,8 +82,13 @@ export function Palette({ open, initialQuery = '', onClose, boardId, onShowBoard
             event.preventDefault();
             run();
           }}
-          // The content spans the window so the palette can keep its margins; clicks around it reach the overlay.
-          className="pointer-events-none fixed inset-0 z-50 flex flex-col items-center pt-24 pb-12 outline-none"
+          // The content spans the window so the palette can keep its margins. Radix sees a click around
+          // the palette as inside its content (it forces `pointer-events: auto` on it), so the empty
+          // area closes the palette itself, as a click on the dimmed app would.
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) onClose();
+          }}
+          className="fixed inset-0 z-50 flex flex-col items-center pt-24 pb-12 outline-none"
         >
           <Dialog.Title className="sr-only">{t('palette.title')}</Dialog.Title>
           <PaletteBody

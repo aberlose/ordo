@@ -98,6 +98,12 @@ test('filter the board, search across boards from the palette, and reopen a rece
   await expect(cards(page)).toHaveCount(1);
   await page.getByRole('button', { name: 'Effacer les filtres' }).click();
 
+  // A click on the dimmed app around the palette closes it.
+  await page.keyboard.press(`${mod}+K`);
+  await expect(palette).toBeVisible();
+  await page.mouse.click(12, 12);
+  await expect(palette).toHaveCount(0);
+
   // A task of another board: arrow down to it, Enter switches board and opens it.
   await page.keyboard.press(`${mod}+K`);
   await palette.getByRole('combobox').fill('sticky');

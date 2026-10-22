@@ -176,6 +176,15 @@ describe('Palette — empty query', () => {
     expect(onShowBoard).toHaveBeenCalledWith(board.id);
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+
+  it('closes on a click around the palette, not on a click inside it', async () => {
+    const input = renderPalette(board.id);
+    await screen.findByText('Aller au board');
+    fireEvent.pointerDown(input);
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    fireEvent.pointerDown(screen.getByRole('dialog'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
 });
 
 describe('Palette — typed query', () => {
