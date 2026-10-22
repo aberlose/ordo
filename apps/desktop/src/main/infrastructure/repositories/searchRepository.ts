@@ -50,6 +50,12 @@ interface FilterSql {
   readonly params: readonly (string | number)[];
   /** Statement cache key: the shape of the conditions, not their values. */
   readonly shape: string;
+  /**
+   * Condition on the index's matches (`task_id`), applied before the joins: a tag filter keeps few
+   * matches, so the hidden-task and typed-filter joins run on those only. Its parameter comes first.
+   */
+  readonly matchWhere: string;
+  readonly matchParams: readonly string[];
 }
 
 /**
@@ -86,14 +92,18 @@ function filterSql(filters: SearchTaskFilters, tagIds: readonly string[] | null)
     clauses.push(`(${ors.join(' OR ')})`);
     shape.push(`d${options.join(',')}`);
   }
-  if (tagIds !== null) {
-    clauses.push(
-      'EXISTS (SELECT 1 FROM task_tag tt WHERE tt.task_id = t.id AND tt.tag_id IN (SELECT value FROM json_each(?)))',
-    );
-    params.push(JSON.stringify(tagIds));
-    shape.push('t');
-  }
-  return { where: clauses.map((c) => `AND ${c}`).join(' '), params, shape: shape.join('|') };
+  const matchWhere =
+    tagIds === null
+      ? ''
+      : 'AND task_id IN (SELECT tt.task_id FROM task_tag tt WHERE tt.tag_id IN (SELECT value FROM json_each(?)))';
+  if (tagIds !== null) shape.push('t');
+  return {
+    where: clauses.map((c) => `AND ${c}`).join(' '),
+    params,
+    shape: shape.join('|'),
+    matchWhere,
+    matchParams: tagIds === null ? [] : [JSON.stringify(tagIds)],
+  };
 }
 
 interface HitRow {
@@ -140,7 +150,7 @@ export function searchRepository(db: Db): SearchRepository {
     if (!statement) {
       statement = sqlite.prepare<(string | number)[], HitRow>(
         `SELECT ${HIT_COLUMNS} FROM (
-           SELECT task_id, ${SCORE} AS score FROM task_fts WHERE task_fts MATCH ?
+           SELECT task_id, ${SCORE} AS score FROM task_fts WHERE task_fts MATCH ? ${filters.matchWhere}
            ${capped ? 'ORDER BY score LIMIT ?' : ''}
          ) m
          JOIN task t ON t.id = m.task_id ${HIT_JOINS}
@@ -216,9 +226,10 @@ export function searchRepository(db: Db): SearchRepository {
       }
       const where = filterSql(filters, tagIds);
       const query = searched(ftsQuery);
-      const capped = rankedSearch(true, where).all(query, limit * OVERFETCH, ...where.params, limit);
+      const head = [query, ...where.matchParams];
+      const capped = rankedSearch(true, where).all(...head, limit * OVERFETCH, ...where.params, limit);
       return withTags(
-        capped.length === limit ? capped : rankedSearch(false, where).all(query, ...where.params, limit),
+        capped.length === limit ? capped : rankedSearch(false, where).all(...head, ...where.params, limit),
       );
     },
 

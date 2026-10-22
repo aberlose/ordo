@@ -101,7 +101,7 @@ describe('BoardView keyboard navigation', () => {
   });
 });
 
-describe('BoardView quick add under filters', () => {
+describe('BoardView quick add', () => {
   const doneColumn = board.columns[2]!;
   const created: Task = {
     ...board.tasks[5]!,
@@ -118,14 +118,14 @@ describe('BoardView quick add under filters', () => {
     return data ? <BoardView board={data} /> : null;
   }
 
-  function renderLive() {
+  function renderLive(data: BoardDetail = board) {
     vi.stubGlobal('api', {
       invoke: (channel: string) =>
         Promise.resolve({ ok: true, data: channel === 'tasks.create' ? created : board }),
       getPathForFile: () => '',
     });
     const client = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
-    client.setQueryData(['boards', board.id], board);
+    client.setQueryData(['boards', board.id], data);
     render(
       <QueryClientProvider client={client}>
         <LiveBoard />
@@ -134,7 +134,9 @@ describe('BoardView quick add under filters', () => {
     return client;
   }
 
-  beforeEach(() => useTaskUi.setState({ quickAddColumnId: null, keptTaskIds: new Set() }));
+  beforeEach(() =>
+    useTaskUi.setState({ quickAddColumnId: null, keptTaskIds: new Set(), expandedColumnIds: new Set() }),
+  );
 
   it('keeps the new card shown until the filters change, without the dashed box while adding', async () => {
     useSearchStore.getState().apply(board.id, { priorities: [5], tags: [], due: [], text: '' });
@@ -166,6 +168,22 @@ describe('BoardView quick add under filters', () => {
     fireEvent.change(input, { target: { value: created.title } });
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(useTaskUi.getState().keptTaskIds.size).toBe(0);
+  });
+
+  it('expands the column when tasks are added past its limit faster than they show', () => {
+    // "Terminé" holds one task and shows two: the second quick add, typed before the first card is
+    // in the board, is the one past the limit.
+    renderLive({
+      ...board,
+      columns: board.columns.map((c) => (c.id === doneColumn.id ? { ...c, displayLimit: 2 } : c)),
+    });
+    act(() => useTaskUi.getState().openQuickAdd(doneColumn.id));
+    const input = within(column('Terminé')).getByRole('textbox', { name: 'Titre de la nouvelle tâche' });
+    for (const title of ['Première', 'Deuxième']) {
+      fireEvent.change(input, { target: { value: title } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+    }
+    expect(useTaskUi.getState().expandedColumnIds.has(doneColumn.id)).toBe(true);
   });
 });
 

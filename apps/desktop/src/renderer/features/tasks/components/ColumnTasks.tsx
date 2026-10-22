@@ -275,6 +275,9 @@ export const ColumnTasks = memo(function ColumnTasks({
   const scrollRef = useRef<HTMLDivElement>(null);
   /** Card holding the focus: kept rendered even when scrolled out of the virtual window. */
   const focusedId = useRef<string | null>(null);
+  // Quick adds not settled yet: their optimistic card may not be in `tasks` yet (the insert waits for
+  // the board query to be cancelled), so typing fast past the display limit still expands the column.
+  const pendingAdds = useRef(new Set<string>());
   const open = useTaskUi((state) => state.quickAddColumnId === column.id);
   const focusRequest = useTaskUi((state) =>
     state.quickAddColumnId === column.id ? state.quickAddRequest : 0,
@@ -451,9 +454,13 @@ export const ColumnTasks = memo(function ColumnTasks({
           onSubmit={(title) => {
             const tempId = `${TEMP_ID_PREFIX}${++tempCounter}`;
             // The new task goes to the bottom: show it even past the display limit.
-            if (column.displayLimit !== null && tasks.length >= column.displayLimit) {
+            const notShownYet = [...pendingAdds.current].filter(
+              (id) => !tasks.some((t) => t.id === id),
+            ).length;
+            if (column.displayLimit !== null && tasks.length + notShownYet >= column.displayLimit) {
               useTaskUi.getState().setColumnExpanded(column.id, true);
             }
+            pendingAdds.current.add(tempId);
             highlight(tempId);
             // Under filters the new card stays shown, even if it does not match, until they change.
             if (filtered) useTaskUi.getState().keepTask(tempId);
@@ -465,6 +472,7 @@ export const ColumnTasks = memo(function ColumnTasks({
                   ui.replaceKeptTask(tempId, task.id);
                   if (ui.highlightedTaskId === tempId) highlight(task.id);
                 },
+                onSettled: () => pendingAdds.current.delete(tempId),
               },
             );
           }}
