@@ -2,6 +2,7 @@ import type { AppInfo } from '@ordo/contracts';
 import type { AttachmentUseCases } from '../application/attachments';
 import type { BoardUseCases } from '../application/boards';
 import type { ColumnUseCases } from '../application/columns';
+import type { SearchUseCases } from '../application/search';
 import type { TagUseCases } from '../application/tags';
 import type { TaskUseCases } from '../application/tasks';
 import type { Handlers } from './handle';
@@ -12,6 +13,7 @@ export function createHandlers(
   columns: ColumnUseCases,
   tags: TagUseCases,
   attachments: AttachmentUseCases,
+  search: SearchUseCases,
   appInfo: () => AppInfo,
 ): Handlers {
   return {
@@ -49,5 +51,9 @@ export function createHandlers(
     'columns.create': (input) => columns.createColumn(input),
     'columns.update': (input) => columns.updateColumn(input),
     'columns.delete': ({ id }) => columns.deleteColumn(id),
+    'search.boardTaskIds': (input) => search.searchBoardTaskIds(input),
+    'search.tasks': (input) => search.searchTasks(input),
+    'recent.list': () => search.listRecent(),
+    'recent.record': ({ taskId }) => search.recordRecent(taskId),
   };
 }

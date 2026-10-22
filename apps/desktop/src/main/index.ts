@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { makeAttachmentUseCases } from './application/attachments';
 import { makeBoardUseCases } from './application/boards';
 import { makeColumnUseCases } from './application/columns';
+import { makeSearchUseCases } from './application/search';
 import { makeTagUseCases } from './application/tags';
 import { makeTaskUseCases } from './application/tasks';
 import { electronShell, handleAttachmentProtocol, registerAttachmentScheme } from './app/electronAdapters';
@@ -14,6 +15,8 @@ import { systemClock, uuidv7Generator } from './infrastructure/ids';
 import { attachmentRepository } from './infrastructure/repositories/attachmentRepository';
 import { boardRepository } from './infrastructure/repositories/boardRepository';
 import { columnRepository } from './infrastructure/repositories/columnRepository';
+import { searchRepository } from './infrastructure/repositories/searchRepository';
+import { settingRepository } from './infrastructure/repositories/settingRepository';
 import { tagRepository } from './infrastructure/repositories/tagRepository';
 import { taskRepository } from './infrastructure/repositories/taskRepository';
 import { createHandlers } from './ipc/handlers';
@@ -54,6 +57,8 @@ function start(): void {
     tasks: taskRepository(database.db),
     tags: tagRepository(database.db),
     attachments: attachmentRepository(database.db),
+    search: searchRepository(database.db),
+    settings: settingRepository(database.db),
     storage: attachmentStorage(join(app.getPath('userData'), 'attachments')),
     shell: electronShell,
     tx: sqliteTransactor(database.sqlite),
@@ -66,11 +71,12 @@ function start(): void {
   const columns = makeColumnUseCases(ports);
   const tags = makeTagUseCases(ports);
   const attachments = makeAttachmentUseCases(ports);
+  const search = makeSearchUseCases(ports);
   handleAttachmentProtocol((id) => attachments.servedFile(id));
 
   registerHandlers(
     ipcMain,
-    createHandlers(boards, tasks, columns, tags, attachments, () => ({
+    createHandlers(boards, tasks, columns, tags, attachments, search, () => ({
       version: app.getVersion(),
       platform: process.platform === 'darwin' || process.platform === 'win32' ? process.platform : 'linux',
       dataPath: dataFile,

@@ -1,4 +1,13 @@
-import type { CalendarDay, ColumnCategory, ColumnColor, DisplayLimit, Priority, Rank } from '@ordo/domain';
+import type { SearchHit } from '@ordo/contracts';
+import type {
+  CalendarDay,
+  ColumnCategory,
+  ColumnColor,
+  DisplayLimit,
+  DueFilter,
+  Priority,
+  Rank,
+} from '@ordo/domain';
 
 /** Ports implemented by the infrastructure layer. Use cases depend only on these. */
 
@@ -224,6 +233,49 @@ export interface TagRepository {
   removeLinksOfTag(tagId: string): void;
   /** Bulk insert (board duplication). */
   insertLinks(links: readonly TaskTagLink[]): void;
+}
+
+/**
+ * A task found by full-text search (or recently opened), with where it lives: the contract's
+ * `SearchHit`, read-only. Tag names are sorted alphabetically (case ignored).
+ */
+export type SearchHitRecord = Readonly<Omit<SearchHit, 'tagNames'>> & {
+  readonly tagNames: readonly string[];
+};
+
+/**
+ * The palette's typed filters, applied before the limit. Within a kind values combine with OR,
+ * kinds with AND; an empty or missing kind does not filter.
+ */
+export interface SearchTaskFilters {
+  readonly priorities?: readonly Priority[];
+  /** Due options (overdue, this week Monday–Sunday, no due date), against `today`. */
+  readonly due?: { readonly options: readonly DueFilter[]; readonly today: CalendarDay };
+  /** Folded tag names (`foldTagName`): the task carries a tag with one of them. */
+  readonly foldedTagNames?: readonly string[];
+}
+
+/**
+ * The full-text index (title, notes text, tag names). `ftsQuery` is built by the domain's
+ * `toFtsQuery`, never raw user text. Only live tasks (not deleted, not archived) in live columns
+ * are returned, and a sub-task only while its parent is live.
+ */
+export interface SearchRepository {
+  /** Ids of the matching top-level tasks of a board (archived or not), no limit, in no particular order. */
+  boardTaskIds(boardId: string, ftsQuery: string): string[];
+  /**
+   * Matching tasks and sub-tasks of the non-archived boards that pass `filters`, best first
+   * (title > tags > notes), at most `limit`.
+   */
+  searchTasks(ftsQuery: string, limit: number, filters?: SearchTaskFilters): SearchHitRecord[];
+  /** The given tasks that are still shown (live, non-archived board), in the given order. */
+  hits(ids: readonly string[]): SearchHitRecord[];
+}
+
+/** Key–value app settings (table `setting`). */
+export interface SettingRepository {
+  get(key: string): string | null;
+  set(key: string, value: string): void;
 }
 
 export interface AttachmentRecord {

@@ -17,6 +17,8 @@ const FONT_SIZES = [
   'note',
   'note-h1',
   'note-h2',
+  'palette',
+  'micro',
 ];
 
 /** Border widths of index.css (`--border-width-*`), so `border-strong border-accent` keeps both. */

@@ -9,9 +9,11 @@ import {
   SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
-import { useId, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFeedback } from '@renderer/shared/feedback/store';
+import { usePalette } from '@renderer/shared/keyboard/palette';
+import { useLayout } from '@renderer/shared/layout/store';
 import { cn } from '@renderer/shared/lib/cn';
 import { altKey, modKey } from '@renderer/shared/lib/platform';
 import { Kbd } from '@renderer/shared/ui/kbd';
@@ -88,6 +90,16 @@ export function Sidebar({
   const targetIndex = useBoardDrag((state) => state.targetIndex);
   const usedColors = useMemo(() => boards.map((board) => board.color), [boards]);
   const activeId = archivesActive ? undefined : activeBoardId;
+  const openPalette = usePalette((state) => state.openPalette);
+
+  // The palette's "Nouveau board" opens the popover under "+" (sidebar or rail), as a click would.
+  const newBoardRequest = useLayout((state) => state.newBoardRequest);
+  const seenRequest = useRef(newBoardRequest);
+  useEffect(() => {
+    if (newBoardRequest === seenRequest.current) return;
+    seenRequest.current = newBoardRequest;
+    plusRef.current?.click();
+  }, [newBoardRequest]);
 
   const createBoard = ({ name, icon, color }: BoardStyle) =>
     create.mutate(
@@ -257,7 +269,8 @@ export function Sidebar({
       </div>
       <button
         type="button"
-        className="mb-3 flex h-8 items-center gap-2 rounded-lg border border-border bg-surface px-2.5 text-left text-meta text-text-3"
+        onClick={() => openPalette()}
+        className="mb-3 flex h-8 cursor-pointer items-center gap-2 rounded-lg border border-border bg-surface px-2.5 text-left text-meta text-text-3 hover:bg-rail"
       >
         <Search size={14} aria-hidden />
         <span className="flex-1">{t('sidebar.search')}</span>

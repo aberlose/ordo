@@ -5,6 +5,7 @@ import { call } from '@renderer/shared/api/client';
 import { boardKeys } from '@renderer/shared/api/keys';
 import { useFeedback } from '@renderer/shared/feedback/store';
 import i18n from '@renderer/i18n';
+import { refreshSearch } from './searchCache';
 
 type Snapshot = { previous: BoardDetail | undefined };
 
@@ -84,7 +85,10 @@ export function useCreateTask(boardId: string) {
       rollback(client, boardId, snapshot);
       failed('create', () => mutation.mutate(input));
     },
-    onSettled: () => void client.invalidateQueries({ queryKey: boardKeys.all, exact: true }),
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: boardKeys.all, exact: true });
+      refreshSearch(client);
+    },
   });
   return mutation;
 }
@@ -121,6 +125,8 @@ export function useUpdateTask(boardId: string) {
       rollback(client, boardId, snapshot);
       failed('update', () => mutation.mutate(input));
     },
+    // The title may have changed (and the palette's results carry the other fields).
+    onSettled: () => refreshSearch(client),
   });
   return mutation;
 }
@@ -146,6 +152,7 @@ export function useDeleteTask(boardId: string) {
       // Task counts in the sidebar, and the tag counts of the board.
       void client.invalidateQueries({ queryKey: boardKeys.all, exact: true });
       void client.invalidateQueries({ queryKey: boardKeys.detail(boardId) });
+      refreshSearch(client);
     },
   });
   return mutation;

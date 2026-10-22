@@ -39,6 +39,12 @@ const ARROWS: Record<string, MoveDirection> = {
 
 type Row = { kind: 'card'; task: Task } | { kind: 'slot' };
 
+/** Where plain arrows go from a card: the card to focus, or `null` at an edge. */
+export type CardNavigate = (
+  taskId: string,
+  direction: MoveDirection,
+) => { taskId: string; columnId: string } | null;
+
 export interface ColumnTasksProps {
   boardId: string;
   column: Column;
@@ -48,6 +54,12 @@ export interface ColumnTasksProps {
   emptyHint: 'first' | 'other' | null;
   /** ⌥/Alt + arrows on a card. */
   onKeyboardMove: (taskId: string, direction: MoveDirection) => boolean;
+  /** Plain arrows on a card: the card to focus next. */
+  onNavigate?: CardNavigate | undefined;
+  /** Board filters may hide cards: an empty column says that nothing matches (approved board mockup). */
+  filtered?: boolean;
+  /** The filters' text result is on its way: no "nothing matches" yet. */
+  filterPending?: boolean;
 }
 
 interface DraggableCardProps {
@@ -60,6 +72,7 @@ interface DraggableCardProps {
   flash: boolean;
   onOpen: (id: string) => void;
   onKeyboardMove: (taskId: string, direction: MoveDirection) => boolean;
+  onNavigate: CardNavigate | undefined;
   measure: (element: Element | null) => void;
   index: number;
   start: number;
@@ -75,6 +88,7 @@ const DraggableCard = memo(function DraggableCard({
   flash,
   onOpen,
   onKeyboardMove,
+  onNavigate,
   measure,
   index,
   start,
@@ -91,11 +105,19 @@ const DraggableCard = memo(function DraggableCard({
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLButtonElement>) => {
       const direction = ARROWS[event.key];
-      if (!event.altKey || !direction) return;
+      if (!direction) return;
+      if (event.altKey) {
+        event.preventDefault();
+        onKeyboardMove(task.id, direction);
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.shiftKey || !onNavigate) return;
+      // Plain arrows move the focus; the target column brings the card into view and focuses it.
       event.preventDefault();
-      onKeyboardMove(task.id, direction);
+      const target = onNavigate(task.id, direction);
+      if (target) useTaskDrag.setState({ focus: target });
     },
-    [onKeyboardMove, task.id],
+    [onKeyboardMove, onNavigate, task.id],
   );
 
   useEffect(() => {
@@ -245,11 +267,17 @@ export const ColumnTasks = memo(function ColumnTasks({
   today,
   emptyHint,
   onKeyboardMove,
+  onNavigate,
+  filtered = false,
+  filterPending = false,
 }: ColumnTasksProps) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   /** Card holding the focus: kept rendered even when scrolled out of the virtual window. */
   const focusedId = useRef<string | null>(null);
+  // Quick adds not settled yet: their optimistic card may not be in `tasks` yet (the insert waits for
+  // the board query to be cancelled), so typing fast past the display limit still expands the column.
+  const pendingAdds = useRef(new Set<string>());
   const open = useTaskUi((state) => state.quickAddColumnId === column.id);
   const focusRequest = useTaskUi((state) =>
     state.quickAddColumnId === column.id ? state.quickAddRequest : 0,
@@ -362,6 +390,11 @@ export const ColumnTasks = memo(function ColumnTasks({
       )}
     >
       {emptyHint && !open && <EmptyHint kind={emptyHint} onAdd={() => openQuickAdd(column.id)} />}
+      {!emptyHint && filtered && !filterPending && !open && tasks.length === 0 && (
+        <div className="shrink-0 rounded-card border border-dashed border-border-strong px-3 py-4.5 text-center text-meta text-text-3">
+          {t('filters.noMatch')}
+        </div>
+      )}
       {rows.length > 0 && (
         <div className="relative w-full shrink-0" style={{ height: virtualizer.getTotalSize() }}>
           {virtualizer.getVirtualItems().map((item) => {
@@ -388,6 +421,7 @@ export const ColumnTasks = memo(function ColumnTasks({
                 flash={row.task.id === flashTaskId}
                 onOpen={openTask}
                 onKeyboardMove={onKeyboardMove}
+                onNavigate={onNavigate}
                 measure={virtualizer.measureElement}
                 index={item.index}
                 start={item.start}
@@ -420,14 +454,25 @@ export const ColumnTasks = memo(function ColumnTasks({
           onSubmit={(title) => {
             const tempId = `${TEMP_ID_PREFIX}${++tempCounter}`;
             // The new task goes to the bottom: show it even past the display limit.
-            if (column.displayLimit !== null && tasks.length >= column.displayLimit) {
+            const notShownYet = [...pendingAdds.current].filter(
+              (id) => !tasks.some((t) => t.id === id),
+            ).length;
+            if (column.displayLimit !== null && tasks.length + notShownYet >= column.displayLimit) {
               useTaskUi.getState().setColumnExpanded(column.id, true);
             }
+            pendingAdds.current.add(tempId);
             highlight(tempId);
+            // Under filters the new card stays shown, even if it does not match, until they change.
+            if (filtered) useTaskUi.getState().keepTask(tempId);
             create.mutate(
               { columnId: column.id, title, tempId },
               {
-                onSuccess: (task) => useTaskUi.getState().highlightedTaskId === tempId && highlight(task.id),
+                onSuccess: (task) => {
+                  const ui = useTaskUi.getState();
+                  ui.replaceKeptTask(tempId, task.id);
+                  if (ui.highlightedTaskId === tempId) highlight(task.id);
+                },
+                onSettled: () => pendingAdds.current.delete(tempId),
               },
             );
           }}

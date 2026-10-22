@@ -9,7 +9,8 @@ Schema changes go through Drizzle migrations only, and only after the user has a
 - **Order uses fractional keys** (`rank`, text, e.g. via `fractional-indexing`): moving a card writes one row, whatever the column size. Never renumber.
 - **Status = column.** `task.column_id` carries the status; `board_column.category` (`todo`, `in_progress`, `done`) gives it business meaning.
 - **Description stored twice:** editor JSON (`description_json`, for rendering) and plain text (`description_text`, for search).
-- **Search uses FTS5**, kept in sync by triggers.
+- **Search uses FTS5** (`task_fts`, migration `0003`), kept in sync by triggers; see [Full-text search](#full-text-search).
+- **Recently opened tasks** (palette) are the setting `recentTasks`: a JSON array of task ids, most recent first, at most 5 (`pushRecent`). A missing or unreadable value reads as an empty list; entries no longer shown (deleted task, archived board) are skipped on read and dropped on the next write.
 - **Soft delete** (`deleted_at`) backs both the trash (purged after 30 days) and undo; purging a task also deletes its attachment rows and files.
 - **Dates:** `start_date` / `due_date` are calendar days (`YYYY-MM-DD`), no time, no timezone. Timestamps (`*_at`) are Unix epoch milliseconds.
 - **Sub-tasks:** one level only — a task whose `parent_id` is set cannot itself be a parent (enforced in the domain).
@@ -82,13 +83,33 @@ CREATE TABLE attachment (
   created_at INTEGER NOT NULL
 );
 
+-- Own copy of the searched text (not external content); see "Full-text search" below.
 CREATE VIRTUAL TABLE task_fts USING fts5(
-  title, description_text, tags,
-  content='', tokenize='unicode61 remove_diacritics 2'
+  task_id, title, description_text, tags,
+  tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3'
 );
 
 CREATE TABLE setting (key TEXT PRIMARY KEY, value TEXT NOT NULL);  -- language, theme, …
 ```
+
+## Full-text search
+
+`task_fts` (migration `0003`, raw SQL: not declared in `schema.ts`, which drizzle-kit ignores) holds one row per task, deleted ones included:
+
+| Column             | Content                                                    | bm25 weight |
+| ------------------ | ---------------------------------------------------------- | ----------- |
+| `task_id`          | `task.id`; indexed only so that triggers find the row fast | 0           |
+| `title`            | `task.title`                                               | 10          |
+| `description_text` | `task.description_text` (`''` when no notes)               | 1           |
+| `tags`             | names of the task's tags, joined by spaces                 | 5           |
+
+- **Tokenizer:** `unicode61 remove_diacritics 2`, so case and accents are ignored (`ete` finds `Été`); prefix indexes for 2 and 3 characters.
+- **Queries** come from the domain's `toFtsQuery`: each typed word quoted and used as a prefix (`"head"*`), all words required. The repository restricts them to `{title description_text tags}` (ids are never searched) and binds them as parameters. Results leave out deleted or archived tasks, tasks of deleted columns, archived boards and sub-tasks whose parent is gone; the board filters' `search.boardTaskIds` uses the same rules (deleted columns included) for one board's cards.
+- **Ranking and limit:** the palette's search ranks with `bm25(task_fts, 0, 10, 1, 5)`, then newest first. It ranks all matches in the index, then joins and filters only the best 4 × limit rows, and runs again on all the matches when that does not fill the limit.
+- **Typed filters** of the palette (`search.tasks`: `priorities`, `due` with the renderer's `today`, `tagNames`) are SQL conditions of that join, so they apply **before** the limit. Priorities: `priority IN (…)`. Due options, combined with OR: overdue = `due_date < today AND completed_at IS NULL`; this week = `due_date` between the Monday and the Sunday of today's week (`startOfWeek`); none = `due_date IS NULL`. Tag names: SQLite cannot fold accents, so the repository folds every tag name in JS (`foldTagName`), keeps the ids of the tags whose folded name is wanted, and binds them as one JSON array (`EXISTS … tag_id IN (SELECT value FROM json_each(?))`); no such tag means no result. All values are bound parameters. Measured on 10,000 matching tasks: 15–35 ms when the filters leave few rows (the full pass runs), against 7–9 ms without filters (budget 50 ms).
+- **Triggers:** `task` AFTER INSERT (new row, current tags), AFTER UPDATE OF `title`, `description_text` (copy both), AFTER DELETE (remove the row: purge); `task_tag` AFTER INSERT / AFTER DELETE (recompute the task's `tags`); `tag` AFTER UPDATE OF `name` (recompute `tags` for every task carrying it, in one pass over `task_id`: 45–75 ms for 2,500 tagged tasks of 10,000, measured faster than one indexed lookup per task). Deleting a tag removes its `task_tag` links first (no cascade), so the link trigger covers it.
+- **Row lookup by id:** a trigger finds a task's row through the `task_id` index: `MATCH 'task_id : "' || replace(id, '"', '""') || '"'` (the **whole** id as an FTS5 phrase, quotes doubled so any id is valid syntax) plus `task_id = id`, which keeps only the exact row (a phrase can also match inside a longer id). This is coupled to the id format: UUIDv7 ids split on `-` into five tokens. An id without any letter or digit has no token and the phrase finds nothing; `coalesce` then falls back to a scan of `task_id` for that id only. About 0.3 ms per trigger on 10,000 tasks (a scan: ~1 ms).
+- **Soft delete and archive** do not touch the index: queries filter on `deleted_at` / `archived_at`.
 
 ## Planned (V1)
 

@@ -67,6 +67,29 @@
     "loadError": "This board could not be loaded.",
     "toggleTheme": "Toggle theme"
   },
+  "filters": {
+    "group": "Board filters",
+    "active": "{{name}}: {{values}}",
+    "byPriority": "Filter by priority",
+    "byTag": "Filter by tag",
+    "byDue": "Filter by due date",
+    "due": {
+      "overdue": "Overdue",
+      "thisWeek": "This week",
+      "none": "No date"
+    },
+    "option_one": "{{label}}, {{count, number}} task",
+    "option_other": "{{label}}, {{count, number}} tasks",
+    "noTags": "No tag on this board",
+    "clear": "Remove this filter: {{name}}",
+    "text": "Text: “{{text}}”",
+    "clearText": "Remove the text filter",
+    "typeFilter": "or type a filter",
+    "result_one": "{{shown, number}} of {{count, number}} task",
+    "result_other": "{{shown, number}} of {{count, number}} tasks",
+    "clearAll": "Clear filters",
+    "noMatch": "No task matches the filters"
+  },
   "column": {
     "todo": "To do",
     "inProgress": "In progress",
@@ -190,10 +213,11 @@
       "columnSelected": "1 column selected",
       "order": "<kbd>{{alt}}</kbd> <kbd>↑↓</kbd> order",
       "column": "<kbd>{{alt}}</kbd> <kbd>←→</kbd> column",
+      "navigate": "<kbd>Arrows</kbd> navigate",
       "open": "<kbd>Enter</kbd> open",
       "moveColumn": "<kbd>{{alt}}</kbd> <kbd>←→</kbd> move"
     },
-    "cardHint": "{{alt}} + arrows: move the card. Enter: open.",
+    "cardHint": "Arrows: navigate. {{alt}} + arrows: move the card. Enter: open.",
     "edge": "Cannot move further"
   },
   "colors": {
@@ -554,5 +578,78 @@
       "deleteColumn": "Delete column",
       "deleteTable": "Delete table"
     }
+  },
+  "palette": {
+    "title": "Command palette",
+    "inputLabel": "Search, filter or run a command",
+    "placeholder": "Search a task, filter (#tag, high…) or run a command",
+    "results": "Results",
+    "keys": {
+      "esc": "Esc"
+    },
+    "footer": {
+      "navigate": "navigate",
+      "open": "open",
+      "close": "close",
+      "syntax": "Type <b>#tag</b>, <b>high</b> or <b>overdue</b> to filter"
+    },
+    "groups": {
+      "recent": "Recently opened",
+      "actions": "Actions",
+      "boards": "Go to board",
+      "tags": "Tags",
+      "thisBoard": "This board · {{name}} · {{count, number}}",
+      "otherBoards": "Other boards · {{count, number}}",
+      "tasks": "Tasks · {{count, number}}",
+      "commands": "Commands",
+      "tasksHeading": "Tasks",
+      "otherBoardsAtLeast": "Other boards · {{count, number}}+",
+      "tasksAtLeast": "Tasks · {{count, number}}+"
+    },
+    "actions": {
+      "newTask": "New task",
+      "newBoard": "New board",
+      "toggleTheme": "Toggle light / dark",
+      "collapseSidebar": "Collapse the sidebar",
+      "expandSidebar": "Show the sidebar",
+      "apply": "Apply as board filters",
+      "newColumn": "New column"
+    },
+    "strip": {
+      "recognised": "Recognised filters",
+      "none": "none — try #front, high, overdue",
+      "result": "Result",
+      "count_one": "{{count, number}} task of {{total, number}} on this board",
+      "count_other": "{{count, number}} tasks of {{total, number}} on this board",
+      "countLive_one": "{{count, number}} task of {{total, number}} on this board — the board updates live",
+      "countLive_other": "{{count, number}} tasks of {{total, number}} on this board — the board updates live",
+      "countOpen_one": "{{count, number}} task of {{total, number}} on this board — ↵ on a task opens it",
+      "countOpen_other": "{{count, number}} tasks of {{total, number}} on this board — ↵ on a task opens it",
+      "openBoard": "Open a board to filter"
+    },
+    "chips": {
+      "priority": "Priority: {{label}}",
+      "priorityAtLeast": "Priority ≥ {{label}}",
+      "priorityAtMost": "Priority ≤ {{label}}",
+      "text": "text: “{{text}}”"
+    },
+    "due": {
+      "overdue": "Overdue",
+      "thisWeek": "This week",
+      "none": "No date"
+    },
+    "location": "{{board}} · {{column}}",
+    "noResult": "No task matches “{{query}}”, on this board or elsewhere. Check the spelling or remove a filter.",
+    "noneElsewhere": "No task elsewhere.",
+    "more": {
+      "thisBoard_one": "+ {{count, number}} more — ↵ on Apply to see them all on the board",
+      "thisBoard_other": "+ {{count, number}} more — ↵ on Apply to see them all on the board",
+      "elsewhere_one": "+ {{count, number}} more — refine the search",
+      "elsewhere_other": "+ {{count, number}} more — refine the search",
+      "elsewhereAtLeast_one": "+ {{count, number}} or more — refine the search",
+      "elsewhereAtLeast_other": "+ {{count, number}} or more — refine the search"
+    },
+    "searchError": "The search failed.",
+    "noBoardMatch": "No task on this board matches the filters."
   }
 }

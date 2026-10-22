@@ -85,6 +85,12 @@ function setup(overrides: Partial<Handlers> = {}) {
       throw new Error('not used');
     },
     'columns.delete': ({ id }) => ({ id, deletedTasks: 0 }),
+    'search.boardTaskIds': ({ boardId }) => ({ taskIds: [boardId] }),
+    'search.tasks': () => [],
+    'recent.list': () => [],
+    'recent.record': ({ taskId }) => {
+      throw new NotFoundError('task', taskId);
+    },
     ...overrides,
   };
   registerHandlers(
@@ -230,5 +236,58 @@ describe('IPC adapter', () => {
     });
     expect(await invoke('attachments.delete', { id })).toEqual({ ok: true, data: { id } });
     expect(await invoke('attachments.list', { taskId: id })).toEqual({ ok: true, data: [] });
+  });
+
+  it('serves the search channels and validates their input', async () => {
+    const { invoke } = setup();
+    const id = '0192f0a0-0000-7000-8000-000000000001';
+    expect(await invoke('search.boardTaskIds', { boardId: id, text: ' header ' })).toEqual({
+      ok: true,
+      data: { taskIds: [id] },
+    });
+    expect(await invoke('search.boardTaskIds', { boardId: id, text: '   ' })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('search.tasks', { text: 'x', limit: 51 })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('search.tasks', { text: 'x'.repeat(201) })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('search.tasks', { text: 'x' })).toEqual({ ok: true, data: [] });
+    // Typed filters: due options need the renderer's today.
+    expect(await invoke('search.tasks', { text: 'x', due: ['overdue'] })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(
+      await invoke('search.tasks', {
+        text: 'x',
+        priorities: [4, 5],
+        due: ['overdue', 'none'],
+        today: '2026-10-21',
+        tagNames: ['Été'],
+      }),
+    ).toEqual({ ok: true, data: [] });
+    expect(await invoke('search.tasks', { text: 'x', due: [], tagNames: [] })).toEqual({
+      ok: true,
+      data: [],
+    });
+    expect(await invoke('search.tasks', { text: 'x', priorities: [6] })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('search.tasks', { text: 'x', tagNames: ['  '] })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_input' },
+    });
+    expect(await invoke('recent.list', {})).toEqual({ ok: true, data: [] });
+    expect(await invoke('recent.record', { taskId: id })).toMatchObject({
+      ok: false,
+      error: { code: 'not_found' },
+    });
   });
 });

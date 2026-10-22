@@ -5,7 +5,7 @@ import { setCustomNativeDragPreview } from '@atlaskit/pragmatic-drag-and-drop/el
 import { attachClosestEdge } from '@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge';
 import type { ColumnColor, MoveDirection } from '@ordo/domain';
 import { ChevronUp, Ellipsis, Plus } from 'lucide-react';
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, type ComponentProps } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cardDropDataForColumn, ColumnTasks, isTaskDrag, useTaskUi } from '@renderer/features/tasks';
 import { keyboardTargetHandlers } from '@renderer/shared/keyboard/focus';
@@ -29,7 +29,14 @@ export const HEADER_BUTTON =
 export interface BoardColumnProps {
   boardId: string;
   column: Column;
+  /** The column's cards shown under the board filters. */
   tasks: readonly Task[];
+  /** Every card of the column, filtered or not (delete confirmation). */
+  totalCount?: number;
+  /** Board filters may hide cards. */
+  filtered?: boolean;
+  /** The filters' text result is on its way. */
+  filterPending?: boolean;
   today: string;
   /** Empty board: call to action in the first column, drop hint in the others. */
   emptyHint: 'first' | 'other' | null;
@@ -39,6 +46,8 @@ export interface BoardColumnProps {
   canDelete: boolean;
   onKeyboardMoveTask: (taskId: string, direction: MoveDirection) => boolean;
   onKeyboardMoveColumn: (columnId: string, direction: 'left' | 'right') => boolean;
+  /** Plain arrows on a card. */
+  onNavigateTask?: ComponentProps<typeof ColumnTasks>['onNavigate'];
 }
 
 /**
@@ -50,12 +59,16 @@ export const BoardColumn = memo(
     boardId,
     column,
     tasks,
+    totalCount = tasks.length,
+    filtered = false,
+    filterPending = false,
     today,
     emptyHint,
     usedColors,
     canDelete,
     onKeyboardMoveTask,
     onKeyboardMoveColumn,
+    onNavigateTask,
   }: BoardColumnProps) {
     const { t } = useTranslation();
     const sectionRef = useRef<HTMLElement>(null);
@@ -180,7 +193,7 @@ export const BoardColumn = memo(
             boardId={boardId}
             column={column}
             usedColors={usedColors}
-            taskCount={tasks.length}
+            taskCount={totalCount}
             canDelete={canDelete}
             trigger={
               <button
@@ -200,6 +213,9 @@ export const BoardColumn = memo(
           today={today}
           emptyHint={emptyHint}
           onKeyboardMove={onKeyboardMoveTask}
+          onNavigate={onNavigateTask}
+          filtered={filtered}
+          filterPending={filterPending}
         />
       </section>
     );
@@ -214,6 +230,10 @@ export const BoardColumn = memo(
     previous.boardId === next.boardId &&
     previous.onKeyboardMoveTask === next.onKeyboardMoveTask &&
     previous.onKeyboardMoveColumn === next.onKeyboardMoveColumn &&
+    previous.onNavigateTask === next.onNavigateTask &&
+    previous.totalCount === next.totalCount &&
+    previous.filtered === next.filtered &&
+    previous.filterPending === next.filterPending &&
     previous.tasks.length === next.tasks.length &&
     previous.tasks.every((task, i) => task === next.tasks[i]),
 );

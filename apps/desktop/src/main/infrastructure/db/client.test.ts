@@ -76,4 +76,32 @@ describe('openDatabase', () => {
     upgraded.close();
     expect(readdirSync(dir).filter((f) => f.endsWith('.bak'))).toEqual(['ordo.db.before-migration-43.bak']);
   });
+
+  it('builds the full-text index of a database made by the first three migrations', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ordo-db-'));
+    const file = join(dir, 'ordo.db');
+    const old = openDatabase(file, firstMigrations(3));
+    old.sqlite.exec(`
+      insert into board (id, name, rank, created_at, updated_at) values ('b', 'B', 'a', 1, 1);
+      insert into board_column (id, board_id, name, color, category, rank, created_at, updated_at)
+        values ('c', 'b', 'C', 'blue', 'todo', 'a', 1, 1);
+      insert into task (id, board_id, column_id, key, title, description_text, rank, created_at, updated_at)
+        values ('t', 'b', 'c', 1, 'Préparer l''été', 'Réserver le gîte', 'a', 1, 1);
+      insert into tag (id, board_id, name, color) values ('g', 'b', 'Vacances', 'green');
+      insert into task_tag (task_id, tag_id) values ('t', 'g');
+    `);
+    old.close();
+
+    const upgraded = openDatabase(file, migrations, () => 44);
+    const match = (query: string) =>
+      upgraded.sqlite.prepare('select task_id from task_fts where task_fts match ?').all(query);
+    expect(match('"ete"*')).toEqual([{ task_id: 't' }]);
+    expect(match('"gite"*')).toEqual([{ task_id: 't' }]);
+    expect(match('"vacances"*')).toEqual([{ task_id: 't' }]);
+    // The triggers work on rows that were there before.
+    upgraded.sqlite.exec("update task set title = 'Hiver' where id = 't'");
+    expect(match('"ete"*')).toEqual([]);
+    expect(match('"hiver"*')).toEqual([{ task_id: 't' }]);
+    upgraded.close();
+  });
 });
